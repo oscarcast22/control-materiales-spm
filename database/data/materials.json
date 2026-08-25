@@ -1,0 +1,1957 @@
+[
+    {
+        "name": "ABRAZADERA 1BS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ABRAZADERA 2BS",
+        "unit": "s/e",
+        "aliases": [
+            "ABRAZADERA 2 BS"
+        ]
+    },
+    {
+        "name": "ABRAZADERA 3BS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ABRAZADERA OMEGA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ABRAZADERA OMEGA 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ABRAZADERA OMEGA 2\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ACEITE ATF",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ACEITE H 300 GRUA",
+        "unit": "s/e",
+        "aliases": [
+            "ACEITE H-300"
+        ]
+    },
+    {
+        "name": "ACEITE HIDRAULICO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ACEITE MOTOR A GASOLINA",
+        "unit": "s/e",
+        "aliases": [
+            "ACEITE PARA MOTOR A GASOLINA"
+        ]
+    },
+    {
+        "name": "ACEITE PARA MOTOR A GASOLINA 15-30",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ACEITE PARA MOTOR A GASOLINA 20-50",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ACOMETIDA COMPLETA CON QUINTA TERMINAL",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ADAPTADOR TIPO L",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "AISLADOR DE PORCELANA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "AISLADOR DE PORCELANA TIPO CARRETE CHICO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ALAMBRE DESNUDO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ALAMBRE RECOCIDO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ALUMBRADO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ANGULO 1 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ANGULO 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ANGULO 1\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ANTICONGELANTE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "APAGADOR SENCILLO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "APARTARAYOS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "APARTA RAYOS 12 KV",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ARBOTANTE METALICO 8 MTS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ARBOTANTE METALICO 10 MTS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ARBOTANTE METALICO 12 MTS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ARENA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ARENA M3",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BALASTRO 100 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BALASTRO 140 W.",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BALASTRO 150 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BALASTRO 400 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BALASTROS DE 100 DAÑADOS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BASE MEDIDOR",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BASE MEDIDOR 7-100",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BASE MEDIDOR 7-200",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BASE MEDIDOR S-100",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BASE PARA FOTOCELDA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BASTIDOR B1",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BASTIDOR B4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BRAZO METALICO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BRAZO METALICO TUBULAR CEDULA 30 DE 1.50 MTS X 1.5 DIAMETRO CON PERCHA PARA MONTAJE CON ABRAZADERA TIPO B5, CON 10 GRADOS DE ANGULO ELEVACION DE BM RESPECTO AL SU PUNTO DE ANCLAJE.",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BROCHA 3\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BROCHA 4\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "BROCHE BACO JUMBO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE # 10",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE NEUTRANEL",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE NEUTRANEL 2+1",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE NEUTRANEL 2+1 CALIBRE 6 AL",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE PORTA ELECTRODO CALIBRE 4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE POT CALIBRE NO. 14",
+        "unit": "s/e",
+        "aliases": [
+            "CABLE POT 14"
+        ]
+    },
+    {
+        "name": "CABLES PASA CORRIENTE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE T.H.W. # 12 NEGRO",
+        "unit": "s/e",
+        "aliases": [
+            "cable thw # 12 negro"
+        ]
+    },
+    {
+        "name": "CABLE THW # 8 NEGRO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE THW #10",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE THW # 10 NEGRO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE THW #12",
+        "unit": "s/e",
+        "aliases": [
+            "CABLE THW CAL 12"
+        ]
+    },
+    {
+        "name": "CABLE THW # 12 VERDE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE THW CAL 16",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE URD XLP #6",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE UTP",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CABLE XLP #6",
+        "unit": "s/e",
+        "aliases": [
+            "CABLE XLP CAL 6"
+        ]
+    },
+    {
+        "name": "CABLE XLP CAL 4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CADENA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CAJA CANOA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CAJA CANOA 2*4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CAJA CANOA CONDULET FS 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CAJA PARA ARCHIVO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CANALETA PROTECTOR CABLE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CANDADO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CARCAZA CALIMA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CARCAZA LED CITY PLUS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CARPETA MANILA CARTA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CASQUILLOS DE FOCO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CEMENTO GRIS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CENTRO DE CARGA QO-2 70A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CENTRO DE CARGA QO2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CEPILLO DE ALAMBRE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CERRADURA DE MANIJA PARAPUERTA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CINTA DE AISLAR",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CINTA DE AISLAR BURNDY",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CINTA VULCANIZADA (SCOTCH, E-800)",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CINTA VULKANIZADA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CINTILLOS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CINTURON PORTA HERRAMIENTAS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CLIP",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CLIP CHICO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CLIP GRANDE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CODO GALVANIZADO 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CODO PG 1 1/4\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONDULET L",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR 1/2 CON OPRESOR",
+        "unit": "s/e",
+        "aliases": [
+            "conector con opreso 1/2"
+        ]
+    },
+    {
+        "name": "CONECTOR BURNDY",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR CILÍNDRICO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR CONDUIT 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR DE DERIVACION BRUNDY",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR P/D 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR P/D 3/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR PARA USO RUDO 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR PARA VARILLA A TIERRA",
+        "unit": "s/e",
+        "aliases": [
+            "conector varilla a tierra"
+        ]
+    },
+    {
+        "name": "CONECTOR PARA VARILLA A TIERRA REFORZADO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR RECTO 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR RECTO 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONECTOR REFORZADO PARA VARILLA DE TIERRAS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTO DOBLE POLARIZADO CON TAPA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTO DUPLEX",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTO DUPLEX POLARIZADO 127 VOLTS 15 A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 3RT10-45 BOBINA A 220 VOLTS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 3RT20-27 BOBINA A 220 VOLTS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 3RT20-35 BOBINA A 220 VOLTS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 1026",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 1034",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 1045",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 2027",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 2027 -34",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 2035",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 2036",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTACTOR 2037",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTRA 1 1/4\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTRA 1\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CONTROL TORK",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "COPLE 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "COPLE 1 1/4 PARED GRUESA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "COPLE 1/2 C/OPRESOR",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "COPLE CON 2 OPRESOR 1/2\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "COPLE CONDUIT GALVANIZADO PARED GRUESA ROSCADA DE 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "COPLE GALVANIZADO 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "COPLE PARED DELGADA 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "COPLE PARED DELGADA 3/4\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "COPLE ROSCADO 1 1/4\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CORDON POT",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CORRECTOR EN CINTA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CORRECTOR LIQUIDO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CORTA PERNO DE 36",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CUCHILLA PARA LINIERO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "CUENTA FACIL",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "DESARMADOR CRUZ 1/8",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "DESARMADOR PLANO 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "DISCO DE CORTE 7\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "DISCO DE CORTE 14\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "DISCO DE DESBASTE 4 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "DISCO DE DESBASTE 7\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "DISCO DESBASTE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "DRIVER CON SALIDA A 24V DE 200 W PARA PROYECTO (ALUMINIO) DRIVERLED-24V-360W-PR",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "DRIVER CON SALIDA A 24V DE 360 W PARA PROYECTO (ALUMINIO) DRIVERLED-24V-360W-PR",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ESCALERA DE FIBRA DE VIDRIO 10 PELDAÑOS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ESPUMA DE POLURIETANO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ESPUMA SELLADORA DE POLIURETANO 500 ML",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FAROL KID BARROCO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FAROL KID JUAREZ 70W.",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FAROL KID MEXICANO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FAROL KID MEXICANO 70 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FAROL KIT HACIENDA 70W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FLEJE ACERADO 3/4",
+        "unit": "s/e",
+        "aliases": [
+            "FLEJE DE ACERO 3/4"
+        ]
+    },
+    {
+        "name": "FOCO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO 8 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO 8.5",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO 10 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO 50 W",
+        "unit": "s/e",
+        "aliases": [
+            "FOCO 50W"
+        ]
+    },
+    {
+        "name": "FOCO 70 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO 100 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO 100 W SODIO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO 140 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO 150 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO 400 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO LED 8 W LUZ BLANCO FRIO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO LED 75 W ALTA POTENCIA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO LED ALTA POTENCIA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO LED RETROFIT 54 WATTS DE POTENCIA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO LED RETROFIT 100 WATTS DE POTENCIA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO RETROFIT 54 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCOS DE 100 W DAÑADOS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOCO VAPOR DE SODIO 100 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOTOCELDA 110",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOTOCELDA 127",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOTOCELDA 220",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOTOCELDA MULTIVOLTAJE 110",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOTO CONTACTOR 40 AMP (CONTROL TORK)",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FOTOCONTROL",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE CARTUCHO 2*30",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE ESLABON 1 A",
+        "unit": "s/e",
+        "aliases": [
+            "fusible eslabon 1a"
+        ]
+    },
+    {
+        "name": "FUSIBLE ESLABON 2A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE ESLABON 3 A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE ESLABON 5 A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE ESLABON 10 A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE ESLABON 20 A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE ESLABON MT 1A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE ESLABON MT 2 A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE ESLABON MT 3 A",
+        "unit": "s/e",
+        "aliases": [
+            "Fusible eslabon M.T. 3 A"
+        ]
+    },
+    {
+        "name": "FUSIBLE ESLABON MT 5 A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE ESLABON MT 10 A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "FUSIBLE ESLABON MT 20 A",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "GOMA MIGAJON",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "GRAPAS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "GRAVA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "GRAVA M3",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "HEBILLA 3/4",
+        "unit": "s/e",
+        "aliases": [
+            "HEBILLAS 3/4"
+        ]
+    },
+    {
+        "name": "HOJAS DE MAQUINA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "INTERRUPTOR DE SEGURIDAD 2X30 A CON PORTAFUSIBLE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 1*20",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "INTERRUPTOR TERMOMAGNETICO 2 X 10",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "INTERRUPTOR TERMOMAGNETICO 2*10 DIN",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 2*15",
+        "unit": "s/e",
+        "aliases": [
+            "INTERRUPTOR TERMO MARNETICO 2*15",
+            "INTERRUPTOR TERMOMAGNETICO 2*15"
+        ]
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 2*20",
+        "unit": "s/e",
+        "aliases": [
+            "INTERRUPTOR TERMOMAGNETICO 2*20"
+        ]
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 2*30",
+        "unit": "s/e",
+        "aliases": [
+            "INTERRUPTOR TERMOMAGNETICO 2*30"
+        ]
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 2*40",
+        "unit": "s/e",
+        "aliases": [
+            "interruptor termomagnetico 2 x 40",
+            "INTERRUPTOR TERMOMAGNETICO 2*40"
+        ]
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 2*50",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 2*60",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 2*70",
+        "unit": "s/e",
+        "aliases": [
+            "INTERRUPTOR TERMOMAGNETICO 2*70"
+        ]
+    },
+    {
+        "name": "JUEGO ANCLAS COLL ROLLED 3/4\", 90 CM DE LARGO, LONGITUD DE ROSCA DE 4\", BOBLES 10 CM. INCLUYA TUERCA Y RONDANAS PLANA Y DE PRESION",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "JUEGO DE ANCLAS DE 3/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "JUEGO DE DADOS DE IMPACTO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 BISAGRAS TUBULARES DE 3/4\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 DISCO CORTE METAL DE 14\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 DISCO DE DESBASTE 4-1/2\"2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 DISCO DE DESBASTE Y PULIDO 4-1/2\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 DISCO DERBASTE METAL 7\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 DISCO LAMINADO #40 4 1/2\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 LAMINA ANTIDERRAPANTE CAL 14 4 X 10",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 PIJA PUNTA DE BROCA CABEZA DE CRUZ NO.8 X 1/2\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 PIJA PUNTA DE BROCA CABEZA HEXAGONAL CON RONDANA DE NEOPRENO NO.14 X 3/4\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 SEGUETA BIMETÁLICA PARA ARCO 12\" BLANCA DIENTE FINO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "L23 VARILLA LISA REDONDO 3/8\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LAMPARA FLOURECENTE 34 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LAPIZ",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LAPIZ ADHESIVO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LATA DE SPRAY COLOR BLANCO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LED DE 2 PANELES",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LIBRETA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA APOLO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA APOLO 100 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA CALIMA 100W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA CALIMA 140W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA CUTOF",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED 50 W DAÑADA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED 50W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED 70 W DONACION",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED 70W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED 100 W DAÑADA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED 100W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED 150 W.",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED BUUMER 50",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED CITY PLUS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED CITY PLUS 50 W",
+        "unit": "s/e",
+        "aliases": [
+            "Luminaria led City Plus 50w. Garantia",
+            "Luminaria led City Plus 50w."
+        ]
+    },
+    {
+        "name": "LUMINARIA LED CITY PLUS 70 W",
+        "unit": "s/e",
+        "aliases": [
+            "Luminaria led City Plus 70w. Garantia"
+        ]
+    },
+    {
+        "name": "LUMINARIA LED CITY PLUS 100 W",
+        "unit": "s/e",
+        "aliases": [
+            "Luminaria led City Plus 100w. Garantia"
+        ]
+    },
+    {
+        "name": "LUMINARIA LED CITY PLUS 150 W.",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED LHD 50 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED LHD 100 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LED PHILIPS 73 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA LHD",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA OV-15",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA OV7",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA PHILIPS 105 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA PRAHA DAÑADA 210 W2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIAS DAÑADAS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LUMINARIA SUBURBANA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 50 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 70 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 100 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 150 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "MALLA PARA CRIBA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "MANGUERA DE LED BLANCA FRIO PLANA ROLLO DE 25 METROS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "MANGUERA LICUATITE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "MARCADOR PERMANENTE GRUESO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "MARCA TEXTOS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "MORTERO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "MUFA 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PALA CUADRADA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PEDAZO DE LUMINARIA DRIVE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PERROS SOGUILLA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PIJA BROCA 1/2\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PIJA PUNTA BROCA 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PIJA PUNTA BROCA PHILIPS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PIJA PUNTA DE BROCA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PILA AA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PILA AAA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PINTARRON",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PINTURA ESMALTE BLANCA",
+        "unit": "s/e",
+        "aliases": [
+            "PINTURA DE ESMALTE BLANCO"
+        ]
+    },
+    {
+        "name": "PINTURA ESMALTE NEGRA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PINTURA ESMALTE VERDE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PINTURA VINILICA BLANCA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PINZA DE CORTE DIAGONAL",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PINZAS DE ELECTRICISTA DE LINERO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PLACA DE ACERO 3.05 M X .92 M X 1/4 ESPESOR",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PLUMA AZUL",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PLUMA NEGRA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PLUMON NEGRO PERMANENTE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PLUMON PERMANENTE",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PLUMON PINTARRON",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "POLIDUCTO ANARANJADO 1 1/4",
+        "unit": "s/e",
+        "aliases": [
+            "POLIDUCTO NARANJA 1 1/4"
+        ]
+    },
+    {
+        "name": "POLIDUCTO ANARANJADO 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PROTECTOR DE HOJAS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PROYECTOR DE 1000 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PROYECTOR DE 1500 W",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PROYECTOR LED 100 W PHILIPS LUZ DE DIA BLANCO FRIO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PTR 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "PUNTA BROCA 3/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "QUINTA TERMINAL",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "REFLECTOR LED 30 W DAÑADO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "REFLECTOR LED 50 W DAÑADO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "REFLECTOR LED 185 W DAÑADO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "REFLECTOR LED PARA EXTERIORES, 100 W, LUZ DE DÍA, A PRUEBA DE POLVO Y CHORROS DE AGUA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "REGISTRO 40*40",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "REGISTRO CANOA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "REGISTRO ELECTRICO DE CONCRETO 40*40",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "RIEL DIN",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "RODILLO COMPLETO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ROLLO PAPEL",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "ROLLO PAPEL SANITARIO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "RONDANA PLANA 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "RONDANA PLANA 3/4",
+        "unit": "s/e",
+        "aliases": [
+            "Rondadna plana 3/4"
+        ]
+    },
+    {
+        "name": "RONDANA PLANA 5/8",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "RONDANA PRESIÓN 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "RONDANA PRESIÓN 3/4",
+        "unit": "s/e",
+        "aliases": [
+            "RONDANA DE PRESION 3/4"
+        ]
+    },
+    {
+        "name": "SANITAS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SEGUETA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SEGUETA BIMETALICA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SEPARADOR DE FIBRA DE VIDRIO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SEPARADOR DE FIBRA DE VIDRIO 25.5\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOCKET",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOGA 3/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOGUILLA DE ACERO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOGUILLA DE ACERO 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOLA LED KIT JUAREZ",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOLDADURA 60-11",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOLDADURA 6011",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOLDADURA 7018",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOLERA 1 3/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOLERA 2 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOLERA 3\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOLERA 4\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOQUET BAQUELITA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOQUET DE VINILI",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "SOQUET MOGUL",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TAPA 1 VENTANA",
+        "unit": "s/e",
+        "aliases": [
+            "tapa de 1 ventana"
+        ]
+    },
+    {
+        "name": "TAPA 2 VENTANAS",
+        "unit": "s/e",
+        "aliases": [
+            "TAPA DOBLEVENTANA"
+        ]
+    },
+    {
+        "name": "TAPA CIEGA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TAPA DE 2 VENTANAS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TAPA PARA CONTACTO DUPLEX POLARIZADO",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TAQUETE PARA BROCA DE 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "THINNER",
+        "unit": "s/e",
+        "aliases": [
+            "thiner"
+        ]
+    },
+    {
+        "name": "TORNILLO PUNTA BROCA 8 X 1 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TORNILLO PUNTA BROCA 14 X 3/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TORNILLOS PIJA 8 X 10",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO CONDUCT 3/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO CONDUIT 1/2",
+        "unit": "s/e",
+        "aliases": [
+            "Tubo conduit de 1/2"
+        ]
+    },
+    {
+        "name": "TUBO CONDUIT DE 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO CONDUIT METALICO PARED DELGADA 1/2\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO CONDUIT METALICO PARED GRUESA 1 1/4\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO CONDUIT P.D. 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO CONDUIT PG 1 1/4\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO CONDUIT PG 1\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO DE PVC 4/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO NEGRO1 1/2",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO NEGRO 2\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO PARA ACOMETIDA 1 1/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO PVC 6\"",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUBO TERMO CONTRÁCTIL CAL.12",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUERCA 1/2",
+        "unit": "s/e",
+        "aliases": [
+            "TUERCAS 1/2",
+            "tuerca de 1/2"
+        ]
+    },
+    {
+        "name": "TUERCA 3/4",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUERCA 3/8",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "TUERCA 5/16",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "VARILLA A TIERRA 1.5M",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "VARILLA A TIERRA 5/8 3M",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "VARILLA CORRUGADA 1/2",
+        "unit": "s/e",
+        "aliases": [
+            "VARILLA CORRUGADA DE 1/2"
+        ]
+    },
+    {
+        "name": "VARILLA CORRUGADA 3/8",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "VARILLA PARA TIERRA FISICA",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "VARILLA ROSCADA /16",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "VARILLA ROSCADA DE 1/2",
+        "unit": "s/e",
+        "aliases": [
+            "VARILLA ROSCADA 1/2"
+        ]
+    },
+    {
+        "name": "VARILLA ROSCADA GALVANIZADA DE 1/2 X 3 METROS",
+        "unit": "s/e",
+        "aliases": []
+    },
+    {
+        "name": "VARILLA SEMIFLECHA 1/4",
+        "unit": "s/e",
+        "aliases": []
+    }
+]

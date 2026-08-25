@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\StorageLocation;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,11 +15,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        StorageLocation::firstOrCreate(
+            ['code' => 'warehouse'],
+            ['name' => 'Almacén', 'tracking_started_on' => now()->toDateString()],
+        );
+        StorageLocation::firstOrCreate(
+            ['code' => 'yard'],
+            ['name' => 'Patio', 'tracking_started_on' => now()->toDateString()],
+        );
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $this->call(CatalogSeeder::class);
     }
 }
