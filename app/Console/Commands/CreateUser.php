@@ -8,6 +8,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 #[Signature('app:create-user {--name=} {--email=} {--password=}')]
 #[Description('Crea una cuenta autorizada para Control de Materiales SPM')]
@@ -25,7 +26,7 @@ class CreateUser extends Command
         $validator = Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', Password::default()],
         ]);
         if ($validator->fails()) {
             foreach ($validator->errors()->all() as $error) {

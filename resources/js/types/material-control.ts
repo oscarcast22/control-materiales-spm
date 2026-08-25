@@ -73,6 +73,7 @@ export type Voucher = {
     status: 'active' | 'cancelled';
     balance_state: 'pending' | 'settled' | 'anomaly' | 'received' | 'cancelled';
     needs_review: boolean;
+    review_reasons: string[];
     cancellation_reason?: string | null;
     items_count: number;
     items: VoucherItem[];

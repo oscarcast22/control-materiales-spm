@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
 use App\Models\Voucher;
-use App\Support\InventorySummary;
+use App\Support\MaterialTracking;
 use App\Support\VoucherData;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -19,34 +19,29 @@ class DashboardController extends Controller
         $vouchers = Voucher::query()
             ->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'items.material', 'items.unit', 'items.dispositions'])
             ->where('status', VoucherStatus::Active->value)
+            ->whereDate('issued_on', '>=', MaterialTracking::START_DATE)
             ->orderByDesc('issued_on')
-            ->get()
-            ->map(fn (Voucher $voucher): array => VoucherData::make($voucher));
+            ->get();
 
-        $pendingItems = $vouchers
-            ->where('direction', VoucherDirection::Exit->value)
-            ->flatMap(fn (array $voucher) => collect(VoucherData::itemRows($voucher['items']))->map(fn (array $item) => [
-                'voucher_id' => $voucher['id'],
-                'folio' => $voucher['folio'],
-                'location' => $voucher['location'],
-                'issued_on' => $voucher['issued_on'],
-                'received_by' => $voucher['received_by'],
-                ...$item,
-            ]))->filter(fn (array $item): bool => (float) $item['pending_quantity'] > 0)->values();
-        $inventory = collect(InventorySummary::rows());
+        $tracking = MaterialTracking::make(
+            $vouchers->filter(fn (Voucher $voucher): bool => $voucher->direction === VoucherDirection::Exit)->values(),
+        );
+        $pendingItems = collect($tracking['rows'])
+            ->where('balance_state', 'pending')
+            ->sortBy('issued_on')
+            ->values();
 
         return Inertia::render('dashboard', [
             'metrics' => [
-                'pending_vouchers' => $vouchers->where('balance_state', 'pending')->count(),
-                'pending_items' => $pendingItems->count(),
-                'settled_vouchers' => $vouchers->where('balance_state', 'settled')->count(),
-                'anomalies' => $vouchers->where('balance_state', 'anomaly')->count(),
+                'pending_vouchers' => $tracking['metrics']['pending_vouchers'],
+                'pending_items' => $tracking['metrics']['pending_items'],
+                'settled_vouchers' => $tracking['metrics']['settled_vouchers'],
+                'anomalies' => $tracking['metrics']['anomalies'],
                 'needs_review' => $vouchers->where('needs_review', true)->count(),
-                'negative_inventory' => $inventory->filter(fn (array $row): bool => (float) $row['available'] < 0)->count(),
+                'technicians_with_pending' => $tracking['metrics']['technicians_with_pending'],
             ],
-            'recent' => $vouchers->take(8)->values(),
-            'oldest_pending' => $pendingItems->sortBy('issued_on')->take(10)->values(),
-            'negative_inventory' => $inventory->filter(fn (array $row): bool => (float) $row['available'] < 0)->take(10)->values(),
+            'recent' => $vouchers->take(8)->map(fn (Voucher $voucher): array => VoucherData::make($voucher))->values(),
+            'oldest_pending' => $pendingItems->take(10)->values(),
         ]);
     }
 }

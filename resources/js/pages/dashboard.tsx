@@ -6,19 +6,15 @@ import {
     ClipboardCheck,
     PackageOpen,
     Plus,
+    Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, formatQuantity } from '@/lib/format';
-import type {
-    InventoryRow,
-    StorageLocation,
-    Voucher,
-    VoucherItem,
-} from '@/types';
+import type { StorageLocation, Voucher, VoucherItem } from '@/types';
 
-type PendingRow = VoucherItem & {
+type PendingRow = Omit<VoucherItem, 'dispositions'> & {
     voucher_id: number;
     folio: string;
     issued_on: string;
@@ -32,11 +28,10 @@ type Props = {
         settled_vouchers: number;
         anomalies: number;
         needs_review: number;
-        negative_inventory: number;
+        technicians_with_pending: number;
     };
     recent: Voucher[];
     oldest_pending: PendingRow[];
-    negative_inventory: InventoryRow[];
 };
 
 const stateLabel: Record<string, string> = {
@@ -47,12 +42,7 @@ const stateLabel: Record<string, string> = {
     received: 'Entrada recibida',
 };
 
-export default function Dashboard({
-    metrics,
-    recent,
-    oldest_pending,
-    negative_inventory,
-}: Props) {
+export default function Dashboard({ metrics, recent, oldest_pending }: Props) {
     return (
         <>
             <Head title="Resumen" />
@@ -108,51 +98,18 @@ export default function Dashboard({
                         tone="slate"
                     />
                     <Metric
-                        title="Existencias negativas"
-                        value={metrics.negative_inventory}
-                        icon={AlertTriangle}
-                        tone="red"
+                        title="Técnicos con pendientes"
+                        value={metrics.technicians_with_pending}
+                        icon={Users}
+                        tone="amber"
                     />
                 </div>
-                {negative_inventory.length > 0 && (
-                    <Card className="border-red-300">
-                        <CardHeader className="flex-row items-center justify-between">
-                            <CardTitle>Existencias negativas</CardTitle>
-                            <Button variant="ghost" size="sm" asChild>
-                                <Link href="/reports/inventory">
-                                    Revisar inventario{' '}
-                                    <ArrowRight className="ml-1 size-4" />
-                                </Link>
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="grid gap-2 md:grid-cols-2">
-                            {negative_inventory.map((row) => (
-                                <div
-                                    key={`${row.location.id}-${row.material.id}-${row.unit.id}`}
-                                    className="flex justify-between rounded-lg border p-3 text-sm"
-                                >
-                                    <span>
-                                        <strong>{row.material.name}</strong>
-                                        <br />
-                                        <span className="text-xs text-muted-foreground">
-                                            {row.location.name}
-                                        </span>
-                                    </span>
-                                    <span className="font-semibold text-red-700">
-                                        {formatQuantity(row.available)}{' '}
-                                        {row.unit.symbol}
-                                    </span>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                )}
                 <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
                     <Card>
                         <CardHeader className="flex-row items-center justify-between">
                             <CardTitle>Pendientes más antiguos</CardTitle>
                             <Button variant="ghost" size="sm" asChild>
-                                <Link href="/reports/balances">
+                                <Link href="/reports/material-tracking?tab=detail&state=pending">
                                     Ver todos{' '}
                                     <ArrowRight className="ml-1 size-4" />
                                 </Link>

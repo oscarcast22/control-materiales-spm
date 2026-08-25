@@ -13,6 +13,7 @@ use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
+use App\Support\MaterialTracking;
 use App\Support\Normalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
@@ -205,9 +206,11 @@ class CatalogController extends Controller
         $data = $request->validate([
             'code' => ['required', 'alpha_dash:ascii', 'max:40', Rule::unique('storage_locations', 'code')],
             'name' => ['required', 'string', 'max:100'],
-            'tracking_started_on' => ['required', 'date'],
         ]);
-        $model = StorageLocation::create($data);
+        $model = StorageLocation::create([
+            ...$data,
+            'tracking_started_on' => MaterialTracking::START_DATE,
+        ]);
         AuditEvent::record($model, 'created', null, $model->toArray());
 
         return back()->with('success', 'Área de resguardo agregada.');
@@ -218,7 +221,6 @@ class CatalogController extends Controller
         Gate::authorize('manage-catalogs');
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'tracking_started_on' => ['required', 'date'],
         ]);
         $before = $location->toArray();
         $location->update($data);

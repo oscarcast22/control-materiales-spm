@@ -41,6 +41,20 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
         }
     };
 
+    const markReviewed = () => {
+        if (
+            window.confirm(
+                '¿Confirmas que las incidencias de importación de este vale ya fueron revisadas?',
+            )
+        ) {
+            router.post(
+                `/vouchers/${voucher.id}/review`,
+                {},
+                { preserveScroll: true },
+            );
+        }
+    };
+
     return (
         <>
             <Head title={`Vale ${voucher.folio}`} />
@@ -116,6 +130,35 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                     <Alert variant="destructive">
                         <AlertDescription>
                             Vale cancelado: {voucher.cancellation_reason}
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {voucher.review_reasons.length > 0 && (
+                    <Alert className="border-amber-400 bg-amber-50 text-amber-950">
+                        <AlertDescription>
+                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                <div>
+                                    <p className="font-medium">
+                                        Incidencias detectadas al importar
+                                    </p>
+                                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                                        {voucher.review_reasons.map(
+                                            (reason) => (
+                                                <li key={reason}>{reason}</li>
+                                            ),
+                                        )}
+                                    </ul>
+                                </div>
+                                {voucher.needs_review && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={markReviewed}
+                                    >
+                                        Marcar revisión atendida
+                                    </Button>
+                                )}
+                            </div>
                         </AlertDescription>
                     </Alert>
                 )}

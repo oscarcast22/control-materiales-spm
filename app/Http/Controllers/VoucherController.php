@@ -188,6 +188,23 @@ class VoucherController extends Controller
         return redirect()->route('vouchers.show', $voucher)->with('success', 'Vale cancelado.');
     }
 
+    public function review(Request $request, Voucher $voucher): RedirectResponse
+    {
+        Gate::authorize('update', $voucher);
+
+        DB::transaction(function () use ($voucher): void {
+            $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
+            $before = $locked->toArray();
+            $locked->update([
+                'needs_review' => false,
+                'updated_by' => auth()->id(),
+            ]);
+            AuditEvent::record($locked, 'reviewed', $before, $locked->fresh()->toArray());
+        });
+
+        return redirect()->route('vouchers.show', $voucher)->with('success', 'La revisión del vale quedó registrada.');
+    }
+
     public function print(Voucher $voucher): View
     {
         Gate::authorize('view', $voucher);

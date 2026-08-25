@@ -2,6 +2,16 @@
 
 Aplicación interna para capturar vales de salida de almacén y comprobar qué material se aplicó, qué se devolvió y qué continúa pendiente. Está construida con Laravel, Inertia, React, TypeScript y PostgreSQL.
 
+## Documentación
+
+- [`AGENTS.md`](AGENTS.md): reglas y contexto obligatorio para futuras sesiones de desarrollo.
+- [`docs/product.md`](docs/product.md): problema, flujo operativo, glosario y alcance del MVP.
+- [`docs/architecture.md`](docs/architecture.md): componentes, relaciones de datos e invariantes.
+- [`docs/data-import.md`](docs/data-import.md): fuentes históricas, transformación y reconciliación.
+- [`docs/operations.md`](docs/operations.md): seguridad, instalación, respaldo y checklist de producción.
+
+El proyecto se encuentra en refinamiento local y todavía no se ha desplegado ni entregado a usuarios.
+
 ## Alcance actual
 
 - Acceso privado con cuentas creadas por consola; el registro público está deshabilitado.
@@ -10,8 +20,8 @@ Aplicación interna para capturar vales de salida de almacén y comprobar qué m
 - Aplicaciones/consumos y devoluciones parciales, con saldo por partida.
 - Anulación auditada de movimientos y cancelación controlada de vales.
 - Fotos o PDF del vale guardados en almacenamiento privado.
-- Consulta, filtros, impresión y exportación XLSX de saldos y movimientos.
-- Existencia neta por área desde una fecha de inicio, con ajustes auditados.
+- Consulta, filtros, impresión y exportación XLSX del seguimiento de material.
+- Resúmenes por material y por técnico de lo entregado, aplicado, devuelto y pendiente desde 2026.
 - Catálogos iniciales depurados y versionados; importación separada del historial confiable desde 2026.
 
 ## Requisitos
@@ -64,20 +74,22 @@ Para importarlo:
 php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --from=2026-01-01
 ```
 
-El corte se aplica al folio completo: un folio con fechas anteriores y posteriores al límite se omite entero para no crear documentos parciales. También se omiten folios sin fecha válida. Cada fila aceptada queda conservada en una tabla de trazabilidad y el mismo archivo no se importa dos veces. Los conflictos o saldos anómalos quedan marcados para revisión.
+El corte es inclusivo y se aplica por renglón. Si un folio contiene filas anteriores y posteriores al límite, sólo se importa su parte válida y el vale queda marcado para revisión. Las filas sin fecha únicamente se importan cuando ésta puede inferirse de un comentario inequívoco de 2026; las demás se conservan como no resueltas sin inventar un vale. Cada fila considerada queda guardada en la tabla de trazabilidad y el mismo archivo no se importa dos veces.
 
-La importación histórica utiliza OpenSpout por streaming y reutiliza los alias del catálogo depurado, por lo que variantes como abreviaturas o errores ortográficos se relacionan con su registro canónico.
+La importación histórica utiliza OpenSpout por streaming, lee directamente los comentarios internos de las columnas `REPORTE 1` a `REPORTE 10` y reutiliza los alias del catálogo depurado. Una fecha de aplicación sólo se acepta si tiene un formato inequívoco y corresponde a 2026; en caso contrario se usa la fecha del vale, se conserva el comentario original y se registra el motivo de revisión. Desde el detalle del vale se pueden consultar estas incidencias y marcar la revisión como atendida con auditoría.
+
+Antes de escribir, el comando valida la estructura del libro, calcula todos los resultados y comprueba que ningún folio choque con los ya capturados. La importación efectiva es transaccional: ante cualquier error no se conserva una carga parcial. No utilice este comando mediante un seeder ni ejecute `migrate:fresh` para cargar el historial.
 
 ## Cómo se calculan los saldos
 
 - El pendiente de una salida es la cantidad entregada menos lo comprobado como usado y lo devuelto.
-- Una entrada independiente aumenta la existencia del área; una salida la disminuye y una devolución la repone.
-- El consumo no vuelve a restar existencia porque el material salió físicamente al emitir el vale.
-- Cada área comienza en cero desde su fecha de inicio, configurable en Catálogos. Los documentos anteriores siguen consultables, pero no afectan la existencia.
-- Una cifra negativa señala falta de una entrada, devolución o ajuste; no se corrige editando el historial.
-- Los ajustes requieren motivo y pueden anularse con trazabilidad completa.
+- El seguimiento incluye únicamente vales de salida activos emitidos desde el 1 de enero de 2026; las entradas y los vales cancelados no generan responsabilidad para un técnico.
+- Una cifra positiva es material que todavía debe aplicarse en un trabajo o devolverse. La aplicación no intenta anticipar cuál de las dos acciones ocurrirá.
+- Una cifra negativa indica que se comprobó más de lo entregado y se muestra como inconsistencia.
+- Las cantidades se agregan exclusivamente por material y unidad; no se genera un total que mezcle piezas, metros u otros artículos.
+- Las devoluciones históricas permanecen en cero cuando el documento original no las identifica; no se infieren datos faltantes.
 
-La cifra se presenta como **existencia calculada desde el inicio**. No debe considerarse un conteo físico certificado hasta registrar un ajuste basado en un inventario real.
+La aplicación no presenta estos saldos como existencias de almacén. Conocer el inventario físico requeriría una existencia inicial y el registro completo de entradas, información que no forma parte del flujo actual.
 
 ## Modelo de datos
 
@@ -90,6 +102,8 @@ La cifra se presenta como **existencia calculada desde el inicio**. No debe cons
 - `legacy_import_rows`: copia trazable de cada renglón leído del Excel histórico.
 
 Las migraciones representan directamente este esquema final. No contienen migraciones transitorias de renombrado o compatibilidad porque el proyecto parte de una base limpia.
+
+Las estructuras de inventario físico se conservan como infraestructura reservada, pero sus pantallas y operaciones no se exponen. Sólo deberán activarse si en el futuro se dispone de existencias iniciales y movimientos completos de almacén.
 
 ## Verificación
 

@@ -4,7 +4,6 @@ import {
     FileSpreadsheet,
     LayoutDashboard,
     PackageSearch,
-    Warehouse,
     PlusCircle,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -38,14 +37,9 @@ const mainNavItems: NavItem[] = [
         icon: ClipboardList,
     },
     {
-        title: 'Saldos',
-        href: '/reports/balances',
+        title: 'Seguimiento',
+        href: '/reports/material-tracking',
         icon: FileSpreadsheet,
-    },
-    {
-        title: 'Existencias',
-        href: '/reports/inventory',
-        icon: Warehouse,
     },
     {
         title: 'Catálogos',

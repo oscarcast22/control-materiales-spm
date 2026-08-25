@@ -69,6 +69,7 @@ final class VoucherData
             'status' => $voucher->status->value,
             'balance_state' => $balanceState,
             'needs_review' => $voucher->needs_review,
+            'review_reasons' => $voucher->review_reasons ?? [],
             'cancellation_reason' => $voucher->cancellation_reason,
             'items_count' => $items->count(),
             'items' => $items,

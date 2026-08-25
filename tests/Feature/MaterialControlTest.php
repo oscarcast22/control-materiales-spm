@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\DispositionType;
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
-use App\Models\InventoryAdjustment;
 use App\Models\Material;
 use App\Models\MaterialDisposition;
 use App\Models\Person;
@@ -14,12 +13,13 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
-use App\Support\InventorySummary;
 use App\Support\VoucherData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
+use ZipArchive;
 
 class MaterialControlTest extends TestCase
 {
@@ -169,7 +169,7 @@ class MaterialControlTest extends TestCase
         $this->actingAs($user)->get(route('attachments.show', $attachment))->assertDownload('vale.pdf');
     }
 
-    public function test_balance_report_exports_a_valid_xlsx_file(): void
+    public function test_tracking_report_exports_the_operational_sheets_as_a_valid_xlsx_file(): void
     {
         $user = User::factory()->create();
         $this->voucherItem(10);
@@ -179,6 +179,17 @@ class MaterialControlTest extends TestCase
         $response->assertOk();
         $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $this->assertStringContainsString('.xlsx', (string) $response->headers->get('content-disposition'));
+
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($response->getFile()->getPathname()));
+        $workbook = $zip->getFromName('xl/workbook.xml');
+        $this->assertIsString($workbook);
+        $this->assertStringContainsString('Resumen por material', $workbook);
+        $this->assertStringContainsString('Resumen por técnico', $workbook);
+        $this->assertStringContainsString('Detalle de vales', $workbook);
+        $this->assertStringContainsString('Aplicaciones y devoluciones', $workbook);
+        $this->assertStringNotContainsString('Existencias', $workbook);
+        $zip->close();
     }
 
     public function test_an_independent_entry_is_received_and_cannot_have_dispositions(): void
@@ -198,85 +209,122 @@ class MaterialControlTest extends TestCase
         $this->assertDatabaseCount('material_dispositions', 0);
     }
 
-    public function test_inventory_combines_entries_exits_returns_and_audited_adjustments(): void
+    public function test_tracking_reports_only_active_exits_since_2026_and_separates_each_balance(): void
     {
         $user = User::factory()->create();
-        [$technician, $issuer, $unit, $material] = $this->catalogs();
-        $location = StorageLocation::factory()->create(['tracking_started_on' => '2026-08-01']);
+        [$technician, $issuer, $unit, $material, $otherMaterial] = $this->catalogs();
+        $location = StorageLocation::factory()->create();
 
-        $entry = Voucher::factory()->create([
-            'storage_location_id' => $location->id, 'direction' => VoucherDirection::Entry,
-            'issued_on' => '2026-08-05', 'received_by_id' => $technician->id, 'delivered_by_id' => $issuer->id,
+        $pendingVoucher = Voucher::factory()->create([
+            'storage_location_id' => $location->id,
+            'direction' => VoucherDirection::Exit,
+            'issued_on' => '2026-01-10',
+            'received_by_id' => $technician->id,
+            'delivered_by_id' => $issuer->id,
+        ]);
+        $pendingItem = VoucherItem::factory()->create([
+            'voucher_id' => $pendingVoucher->id,
+            'material_id' => $material->id,
+            'unit_id' => $unit->id,
+            'description_snapshot' => $material->name,
+            'quantity' => 10,
         ]);
         VoucherItem::factory()->create([
-            'voucher_id' => $entry->id, 'material_id' => $material->id, 'unit_id' => $unit->id,
-            'description_snapshot' => $material->name, 'quantity' => 20,
-        ]);
-        $exit = Voucher::factory()->create([
-            'storage_location_id' => $location->id, 'direction' => VoucherDirection::Exit,
-            'issued_on' => '2026-08-10', 'received_by_id' => $technician->id, 'delivered_by_id' => $issuer->id,
-        ]);
-        $exitItem = VoucherItem::factory()->create([
-            'voucher_id' => $exit->id, 'material_id' => $material->id, 'unit_id' => $unit->id,
-            'description_snapshot' => $material->name, 'quantity' => 10,
+            'voucher_id' => $pendingVoucher->id,
+            'material_id' => $otherMaterial->id,
+            'unit_id' => $unit->id,
+            'description_snapshot' => $otherMaterial->name,
+            'quantity' => 3,
         ]);
         MaterialDisposition::factory()->create([
-            'voucher_item_id' => $exitItem->id, 'type' => DispositionType::Consumption,
-            'occurred_on' => '2026-08-11', 'quantity' => 4,
+            'voucher_item_id' => $pendingItem->id,
+            'type' => DispositionType::Consumption,
+            'occurred_on' => '2026-01-11',
+            'quantity' => 4,
         ]);
         MaterialDisposition::factory()->create([
-            'voucher_item_id' => $exitItem->id, 'type' => DispositionType::Return,
-            'occurred_on' => '2026-08-12', 'quantity' => 2,
+            'voucher_item_id' => $pendingItem->id,
+            'type' => DispositionType::Return,
+            'occurred_on' => '2026-01-12',
+            'quantity' => 2,
         ]);
         MaterialDisposition::factory()->create([
-            'voucher_item_id' => $exitItem->id, 'type' => DispositionType::Return,
-            'occurred_on' => '2026-08-12', 'quantity' => 1, 'voided_at' => now(),
-        ]);
-        $cancelledEntry = Voucher::factory()->create([
-            'storage_location_id' => $location->id, 'direction' => VoucherDirection::Entry,
-            'status' => VoucherStatus::Cancelled, 'issued_on' => '2026-08-06',
-            'received_by_id' => $technician->id, 'delivered_by_id' => $issuer->id,
-        ]);
-        VoucherItem::factory()->create([
-            'voucher_id' => $cancelledEntry->id, 'material_id' => $material->id, 'unit_id' => $unit->id,
-            'description_snapshot' => $material->name, 'quantity' => 50,
-        ]);
-        $historical = Voucher::factory()->create([
-            'storage_location_id' => $location->id, 'direction' => VoucherDirection::Exit,
-            'issued_on' => '2026-07-01', 'received_by_id' => $technician->id, 'delivered_by_id' => $issuer->id,
-        ]);
-        VoucherItem::factory()->create([
-            'voucher_id' => $historical->id, 'material_id' => $material->id, 'unit_id' => $unit->id,
-            'description_snapshot' => $material->name, 'quantity' => 99,
+            'voucher_item_id' => $pendingItem->id,
+            'type' => DispositionType::Return,
+            'occurred_on' => '2026-01-12',
+            'quantity' => 1,
+            'voided_at' => now(),
         ]);
 
-        $this->actingAs($user)->post(route('inventory-adjustments.store'), [
-            'storage_location_id' => $location->id, 'material_id' => $material->id, 'unit_id' => $unit->id,
-            'occurred_on' => '2026-07-31', 'direction' => 'increase', 'quantity' => 100,
-            'reason' => 'Intento anterior al inicio',
-        ])->assertSessionHasErrors('occurred_on');
-
-        $this->actingAs($user)->post(route('inventory-adjustments.store'), [
-            'storage_location_id' => $location->id, 'material_id' => $material->id, 'unit_id' => $unit->id,
-            'occurred_on' => '2026-08-13', 'direction' => 'decrease', 'quantity' => 1,
-            'reason' => 'Diferencia en conteo físico',
-        ])->assertSessionHasNoErrors();
-
-        $row = InventorySummary::rows($location->id, $material->id, '2026-08-31')[0];
-        $this->assertSame('20.000', $row['entries']);
-        $this->assertSame('10.000', $row['exits']);
-        $this->assertSame('2.000', $row['returns']);
-        $this->assertSame('-1.000', $row['adjustments']);
-        $this->assertSame('11.000', $row['available']);
-
-        $adjustment = InventoryAdjustment::query()->sole();
-        $this->actingAs($user)->post(route('inventory-adjustments.void', $adjustment), [
-            'reason' => 'El conteo fue corregido',
-        ])->assertSessionHasNoErrors();
-        $this->assertSame('12.000', InventorySummary::rows($location->id, $material->id, '2026-08-31')[0]['available']);
-        $this->assertDatabaseHas('audit_events', [
-            'event' => 'voided', 'auditable_type' => InventoryAdjustment::class, 'auditable_id' => $adjustment->id,
+        $settledVoucher = Voucher::factory()->create([
+            'storage_location_id' => $location->id,
+            'direction' => VoucherDirection::Exit,
+            'issued_on' => '2026-02-10',
+            'received_by_id' => $technician->id,
+            'delivered_by_id' => $issuer->id,
         ]);
+        $settledItem = VoucherItem::factory()->create([
+            'voucher_id' => $settledVoucher->id,
+            'material_id' => $material->id,
+            'unit_id' => $unit->id,
+            'description_snapshot' => $material->name,
+            'quantity' => 5,
+        ]);
+        MaterialDisposition::factory()->create([
+            'voucher_item_id' => $settledItem->id,
+            'type' => DispositionType::Consumption,
+            'occurred_on' => '2026-02-11',
+            'quantity' => 5,
+        ]);
+
+        foreach ([
+            ['issued_on' => '2025-12-31', 'direction' => VoucherDirection::Exit, 'status' => VoucherStatus::Active],
+            ['issued_on' => '2026-03-01', 'direction' => VoucherDirection::Entry, 'status' => VoucherStatus::Active],
+            ['issued_on' => '2026-03-02', 'direction' => VoucherDirection::Exit, 'status' => VoucherStatus::Cancelled],
+        ] as $excluded) {
+            $voucher = Voucher::factory()->create([
+                ...$excluded,
+                'storage_location_id' => $location->id,
+                'received_by_id' => $technician->id,
+                'delivered_by_id' => $issuer->id,
+            ]);
+            VoucherItem::factory()->create([
+                'voucher_id' => $voucher->id,
+                'material_id' => $material->id,
+                'unit_id' => $unit->id,
+                'description_snapshot' => $material->name,
+                'quantity' => 99,
+            ]);
+        }
+
+        $this->actingAs($user)->get(route('reports.material-tracking', [
+            'from' => '2025-01-01',
+            'material_id' => $material->id,
+        ]))->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('reports/material-tracking')
+            ->where('filters.from', '2026-01-01')
+            ->where('metrics.delivered_vouchers', 2)
+            ->where('metrics.pending_vouchers', 1)
+            ->where('metrics.pending_items', 1)
+            ->where('metrics.settled_vouchers', 1)
+            ->where('metrics.technicians_with_pending', 1)
+            ->has('by_material', 1)
+            ->where('by_material.0.delivered_quantity', '15.000')
+            ->where('by_material.0.used_quantity', '9.000')
+            ->where('by_material.0.returned_quantity', '2.000')
+            ->where('by_material.0.pending_quantity', '4.000')
+            ->has('rows', 2));
+    }
+
+    public function test_old_reports_redirect_to_tracking_and_inventory_adjustments_are_not_exposed(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/reports/balances?state=pending')
+            ->assertRedirect(route('reports.material-tracking', ['state' => 'pending']));
+        $this->actingAs($user)->get('/reports/inventory')
+            ->assertRedirect(route('reports.material-tracking'));
+        $this->actingAs($user)->post('/inventory-adjustments', [])->assertNotFound();
     }
 
     public function test_imported_catalog_records_can_be_corrected_reviewed_and_keep_their_old_aliases(): void
@@ -331,11 +379,36 @@ class MaterialControlTest extends TestCase
         $this->assertDatabaseCount('audit_events', 2);
     }
 
+    public function test_an_import_review_can_be_marked_as_attended_and_is_audited(): void
+    {
+        $user = User::factory()->create();
+        $item = $this->voucherItem(10);
+        $item->voucher->update([
+            'needs_review' => true,
+            'review_reasons' => ['La fecha fue inferida.'],
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('vouchers.review', $item->voucher))
+            ->assertRedirect(route('vouchers.show', $item->voucher));
+
+        $voucher = $item->voucher->fresh();
+        $this->assertFalse($voucher->needs_review);
+        $this->assertSame(['La fecha fue inferida.'], $voucher->review_reasons);
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'reviewed',
+            'auditable_type' => Voucher::class,
+            'auditable_id' => $voucher->id,
+            'user_id' => $user->id,
+        ]);
+    }
+
     private function voucherItem(float $quantity, VoucherDirection $direction = VoucherDirection::Exit): VoucherItem
     {
         [$technician, $issuer, $unit, $material] = $this->catalogs();
         $voucher = Voucher::factory()->create([
             'direction' => $direction,
+            'issued_on' => '2026-08-24',
             'received_by_id' => $technician->id,
             'delivered_by_id' => $issuer->id,
         ]);

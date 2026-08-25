@@ -62,7 +62,6 @@ function LocationSection({ locations }: { locations: StorageLocation[] }) {
     const form = useForm({
         code: '',
         name: '',
-        tracking_started_on: new Date().toISOString().slice(0, 10),
     });
 
     return (
@@ -72,7 +71,7 @@ function LocationSection({ locations }: { locations: StorageLocation[] }) {
             </CardHeader>
             <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                    La existencia neta comienza en cero desde la fecha indicada.
+                    Identifican el área que entregó o recibió cada vale.
                 </p>
                 <form
                     onSubmit={(event) => {
@@ -82,7 +81,7 @@ function LocationSection({ locations }: { locations: StorageLocation[] }) {
                             onSuccess: () => form.reset('code', 'name'),
                         });
                     }}
-                    className="grid gap-2 sm:grid-cols-[120px_1fr_150px_auto]"
+                    className="grid gap-2 sm:grid-cols-[120px_1fr_auto]"
                 >
                     <Input
                         value={form.data.code}
@@ -98,27 +97,11 @@ function LocationSection({ locations }: { locations: StorageLocation[] }) {
                         }
                         placeholder="Nombre"
                     />
-                    <Input
-                        type="date"
-                        value={form.data.tracking_started_on}
-                        onChange={(event) =>
-                            form.setData(
-                                'tracking_started_on',
-                                event.target.value,
-                            )
-                        }
-                    />
                     <Button>
                         <Plus className="size-4" />
                     </Button>
                 </form>
-                <InputError
-                    message={
-                        form.errors.code ??
-                        form.errors.name ??
-                        form.errors.tracking_started_on
-                    }
-                />
+                <InputError message={form.errors.code ?? form.errors.name} />
                 <div className="space-y-2">
                     {locations.map((location) => (
                         <LocationRow key={location.id} location={location} />
@@ -132,7 +115,6 @@ function LocationSection({ locations }: { locations: StorageLocation[] }) {
 function LocationRow({ location }: { location: StorageLocation }) {
     const form = useForm({
         name: location.name,
-        tracking_started_on: location.tracking_started_on,
     });
 
     return (
@@ -143,7 +125,7 @@ function LocationRow({ location }: { location: StorageLocation }) {
                     preserveScroll: true,
                 });
             }}
-            className="grid items-center gap-2 rounded-lg border p-2 sm:grid-cols-[90px_1fr_150px_auto_auto]"
+            className="grid items-center gap-2 rounded-lg border p-2 sm:grid-cols-[90px_1fr_auto_auto]"
         >
             <span className="px-2 text-xs font-medium text-muted-foreground">
                 {location.code}
@@ -151,13 +133,6 @@ function LocationRow({ location }: { location: StorageLocation }) {
             <Input
                 value={form.data.name}
                 onChange={(event) => form.setData('name', event.target.value)}
-            />
-            <Input
-                type="date"
-                value={form.data.tracking_started_on}
-                onChange={(event) =>
-                    form.setData('tracking_started_on', event.target.value)
-                }
             />
             <Button type="submit" variant="outline" size="sm">
                 Guardar

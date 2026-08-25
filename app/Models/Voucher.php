@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $notes
  * @property VoucherStatus $status
  * @property bool $needs_review
+ * @property array<int, string>|null $review_reasons
  * @property Carbon|null $cancelled_at
  * @property string|null $cancellation_reason
  * @property Carbon|null $created_at
@@ -51,7 +52,7 @@ class Voucher extends Model
     protected $fillable = [
         'storage_location_id', 'folio', 'folio_key', 'direction', 'reference', 'issued_on', 'issued_time',
         'received_by_id', 'delivered_by_id', 'authorized_by_id', 'program_id', 'action_id',
-        'destination', 'notes', 'status', 'needs_review', 'cancelled_at', 'cancelled_by', 'cancellation_reason',
+        'destination', 'notes', 'status', 'needs_review', 'review_reasons', 'cancelled_at', 'cancelled_by', 'cancellation_reason',
         'created_by', 'updated_by',
     ];
 
@@ -62,6 +63,7 @@ class Voucher extends Model
             'direction' => VoucherDirection::class,
             'status' => VoucherStatus::class,
             'needs_review' => 'boolean',
+            'review_reasons' => 'array',
             'cancelled_at' => 'datetime',
         ];
     }
