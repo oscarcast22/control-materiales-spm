@@ -30,7 +30,41 @@ npm run build
 php artisan app:create-user
 ```
 
+El seeder carga las unidades habituales desde el catálogo versionado. Si el histórico se importa después de este paso, cada material reconocido conserva esa unidad. Para una base donde el histórico ya fue importado con `s/e`, usar primero la simulación y después la aplicación descritas en `docs/data-import.md`; no volver a importar el libro para corregir unidades.
+
 Configure previamente PostgreSQL en `.env`. El comando de usuarios crea una cuenta activa y verificada. No pase la contraseña mediante `--password` en una terminal compartida porque puede quedar en el historial o lista de procesos; utilice el prompt oculto.
+
+## Primera carga de datos en producción
+
+Con `APP_ENV=production`, después de configurar PostgreSQL y disponer de un respaldo si la base ya existe, cargar primero el esquema y el catálogo versionado:
+
+```bash
+php artisan migrate --seed --force
+```
+
+`--force` confirma que la migración y el seeder se ejecutan deliberadamente en producción; no sustituye la revisión previa ni autoriza comandos destructivos. Nunca usar `migrate:fresh` o `db:wipe`.
+
+Conservar el Excel fuera del repositorio y simular la única importación histórica permitida:
+
+```bash
+php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --from=2026-01-01 --dry-run
+```
+
+Sólo si el resumen es correcto, ejecutar la carga real:
+
+```bash
+php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --from=2026-01-01
+```
+
+Verificar finalmente que las partidas reconocidas conservaron su unidad curada:
+
+```bash
+php artisan catalog:sync-material-units
+```
+
+En una primera carga ordenada debe mostrar cero materiales y cero partidas por actualizar. Un material genuinamente desconocido puede conservar `s/e` y quedar pendiente de revisión sin que esto represente un fallo de la importación. No importar transacciones de 2025.
+
+Si el histórico se cargó antes que el catálogo curado, no volver a importar el libro. Respaldar la base, revisar la simulación anterior y seguir el procedimiento con `--apply` de [`docs/data-import.md`](data-import.md#sincronización-de-una-base-ya-importada).
 
 ## Checklist antes de producción
 

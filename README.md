@@ -58,7 +58,7 @@ composer dev
 
 `php artisan migrate --seed` carga directamente el catálogo inicial incluido en `database/data`; no requiere ningún Excel. Contiene 377 materiales canónicos, sus alias históricos, 45 personas, unidades y las 13 acciones observadas del programa SPM-06.
 
-La depuración fusiona únicamente equivalencias inequívocas y conserva como registros separados los calibres, medidas, potencias, modelos o identidades dudosas. Los nombres originales aceptados quedan como alias. Como las hojas no proporcionan unidades estructuradas confiables, los materiales comienzan con `s/e` hasta que se confirme su unidad habitual.
+La depuración fusiona únicamente equivalencias inequívocas y conserva como registros separados los calibres, medidas, potencias, modelos o identidades dudosas. Los nombres originales aceptados quedan como alias. El catálogo incluye unidades habituales curadas para los casos seguros: pieza, metro, kilogramo, metro cúbico, rollo o juego. Los 29 materiales cuya presentación no puede determinarse por el nombre conservan `s/e` hasta que una persona confirme su unidad.
 
 Después de instalar, entre a **Catálogos** para revisar los 19 nombres de persona que siguen siendo ambiguos. Si corrige un nombre, la forma anterior se conserva como alias; si dos registros representan lo mismo, utilice **Fusionar**.
 
@@ -73,6 +73,8 @@ Para importarlo:
 ```bash
 php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --from=2026-01-01
 ```
+
+Como comprobación final, `php artisan catalog:sync-material-units` debe indicar cero partidas históricas por actualizar en una instalación nueva. Si el historial ya se había importado antes de cargar las unidades curadas, consulte el procedimiento de sincronización en [`docs/data-import.md`](docs/data-import.md#sincronización-de-una-base-ya-importada). La secuencia completa para producción está en [`docs/operations.md`](docs/operations.md#primera-carga-de-datos-en-producción).
 
 El corte es inclusivo y se aplica por renglón. Si un folio contiene filas anteriores y posteriores al límite, sólo se importa su parte válida y el vale queda marcado para revisión. Las filas sin fecha únicamente se importan cuando ésta puede inferirse de un comentario inequívoco de 2026; las demás se conservan como no resueltas sin inventar un vale. Cada fila considerada queda guardada en la tabla de trazabilidad y el mismo archivo no se importa dos veces.
 

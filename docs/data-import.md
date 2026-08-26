@@ -14,10 +14,12 @@ Los catálogos depurados ya están versionados en `database/data/materials.json`
 
 - 377 materiales canónicos.
 - 45 personas, de las cuales 19 requieren revisión humana.
-- Unidades y 13 acciones observadas del programa SPM-06.
+- Siete unidades y 13 acciones observadas del programa SPM-06.
 - Alias para conservar variantes ortográficas inequívocas.
 
 Los calibres, medidas, potencias, modelos o identidades dudosas no se fusionan automáticamente. Los materiales comienzan con unidad `s/e` cuando el libro no permite determinarla con seguridad.
+
+Las unidades habituales también forman parte del catálogo versionado. La curación conservadora actual contiene 303 materiales en pieza, 28 en metro, 4 en kilogramo, 2 en metro cúbico, 7 en rollo y 4 en juego; 29 materiales conservan `s/e` porque el nombre no distingue con seguridad entre litro, envase, paquete, bulto u otra presentación. El seeder sólo reemplaza una unidad `s/e`: nunca sobrescribe una corrección manual ya especificada.
 
 ## Comando
 
@@ -34,6 +36,32 @@ php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --fr
 ```
 
 No ejecutar el importador desde un seeder. En producción, migrar y cargar catálogos antes de importar el histórico.
+
+Después de una primera carga ordenada, verificar con:
+
+```bash
+php artisan catalog:sync-material-units
+```
+
+El resultado esperado es cero materiales y cero partidas por actualizar. Los materiales nuevos que no pertenecen al catálogo pueden permanecer en `s/e` y marcados para revisión.
+
+Al resolver un material conocido, el importador copia su unidad habitual a la partida. Un nombre nuevo o no resuelto conserva `s/e` y queda marcado para revisión.
+
+## Sincronización de una base ya importada
+
+Para revisar cuántos materiales y partidas históricas siguen en `s/e`, ejecutar sin opciones:
+
+```bash
+php artisan catalog:sync-material-units
+```
+
+La simulación no escribe. Después de revisar el resumen y disponer de respaldo, aplicar con:
+
+```bash
+php artisan catalog:sync-material-units --apply
+```
+
+La sincronización sólo modifica unidades `s/e` de materiales versionados y partidas vinculadas mediante `legacy_import_rows`. No cambia cantidades, aplicaciones, devoluciones ni saldos; conserva unidades previamente corregidas y registra auditoría por cada actualización.
 
 ## Reglas de transformación
 
