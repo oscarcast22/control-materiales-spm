@@ -490,7 +490,7 @@ class ImportLegacyControl extends Command
                 $item = VoucherItem::create([
                     'voucher_id' => $voucher->id,
                     'material_id' => $material->id,
-                    'unit_id' => $unit->id,
+                    'unit_id' => $material->default_unit_id,
                     'description_snapshot' => $dataItem['material'],
                     'quantity' => $dataItem['quantity'],
                     'legacy_anomaly' => $dataItem['anomaly'],

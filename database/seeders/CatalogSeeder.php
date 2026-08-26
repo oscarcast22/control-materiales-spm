@@ -3,12 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\Action;
+use App\Models\AuditEvent;
 use App\Models\Material;
 use App\Models\MaterialAlias;
 use App\Models\Person;
 use App\Models\PersonAlias;
 use App\Models\Program;
 use App\Models\Unit;
+use App\Support\CuratedMaterialCatalog;
 use App\Support\Normalizer;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -17,25 +19,21 @@ use RuntimeException;
 
 class CatalogSeeder extends Seeder
 {
-    public function run(): void
+    public function run(CuratedMaterialCatalog $catalog): void
     {
-        DB::transaction(function (): void {
-            $units = $this->seedUnits();
-            $this->seedMaterials($units);
+        DB::transaction(function () use ($catalog): void {
+            $units = $this->seedUnits($catalog);
+            $this->seedMaterials($units, $catalog);
             $this->seedPeople();
             $this->seedPrograms();
         });
     }
 
     /** @return array<string, Unit> */
-    private function seedUnits(): array
+    private function seedUnits(CuratedMaterialCatalog $catalog): array
     {
         $units = [];
-        foreach ([
-            ['name' => 'Pieza', 'symbol' => 'pza'],
-            ['name' => 'Metro', 'symbol' => 'm'],
-            ['name' => 'Unidad sin especificar', 'symbol' => 's/e'],
-        ] as $data) {
+        foreach ($catalog->units() as $data) {
             $units[$data['symbol']] = Unit::firstOrCreate(['symbol' => $data['symbol']], $data);
         }
 
@@ -43,22 +41,28 @@ class CatalogSeeder extends Seeder
     }
 
     /** @param array<string, Unit> $units */
-    private function seedMaterials(array $units): void
+    private function seedMaterials(array $units, CuratedMaterialCatalog $catalog): void
     {
-        foreach ($this->materialData() as $data) {
+        $unspecified = $units['s/e'];
+
+        foreach ($catalog->materials() as $data) {
             $key = Normalizer::key($data['name']);
+            $unit = $units[$data['unit']] ?? throw new RuntimeException("Unidad desconocida: {$data['unit']}");
             $knownAlias = MaterialAlias::query()->where('normalized_alias', $key)->first();
             $material = $knownAlias
                 ? $knownAlias->material
                 : Material::query()->where('normalized_name', $key)->first();
             if (! $material) {
-                $unit = $units[$data['unit']] ?? throw new RuntimeException("Unidad desconocida: {$data['unit']}");
                 $material = Material::create([
                     'name' => $data['name'],
                     'normalized_name' => $key,
                     'default_unit_id' => $unit->id,
                     'needs_review' => false,
                 ]);
+            } elseif ($material->default_unit_id === $unspecified->id && $unit->id !== $unspecified->id) {
+                $before = $material->toArray();
+                $material->update(['default_unit_id' => $unit->id]);
+                AuditEvent::record($material, 'curated_unit_applied', $before, $material->fresh()->toArray());
             }
 
             $this->seedMaterialAliases($material, [$data['name'], ...$data['aliases']]);
@@ -131,25 +135,6 @@ class CatalogSeeder extends Seeder
             $code = sprintf('SPM-06-%02d', $number);
             Action::firstOrCreate(['code' => $code], ['program_id' => $program->id]);
         }
-    }
-
-    /** @return list<array{name: string, unit: string, aliases: list<string>}> */
-    private function materialData(): array
-    {
-        $rows = $this->json('materials.json');
-        $result = [];
-        foreach ($rows as $row) {
-            if (! is_array($row) || ! is_string($row['name'] ?? null) || ! is_string($row['unit'] ?? null)) {
-                throw new RuntimeException('El catálogo de materiales contiene un registro inválido.');
-            }
-            $result[] = [
-                'name' => $row['name'],
-                'unit' => $row['unit'],
-                'aliases' => $this->strings($row['aliases'] ?? null, 'materiales'),
-            ];
-        }
-
-        return $result;
     }
 
     /** @return list<array{name: string, can_receive_material: bool, can_deliver_material: bool, needs_review: bool, aliases: list<string>}> */
