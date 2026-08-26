@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\DispositionType;
 use Database\Factories\VoucherItemFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Voucher $voucher
  * @property-read Material $material
  * @property-read Unit $unit
- * @property-read Collection<int, MaterialDisposition> $dispositions
+ * @property-read Collection<int, MaterialApplication> $applications
  */
 class VoucherItem extends Model
 {
@@ -57,38 +56,28 @@ class VoucherItem extends Model
         return $this->belongsTo(Unit::class);
     }
 
-    /** @return HasMany<MaterialDisposition, $this> */
-    public function dispositions(): HasMany
+    /** @return HasMany<MaterialApplication, $this> */
+    public function applications(): HasMany
     {
-        return $this->hasMany(MaterialDisposition::class);
+        return $this->hasMany(MaterialApplication::class);
     }
 
     public function usedQuantity(): string
     {
-        return $this->sumDisposition(DispositionType::Consumption);
-    }
+        $value = $this->relationLoaded('applications')
+            ? $this->applications->whereNull('voided_at')->sum(fn (MaterialApplication $row) => (float) $row->quantity)
+            : $this->applications()->whereNull('voided_at')->sum('quantity');
 
-    public function returnedQuantity(): string
-    {
-        return $this->sumDisposition(DispositionType::Return);
+        return number_format((float) $value, 3, '.', '');
     }
 
     public function pendingQuantity(): string
     {
         return number_format(
-            (float) $this->quantity - (float) $this->usedQuantity() - (float) $this->returnedQuantity(),
+            (float) $this->quantity - (float) $this->usedQuantity(),
             3,
             '.',
             '',
         );
-    }
-
-    private function sumDisposition(DispositionType $type): string
-    {
-        $value = $this->relationLoaded('dispositions')
-            ? $this->dispositions->whereNull('voided_at')->where('type', $type)->sum(fn (MaterialDisposition $row) => (float) $row->quantity)
-            : $this->dispositions()->whereNull('voided_at')->where('type', $type->value)->sum('quantity');
-
-        return number_format((float) $value, 3, '.', '');
     }
 }

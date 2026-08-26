@@ -43,6 +43,7 @@ use Illuminate\Support\Carbon;
  * @property-read Action|null $action
  * @property-read Collection<int, VoucherItem> $items
  * @property-read Collection<int, VoucherAttachment> $attachments
+ * @property-read Collection<int, MaterialApplicationReport> $applicationReports
  */
 class Voucher extends Model
 {
@@ -114,5 +115,11 @@ class Voucher extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(VoucherAttachment::class);
+    }
+
+    /** @return HasMany<MaterialApplicationReport, $this> */
+    public function applicationReports(): HasMany
+    {
+        return $this->hasMany(MaterialApplicationReport::class);
     }
 }

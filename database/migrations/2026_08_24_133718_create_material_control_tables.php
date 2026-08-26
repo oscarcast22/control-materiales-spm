@@ -127,10 +127,21 @@ return new class extends Migration
             $table->index(['material_id', 'voucher_id']);
         });
 
-        Schema::create('material_dispositions', function (Blueprint $table) {
+        Schema::create('material_application_reports', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('voucher_id')->constrained()->cascadeOnDelete();
+            $table->date('occurred_on');
+            $table->string('reference')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
+            $table->index(['voucher_id', 'occurred_on']);
+        });
+
+        Schema::create('material_applications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('voucher_item_id')->constrained()->cascadeOnDelete();
-            $table->string('type', 20);
+            $table->foreignId('application_report_id')->nullable()->constrained('material_application_reports')->nullOnDelete();
             $table->date('occurred_on');
             $table->decimal('quantity', 12, 3);
             $table->string('reference')->nullable();
@@ -144,6 +155,18 @@ return new class extends Migration
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->index(['voucher_item_id', 'voided_at']);
+        });
+
+        Schema::create('material_application_attachments', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('application_report_id')->unique()->constrained('material_application_reports')->cascadeOnDelete();
+            $table->string('disk', 40)->default('local');
+            $table->string('path');
+            $table->string('original_name');
+            $table->string('mime_type', 100);
+            $table->unsignedBigInteger('size');
+            $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
         });
 
         Schema::create('inventory_adjustments', function (Blueprint $table) {
@@ -212,7 +235,9 @@ return new class extends Migration
         Schema::dropIfExists('audit_events');
         Schema::dropIfExists('voucher_attachments');
         Schema::dropIfExists('inventory_adjustments');
-        Schema::dropIfExists('material_dispositions');
+        Schema::dropIfExists('material_application_attachments');
+        Schema::dropIfExists('material_applications');
+        Schema::dropIfExists('material_application_reports');
         Schema::dropIfExists('voucher_items');
         Schema::dropIfExists('vouchers');
         Schema::dropIfExists('actions');
