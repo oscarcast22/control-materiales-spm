@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     CircleCheck,
@@ -6,24 +6,23 @@ import {
     FileText,
     Pencil,
     Printer,
-    RotateCcw,
     Wrench,
 } from 'lucide-react';
-import type { FormEvent } from 'react';
-import InputError from '@/components/input-error';
+import { QuickApplicationDialog } from '@/components/quick-application-dialog';
 import { StatusBadge } from '@/components/status-badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { IconButton } from '@/components/ui/icon-button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { formatBytes, formatDate, formatQuantity } from '@/lib/format';
-import type { Disposition, Voucher, VoucherItem } from '@/types';
+import type { MaterialApplication, Voucher, VoucherItem } from '@/types';
 
 export default function VoucherShow({ voucher }: { voucher: Voucher }) {
+    const canApply =
+        voucher.direction === 'exit' &&
+        voucher.status === 'active' &&
+        voucher.items.some((item) => Number(item.pending_quantity) > 0);
     const cancel = () => {
         const reason = window.prompt(
             'Motivo de cancelación (mínimo 5 caracteres):',
@@ -200,17 +199,30 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                 </span>
                                 <div>
                                     <h2 className="font-semibold">
-                                        Comprobación de materiales
+                                        Aplicación de materiales
                                     </h2>
                                     <p className="mt-0.5 text-sm text-muted-foreground">
-                                        Registra para cada material lo utilizado
-                                        en un trabajo o lo que fue devuelto.
+                                        Registra el material utilizado en uno o
+                                        varios trabajos.
                                     </p>
                                 </div>
                             </div>
-                            <p className="shrink-0 rounded-md border bg-surface px-3 py-2 text-xs font-medium text-text-secondary">
-                                Pendiente = entregado − aplicado − devuelto
-                            </p>
+                            <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                <p className="rounded-md border bg-surface px-3 py-2 text-xs font-medium text-text-secondary">
+                                    Pendiente = entregado − aplicado
+                                </p>
+                                {canApply && (
+                                    <QuickApplicationDialog
+                                        voucher={voucher}
+                                        trigger={
+                                            <Button>
+                                                <Wrench data-icon="inline-start" />
+                                                Registrar aplicación
+                                            </Button>
+                                        }
+                                    />
+                                )}
+                            </div>
                         </div>
                     )}
                     {voucher.items.map((item) => (
@@ -219,7 +231,6 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                             item={item}
                             active={voucher.status === 'active'}
                             direction={voucher.direction}
-                            defaultDestination={voucher.destination}
                         />
                     ))}
                 </div>
@@ -277,12 +288,10 @@ function MaterialCard({
     item,
     active,
     direction,
-    defaultDestination,
 }: {
     item: VoucherItem;
     active: boolean;
     direction: 'entry' | 'exit';
-    defaultDestination: string;
 }) {
     return (
         <Card
@@ -298,7 +307,7 @@ function MaterialCard({
                     </p>
                 </div>
                 <div
-                    className={`grid gap-4 text-center ${direction === 'entry' ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-4'}`}
+                    className={`grid gap-4 text-center ${direction === 'entry' ? 'grid-cols-1' : 'grid-cols-3'}`}
                 >
                     <Quantity
                         label={direction === 'entry' ? 'Recibido' : 'Entregado'}
@@ -310,11 +319,6 @@ function MaterialCard({
                             <Quantity
                                 label="Aplicado"
                                 value={item.used_quantity}
-                                unit={item.unit.symbol}
-                            />
-                            <Quantity
-                                label="Devuelto"
-                                value={item.returned_quantity}
                                 unit={item.unit.symbol}
                             />
                             <Quantity
@@ -331,19 +335,11 @@ function MaterialCard({
                 {item.balance_state === 'anomaly' && (
                     <Alert variant="destructive">
                         <AlertDescription>
-                            La comprobación histórica supera la cantidad
+                            La aplicación histórica supera la cantidad
                             entregada. Revisa este renglón.
                         </AlertDescription>
                     </Alert>
                 )}
-                {direction === 'exit' &&
-                    active &&
-                    Number(item.pending_quantity) > 0 && (
-                        <DispositionForm
-                            item={item}
-                            defaultDestination={defaultDestination}
-                        />
-                    )}
                 {direction === 'exit' &&
                     active &&
                     item.balance_state === 'settled' && (
@@ -354,8 +350,8 @@ function MaterialCard({
                                     Material completamente comprobado
                                 </p>
                                 <p>
-                                    Todo lo entregado fue aplicado o devuelto;
-                                    no queda saldo por registrar.
+                                    Todo lo entregado fue aplicado; no queda
+                                    saldo por registrar.
                                 </p>
                             </AlertDescription>
                         </Alert>
@@ -364,11 +360,11 @@ function MaterialCard({
                     <div className="flex flex-col gap-3">
                         <div>
                             <h3 className="text-sm font-semibold">
-                                Historial de movimientos
+                                Historial de aplicaciones
                             </h3>
                             <p className="mt-0.5 text-xs text-muted-foreground">
-                                Aplicaciones, devoluciones y movimientos
-                                anulados de este material.
+                                Aplicaciones vigentes y anuladas de este
+                                material.
                             </p>
                         </div>
                         <div className="overflow-x-auto">
@@ -376,7 +372,6 @@ function MaterialCard({
                                 <thead className="border-y bg-muted/40 text-left text-muted-foreground">
                                     <tr>
                                         <th className="px-3 py-2">Fecha</th>
-                                        <th className="px-3 py-2">Tipo</th>
                                         <th className="px-3 py-2">
                                             Referencia / destino
                                         </th>
@@ -387,22 +382,21 @@ function MaterialCard({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {item.dispositions.map((row) => (
-                                        <DispositionRow
+                                    {item.applications.map((row) => (
+                                        <ApplicationRow
                                             key={row.id}
                                             row={row}
                                             unit={item.unit.symbol}
                                             active={active}
                                         />
                                     ))}
-                                    {item.dispositions.length === 0 && (
+                                    {item.applications.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan={5}
+                                                colSpan={4}
                                                 className="px-3 py-8 text-center text-muted-foreground"
                                             >
-                                                Aún no hay aplicaciones ni
-                                                devoluciones.
+                                                Aún no hay aplicaciones.
                                             </td>
                                         </tr>
                                     )}
@@ -416,195 +410,12 @@ function MaterialCard({
     );
 }
 
-function DispositionForm({
-    item,
-    defaultDestination,
-}: {
-    item: VoucherItem;
-    defaultDestination: string;
-}) {
-    const form = useForm({
-        type: 'consumption',
-        occurred_on: new Date().toISOString().slice(0, 10),
-        quantity: '',
-        reference: '',
-        destination: defaultDestination,
-        notes: '',
-    });
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
-        form.post(`/voucher-items/${item.id}/dispositions`, {
-            preserveScroll: true,
-            onSuccess: () => form.reset('quantity', 'reference', 'notes'),
-        });
-    };
-    const isReturn = form.data.type === 'return';
-    const fieldId = (name: string) => `item-${item.id}-${name}`;
-
-    return (
-        <form
-            onSubmit={submit}
-            className="flex flex-col gap-5 rounded-md border border-primary/25 bg-primary-subtle/35 p-4 sm:p-5"
-        >
-            <div>
-                <h3 className="font-semibold">Registrar comprobación</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Indica qué ocurrió con una parte del material entregado.
-                </p>
-            </div>
-            <div className="flex flex-col gap-2">
-                <Label>¿Qué ocurrió con el material?</Label>
-                <RadioGroup
-                    aria-label="Qué ocurrió con el material"
-                    aria-invalid={!!form.errors.type || undefined}
-                    className="grid gap-3 sm:grid-cols-2"
-                    value={form.data.type}
-                    onValueChange={(value) => form.setData('type', value)}
-                >
-                    <Label
-                        htmlFor={fieldId('consumption')}
-                        className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-[background-color,border-color,box-shadow] ${!isReturn ? 'border-primary bg-surface shadow-xs ring-2 ring-primary/10' : 'border-border-strong bg-surface hover:bg-hover'}`}
-                    >
-                        <RadioGroupItem
-                            id={fieldId('consumption')}
-                            value="consumption"
-                            className="mt-0.5"
-                        />
-                        <Wrench
-                            className="mt-0.5 size-4 shrink-0 text-primary"
-                            aria-hidden="true"
-                        />
-                        <span>
-                            <span className="block font-medium">
-                                Material utilizado
-                            </span>
-                            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                                Aplicación en un trabajo o servicio.
-                            </span>
-                        </span>
-                    </Label>
-                    <Label
-                        htmlFor={fieldId('return')}
-                        className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-[background-color,border-color,box-shadow] ${isReturn ? 'border-primary bg-surface shadow-xs ring-2 ring-primary/10' : 'border-border-strong bg-surface hover:bg-hover'}`}
-                    >
-                        <RadioGroupItem
-                            id={fieldId('return')}
-                            value="return"
-                            className="mt-0.5"
-                        />
-                        <RotateCcw
-                            className="mt-0.5 size-4 shrink-0 text-primary"
-                            aria-hidden="true"
-                        />
-                        <span>
-                            <span className="block font-medium">
-                                Material devuelto
-                            </span>
-                            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                                Regresó sin utilizarse y deja de estar
-                                pendiente.
-                            </span>
-                        </span>
-                    </Label>
-                </RadioGroup>
-                <InputError message={form.errors.type} />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="flex flex-col gap-2">
-                    <Label htmlFor={fieldId('date')}>Fecha</Label>
-                    <Input
-                        id={fieldId('date')}
-                        type="date"
-                        value={form.data.occurred_on}
-                        onChange={(e) =>
-                            form.setData('occurred_on', e.target.value)
-                        }
-                        aria-invalid={!!form.errors.occurred_on || undefined}
-                    />
-                    <InputError message={form.errors.occurred_on} />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-baseline justify-between gap-2">
-                        <Label htmlFor={fieldId('quantity')}>Cantidad</Label>
-                        <span
-                            id={fieldId('quantity-help')}
-                            className="text-xs text-muted-foreground"
-                        >
-                            Disponible: {formatQuantity(item.pending_quantity)}{' '}
-                            {item.unit.symbol}
-                        </span>
-                    </div>
-                    <Input
-                        id={fieldId('quantity')}
-                        inputMode="decimal"
-                        value={form.data.quantity}
-                        onChange={(e) =>
-                            form.setData('quantity', e.target.value)
-                        }
-                        placeholder="0.000"
-                        aria-describedby={fieldId('quantity-help')}
-                        aria-invalid={!!form.errors.quantity || undefined}
-                    />
-                    <InputError message={form.errors.quantity} />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <Label htmlFor={fieldId('reference')}>
-                        Reporte / orden (opcional)
-                    </Label>
-                    <Input
-                        id={fieldId('reference')}
-                        value={form.data.reference}
-                        onChange={(e) =>
-                            form.setData('reference', e.target.value)
-                        }
-                        placeholder="Ej. reporte 22072"
-                        aria-invalid={!!form.errors.reference || undefined}
-                    />
-                    <InputError message={form.errors.reference} />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <Label htmlFor={fieldId('destination')}>
-                        Destino (opcional)
-                    </Label>
-                    <Input
-                        id={fieldId('destination')}
-                        value={form.data.destination}
-                        onChange={(e) =>
-                            form.setData('destination', e.target.value)
-                        }
-                        aria-invalid={!!form.errors.destination || undefined}
-                    />
-                    <InputError message={form.errors.destination} />
-                </div>
-            </div>
-            <div className="flex justify-end border-t border-primary/15 pt-4">
-                <Button
-                    className="w-full sm:w-auto"
-                    disabled={form.processing}
-                    aria-busy={form.processing}
-                >
-                    {isReturn ? (
-                        <RotateCcw data-icon="inline-start" />
-                    ) : (
-                        <Wrench data-icon="inline-start" />
-                    )}
-                    {form.processing
-                        ? 'Guardando…'
-                        : isReturn
-                          ? 'Registrar devolución'
-                          : 'Registrar material utilizado'}
-                </Button>
-            </div>
-        </form>
-    );
-}
-
-function DispositionRow({
+function ApplicationRow({
     row,
     unit,
     active,
 }: {
-    row: Disposition;
+    row: MaterialApplication;
     unit: string;
     active: boolean;
 }) {
@@ -615,7 +426,7 @@ function DispositionRow({
 
         if (reason) {
             router.post(
-                `/dispositions/${row.id}/void`,
+                `/material-applications/${row.id}/void`,
                 { reason },
                 { preserveScroll: true },
             );
@@ -628,20 +439,26 @@ function DispositionRow({
         >
             <td className="px-3 py-3">{formatDate(row.occurred_on)}</td>
             <td className="px-3 py-3">
-                <Badge variant="outline">
-                    {row.type === 'return' ? 'Devolución' : 'Aplicación'}
-                </Badge>
-                {row.legacy_slot && (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                        Histórico {row.legacy_slot}
-                    </span>
+                <p>{row.reference || 'Sin orden registrada'}</p>
+                {row.destination && (
+                    <p className="text-xs text-muted-foreground">
+                        {row.destination}
+                    </p>
                 )}
-            </td>
-            <td className="px-3 py-3">
-                <p>{row.reference || 'Sin referencia'}</p>
-                <p className="text-xs text-muted-foreground">
-                    {row.destination}
-                </p>
+                {row.legacy_slot && (
+                    <Badge variant="outline" className="mt-1.5">
+                        Histórico {row.legacy_slot}
+                    </Badge>
+                )}
+                {row.attachment && (
+                    <a
+                        href={`/material-application-attachments/${row.attachment.id}`}
+                        className="mt-1.5 flex w-fit items-center gap-1.5 text-xs font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                        <FileText className="size-3.5" aria-hidden="true" />
+                        Ver evidencia
+                    </a>
+                )}
             </td>
             <td className="px-3 py-3 text-right font-medium">
                 {formatQuantity(row.quantity)} {unit}

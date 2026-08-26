@@ -1,11 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { FilePlus2, Filter, Search, X } from 'lucide-react';
+import { FilePlus2, Filter, Search, Wrench, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
 import { Page, PageHeader } from '@/components/page';
 import { Pagination } from '@/components/pagination';
+import { QuickApplicationDialog } from '@/components/quick-application-dialog';
 import { StatusBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,12 +73,22 @@ export default function VoucherIndex({
                     title="Vales"
                     description={`${vouchers.total} registros localizados. Consulta salidas, entradas y su estado de comprobación.`}
                     actions={
-                        <Button asChild>
-                            <Link href="/vouchers/create">
-                                <FilePlus2 data-icon="inline-start" />
-                                Nuevo vale
-                            </Link>
-                        </Button>
+                        <>
+                            <QuickApplicationDialog
+                                trigger={
+                                    <Button>
+                                        <Wrench data-icon="inline-start" />
+                                        Registrar aplicación
+                                    </Button>
+                                }
+                            />
+                            <Button variant="outline" asChild>
+                                <Link href="/vouchers/create">
+                                    <FilePlus2 data-icon="inline-start" />
+                                    Nuevo vale
+                                </Link>
+                            </Button>
+                        </>
                     }
                 />
 
@@ -316,12 +327,7 @@ export default function VoucherIndex({
                                             <Link
                                                 href={`/vouchers/${voucher.id}`}
                                             >
-                                                {voucher.direction === 'exit' &&
-                                                voucher.status === 'active' &&
-                                                voucher.balance_state ===
-                                                    'pending'
-                                                    ? 'Ver y comprobar'
-                                                    : 'Ver detalle'}
+                                                Ver detalle
                                                 <span className="sr-only">
                                                     vale {voucher.folio}
                                                 </span>

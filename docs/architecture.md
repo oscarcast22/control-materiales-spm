@@ -45,7 +45,9 @@ erDiagram
     VOUCHERS ||--|{ VOUCHER_ITEMS : contains
     MATERIALS ||--o{ VOUCHER_ITEMS : identifies
     UNITS ||--o{ VOUCHER_ITEMS : measures
-    VOUCHER_ITEMS ||--o{ MATERIAL_DISPOSITIONS : accounts
+    VOUCHERS ||--o{ MATERIAL_APPLICATION_REPORTS : documents
+    MATERIAL_APPLICATION_REPORTS ||--o{ MATERIAL_APPLICATIONS : groups
+    VOUCHER_ITEMS ||--o{ MATERIAL_APPLICATIONS : accounts
     VOUCHERS ||--o{ VOUCHER_ATTACHMENTS : evidences
     MATERIALS ||--o{ MATERIAL_ALIASES : recognizes
     PEOPLE ||--o{ PERSON_ALIASES : recognizes
@@ -67,7 +69,8 @@ erDiagram
 | `programs`, `actions` | Clasificación opcional del trabajo municipal. |
 | `vouchers` | Cabecera del documento, estado, revisión y responsables. |
 | `voucher_items` | Material, unidad, descripción histórica y cantidad entregada. |
-| `material_dispositions` | Aplicación o devolución; una anulación conserva fecha, usuario y motivo. |
+| `material_application_reports` | Datos comunes y evidencia opcional de una aplicación capturada en bloque. |
+| `material_applications` | Cantidad aplicada a una partida; una anulación conserva fecha, usuario y motivo. |
 | `voucher_attachments` | Metadatos de evidencia guardada en almacenamiento privado. |
 | `audit_events` | Valores anteriores y posteriores de operaciones sensibles. |
 | `legacy_import_rows` | Copia del renglón original, incidencias y vínculo al registro importado. |
@@ -77,8 +80,8 @@ erDiagram
 
 - `vouchers(storage_location_id, folio_key)` es único. `folio_key` deriva del folio normalizado.
 - Las cantidades utilizan decimal con tres posiciones y deben ser positivas al capturarse.
-- Una aplicación o devolución nueva no puede superar el pendiente; el renglón se bloquea durante la transacción para evitar carreras.
-- Un movimiento anulado deja de afectar las sumas, pero permanece auditable.
+- Una aplicación nueva no puede superar el pendiente; las partidas se bloquean durante la transacción para evitar carreras.
+- Una aplicación anulada deja de afectar las sumas, pero permanece auditable.
 - No se puede reducir una partida por debajo de lo ya comprobado ni eliminarla si posee movimientos vigentes.
 - Un vale con movimientos vigentes no puede cancelarse.
 - Las salidas activas desde `2026-01-01` alimentan el seguimiento. Entradas y cancelados quedan fuera.

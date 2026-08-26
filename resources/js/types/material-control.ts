@@ -28,9 +28,8 @@ export type Action = {
 };
 export type Program = Action & { actions: Action[] };
 
-export type Disposition = {
+export type MaterialApplication = {
     id: number;
-    type: 'consumption' | 'return';
     occurred_on: string;
     quantity: string;
     reference?: string | null;
@@ -39,6 +38,12 @@ export type Disposition = {
     legacy_slot?: number | null;
     voided_at?: string | null;
     void_reason?: string | null;
+    attachment?: {
+        id: number;
+        original_name: string;
+        mime_type: string;
+        size: number;
+    } | null;
 };
 
 export type VoucherItem = {
@@ -48,11 +53,10 @@ export type VoucherItem = {
     description: string;
     quantity: string;
     used_quantity: string;
-    returned_quantity: string;
     pending_quantity: string;
     balance_state: 'pending' | 'settled' | 'anomaly' | 'received';
     legacy_anomaly: boolean;
-    dispositions: Disposition[];
+    applications: MaterialApplication[];
 };
 
 export type Voucher = {
@@ -92,7 +96,6 @@ export type InventoryRow = {
     unit: Unit;
     entries: string;
     exits: string;
-    returns: string;
     adjustments: string;
     available: string;
 };

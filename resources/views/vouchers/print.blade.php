@@ -32,7 +32,7 @@
     </div>
     <h2>Material {{ $voucher['direction'] === 'entry' ? 'recibido' : 'entregado y comprobación' }}</h2>
     <table>
-        <thead><tr><th>Material</th><th>Unidad</th><th class="number">{{ $voucher['direction'] === 'entry' ? 'Recibido' : 'Entregado' }}</th>@if ($voucher['direction'] === 'exit')<th class="number">Usado</th><th class="number">Devuelto</th><th class="number">Pendiente</th>@endif</tr></thead>
+        <thead><tr><th>Material</th><th>Unidad</th><th class="number">{{ $voucher['direction'] === 'entry' ? 'Recibido' : 'Entregado' }}</th>@if ($voucher['direction'] === 'exit')<th class="number">Aplicado</th><th class="number">Pendiente</th>@endif</tr></thead>
         <tbody>
         @foreach ($voucher['items'] as $item)
             <tr>
@@ -40,7 +40,6 @@
                 <td class="number">{{ $item['quantity'] }}</td>
                 @if ($voucher['direction'] === 'exit')
                     <td class="number">{{ $item['used_quantity'] }}</td>
-                    <td class="number">{{ $item['returned_quantity'] }}</td>
                     <td class="number {{ (float) $item['pending_quantity'] === 0.0 ? 'settled' : 'pending' }}">{{ $item['pending_quantity'] }}</td>
                 @endif
             </tr>

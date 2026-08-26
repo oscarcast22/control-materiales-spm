@@ -32,7 +32,7 @@ import type {
     VoucherItem,
 } from '@/types';
 
-type TrackingRow = Omit<VoucherItem, 'dispositions'> & {
+type TrackingRow = Omit<VoucherItem, 'applications'> & {
     voucher_id: number;
     folio: string;
     issued_on: string;
@@ -48,7 +48,6 @@ type MaterialSummary = {
     technicians_count: number;
     delivered_quantity: string;
     used_quantity: string;
-    returned_quantity: string;
     pending_quantity: string;
 };
 
@@ -144,7 +143,7 @@ export default function MaterialTracking({
                 <PageHeader
                     eyebrow="Control desde el 1 de enero de 2026"
                     title="Seguimiento de material"
-                    description="Material entregado a técnicos, aplicado, devuelto y pendiente de comprobar."
+                    description="Material entregado a técnicos, aplicado y pendiente de comprobar."
                     actions={
                         <Button variant="outline" asChild>
                             <a href={`/reports/export?${query}`}>
@@ -162,8 +161,8 @@ export default function MaterialTracking({
                     </AlertTitle>
                     <AlertDescription>
                         El pendiente es material que el técnico todavía debe
-                        aplicar en un trabajo o devolver. Las cantidades solo se
-                        suman cuando corresponden al mismo material y unidad.
+                        aplicar en un trabajo. Las cantidades sólo se suman
+                        cuando corresponden al mismo material y unidad.
                     </AlertDescription>
                 </Alert>
 
@@ -358,7 +357,6 @@ function MaterialTable({ rows }: { rows: MaterialSummary[] }) {
                     <th className="px-4 py-3 text-right">Técnicos</th>
                     <th className="px-4 py-3 text-right">Entregado</th>
                     <th className="px-4 py-3 text-right">Aplicado</th>
-                    <th className="px-4 py-3 text-right">Devuelto</th>
                     <th className="px-5 py-3 text-right">Pendiente</th>
                 </tr>
             </thead>
@@ -389,17 +387,13 @@ function MaterialTable({ rows }: { rows: MaterialSummary[] }) {
                             unit={row.unit.symbol}
                         />
                         <Quantity
-                            value={row.returned_quantity}
-                            unit={row.unit.symbol}
-                        />
-                        <Quantity
                             value={row.pending_quantity}
                             unit={row.unit.symbol}
                             emphasized
                         />
                     </tr>
                 ))}
-                <EmptyRow show={rows.length === 0} columns={7} />
+                <EmptyRow show={rows.length === 0} columns={6} />
             </tbody>
         </TableCard>
     );
@@ -483,7 +477,6 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                     <th className="px-4 py-3">Material</th>
                     <th className="px-4 py-3 text-right">Entregado</th>
                     <th className="px-4 py-3 text-right">Aplicado</th>
-                    <th className="px-4 py-3 text-right">Devuelto</th>
                     <th className="px-4 py-3 text-right">Pendiente</th>
                     <th className="px-5 py-3">Estado</th>
                 </tr>
@@ -519,10 +512,6 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                             unit={row.unit.symbol}
                         />
                         <Quantity
-                            value={row.returned_quantity}
-                            unit={row.unit.symbol}
-                        />
-                        <Quantity
                             value={row.pending_quantity}
                             unit={row.unit.symbol}
                             emphasized
@@ -532,7 +521,7 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                         </td>
                     </tr>
                 ))}
-                <EmptyRow show={rows.length === 0} columns={8} />
+                <EmptyRow show={rows.length === 0} columns={7} />
             </tbody>
         </TableCard>
     );

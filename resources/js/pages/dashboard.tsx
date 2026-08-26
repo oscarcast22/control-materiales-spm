@@ -25,7 +25,7 @@ import {
 import { formatDate, formatQuantity } from '@/lib/format';
 import type { StorageLocation, Voucher, VoucherItem } from '@/types';
 
-type PendingRow = Omit<VoucherItem, 'dispositions'> & {
+type PendingRow = Omit<VoucherItem, 'applications'> & {
     voucher_id: number;
     folio: string;
     issued_on: string;
@@ -180,7 +180,7 @@ export default function Dashboard({ metrics, recent, oldest_pending }: Props) {
                                             <TableEmpty
                                                 colSpan={4}
                                                 title="Sin material pendiente"
-                                                description="Todas las partidas registradas están comprobadas o devueltas."
+                                                description="Todo el material entregado está aplicado."
                                             />
                                         )}
                                     </TableBody>

@@ -1,6 +1,6 @@
 # Control de Materiales SPM
 
-Aplicación interna para capturar vales de salida de almacén y comprobar qué material se aplicó, qué se devolvió y qué continúa pendiente. Está construida con Laravel, Inertia, React, TypeScript y PostgreSQL.
+Aplicación interna para capturar vales de salida de almacén y comprobar qué material se aplicó y qué continúa pendiente. Está construida con Laravel, Inertia, React, TypeScript y PostgreSQL.
 
 ## Documentación
 
@@ -17,11 +17,11 @@ El proyecto se encuentra en refinamiento local y todavía no se ha desplegado ni
 - Acceso privado con cuentas creadas por consola; el registro público está deshabilitado.
 - Captura y edición de entradas y salidas de Almacén o Patio con varios materiales.
 - Catálogos de materiales, unidades, personas, programas y acciones.
-- Aplicaciones/consumos y devoluciones parciales, con saldo por partida.
+- Aplicaciones parciales o en bloque, con saldo por partida.
 - Anulación auditada de movimientos y cancelación controlada de vales.
 - Fotos o PDF del vale guardados en almacenamiento privado.
 - Consulta, filtros, impresión y exportación XLSX del seguimiento de material.
-- Resúmenes por material y por técnico de lo entregado, aplicado, devuelto y pendiente desde 2026.
+- Resúmenes por material y por técnico de lo entregado, aplicado y pendiente desde 2026.
 - Catálogos iniciales depurados y versionados; importación separada del historial confiable desde 2026.
 
 ## Requisitos
@@ -84,12 +84,11 @@ Antes de escribir, el comando valida la estructura del libro, calcula todos los 
 
 ## Cómo se calculan los saldos
 
-- El pendiente de una salida es la cantidad entregada menos lo comprobado como usado y lo devuelto.
+- El pendiente de una salida es la cantidad entregada menos lo documentado como aplicado.
 - El seguimiento incluye únicamente vales de salida activos emitidos desde el 1 de enero de 2026; las entradas y los vales cancelados no generan responsabilidad para un técnico.
-- Una cifra positiva es material que todavía debe aplicarse en un trabajo o devolverse. La aplicación no intenta anticipar cuál de las dos acciones ocurrirá.
+- Una cifra positiva es material que todavía debe documentarse como aplicado en un trabajo.
 - Una cifra negativa indica que se comprobó más de lo entregado y se muestra como inconsistencia.
 - Las cantidades se agregan exclusivamente por material y unidad; no se genera un total que mezcle piezas, metros u otros artículos.
-- Las devoluciones históricas permanecen en cero cuando el documento original no las identifica; no se infieren datos faltantes.
 
 La aplicación no presenta estos saldos como existencias de almacén. Conocer el inventario físico requeriría una existencia inicial y el registro completo de entradas, información que no forma parte del flujo actual.
 
@@ -98,7 +97,8 @@ La aplicación no presenta estos saldos como existencias de almacén. Conocer el
 - `storage_locations`: áreas físicas como Almacén y Patio, con su fecha de inicio de control.
 - `vouchers`: documento de entrada o salida; el folio es único dentro de cada área.
 - `voucher_items`: material, unidad y cantidad documentada en cada renglón.
-- `material_dispositions`: comprobaciones de consumo o devoluciones ligadas a una salida.
+- `material_application_reports`: encabezado y evidencia opcional de una aplicación capturada en bloque.
+- `material_applications`: cantidades aplicadas a las partidas de un vale.
 - `inventory_adjustments`: correcciones positivas o negativas justificadas, sin modificar vales.
 - `audit_events`: historial del usuario y valores anteriores/posteriores de operaciones sensibles.
 - `legacy_import_rows`: copia trazable de cada renglón leído del Excel histórico.

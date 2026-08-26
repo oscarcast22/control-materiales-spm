@@ -61,7 +61,7 @@ La simulación no escribe. Después de revisar el resumen y disponer de respaldo
 php artisan catalog:sync-material-units --apply
 ```
 
-La sincronización sólo modifica unidades `s/e` de materiales versionados y partidas vinculadas mediante `legacy_import_rows`. No cambia cantidades, aplicaciones, devoluciones ni saldos; conserva unidades previamente corregidas y registra auditoría por cada actualización.
+La sincronización sólo modifica unidades `s/e` de materiales versionados y partidas vinculadas mediante `legacy_import_rows`. No cambia cantidades, aplicaciones ni saldos; conserva unidades previamente corregidas y registra auditoría por cada actualización.
 
 ## Reglas de transformación
 
@@ -86,7 +86,7 @@ Instantánea del 25 de agosto de 2026 después de la importación actual:
 | Vales activos | 203 |
 | Vales cancelados | 13 |
 | Partidas | 619 |
-| Aplicaciones/devoluciones | 775 |
+| Aplicaciones | 775 |
 | Filas trazadas | 636 |
 | Filas no resueltas | 4 |
 | Vales pendientes de revisión | 127 |

@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Enums\VoucherDirection;
 use App\Models\LegacyImportRow;
 use App\Models\Material;
-use App\Models\MaterialDisposition;
+use App\Models\MaterialApplication;
 use App\Models\StorageLocation;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
@@ -40,8 +40,8 @@ class LegacyImportTest extends TestCase
             $this->artisan('legacy:import-control', ['file' => $path])->assertSuccessful();
             $this->assertSame(1, Voucher::query()->count());
             $this->assertSame(2, LegacyImportRow::query()->count());
-            $this->assertSame(1, MaterialDisposition::query()->count());
-            $this->assertSame('2026-01-02', MaterialDisposition::query()->sole()->occurred_on->format('Y-m-d'));
+            $this->assertSame(1, MaterialApplication::query()->count());
+            $this->assertSame('2026-01-02', MaterialApplication::query()->sole()->occurred_on->format('Y-m-d'));
             $this->assertSame('5.000', Voucher::query()->sole()->items()->firstOrFail()->pendingQuantity());
             $this->assertSame(VoucherDirection::Exit, Voucher::query()->sole()->direction);
             $this->assertSame('warehouse', Voucher::query()->sole()->location->code);
@@ -144,13 +144,13 @@ class LegacyImportTest extends TestCase
             $this->artisan('legacy:import-control', ['file' => $path])->assertSuccessful();
 
             $voucher = Voucher::query()->sole();
-            $movement = MaterialDisposition::query()->sole();
+            $application = MaterialApplication::query()->sole();
             $this->assertSame('2026-04-15', $voucher->issued_on->format('Y-m-d'));
             $this->assertTrue($voucher->needs_review);
             $this->assertContains('La fecha del vale se infirió como 2026-04-15 a partir de la información disponible.', $voucher->review_reasons);
-            $this->assertSame('2026-04-15', $movement->occurred_on->format('Y-m-d'));
-            $this->assertSame('22072', $movement->reference);
-            $this->assertSame('Patio', $movement->destination);
+            $this->assertSame('2026-04-15', $application->occurred_on->format('Y-m-d'));
+            $this->assertSame('22072', $application->reference);
+            $this->assertSame('Patio', $application->destination);
             $this->assertSame(2, LegacyImportRow::query()->sole()->row_number);
         } finally {
             if (is_string($path) && is_file($path)) {

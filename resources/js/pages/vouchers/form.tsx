@@ -203,7 +203,7 @@ export default function VoucherForm({
                             </p>
                             <p>
                                 Captura el vale → registra el material utilizado
-                                o devuelto desde su detalle → consulta el saldo
+                                desde la lista o el detalle → consulta el saldo
                                 pendiente actualizado.
                             </p>
                             {voucher && (
@@ -211,7 +211,7 @@ export default function VoucherForm({
                                     className="font-medium text-primary underline-offset-4 hover:underline"
                                     href={`/vouchers/${voucher.id}`}
                                 >
-                                    Ir al detalle para comprobar materiales
+                                    Ir al detalle del vale
                                 </Link>
                             )}
                         </AlertDescription>

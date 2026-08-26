@@ -4,7 +4,7 @@
 
 Esta es una aplicación interna de Servicios Públicos Municipales para que una persona capture vales físicos y controle el material entregado a técnicos. La usuaria no administra el inventario del almacén ni conoce sus existencias físicas.
 
-El flujo operativo es: **vale de salida → material entregado → aplicación en trabajos o devolución → saldo pendiente**. La interfaz y los textos deben estar en español claro y ser cómodos para una usuaria administrativa no técnica.
+El flujo operativo es: **vale de salida → material entregado → aplicación en trabajos → saldo pendiente**. La interfaz y los textos deben estar en español claro y ser cómodos para una usuaria administrativa no técnica.
 
 Antes de modificar reglas de negocio lea:
 
@@ -17,13 +17,13 @@ Antes de modificar reglas de negocio lea:
 
 - El seguimiento operativo comienza obligatoriamente el `2026-01-01`.
 - No importar transacciones de 2025. Ese histórico fue descartado por sus inconsistencias.
-- `Pendiente = entregado - aplicado - devuelto`.
+- `Pendiente = entregado - aplicado`.
 - Un saldo negativo es una inconsistencia; no debe ocultarse ni convertirse automáticamente en cero.
 - No sumar cantidades de materiales o unidades diferentes en un total común.
-- Las entradas, los vales cancelados y los movimientos anulados no generan responsabilidad pendiente para un técnico.
+- Las entradas, los vales cancelados y las aplicaciones anuladas no generan responsabilidad pendiente para un técnico.
 - Las correcciones contables se anulan con motivo y auditoría; no se borran silenciosamente.
 - El folio se normaliza y es único dentro de cada área de resguardo.
-- “Liquidado” significa que el técnico comprobó o devolvió todo. No significa que se conozca la existencia del almacén.
+- “Liquidado” significa que el técnico documentó como aplicado todo el material entregado. No significa que se conozca la existencia del almacén.
 - La infraestructura de inventario físico permanece reservada, sin rutas ni interfaz. No reactivarla sin existencia inicial y movimientos completos del almacén.
 - El único rol actual es una cuenta activa con todos los permisos del MVP.
 
