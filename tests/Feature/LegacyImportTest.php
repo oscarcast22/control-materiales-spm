@@ -4,10 +4,13 @@ namespace Tests\Feature;
 
 use App\Enums\VoucherDirection;
 use App\Models\LegacyImportRow;
+use App\Models\Material;
 use App\Models\MaterialDisposition;
 use App\Models\StorageLocation;
 use App\Models\Voucher;
+use App\Models\VoucherItem;
 use App\Support\InventorySummary;
+use Database\Seeders\CatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use OpenSpout\Common\Entity\Cell;
 use OpenSpout\Common\Entity\Comment\Comment;
@@ -49,6 +52,34 @@ class LegacyImportTest extends TestCase
                 ->assertSuccessful();
             $this->assertSame(1, Voucher::query()->count());
             $this->assertSame(2, LegacyImportRow::query()->count());
+        } finally {
+            if (is_string($path) && is_file($path)) {
+                unlink($path);
+            }
+        }
+    }
+
+    public function test_legacy_import_uses_curated_units_and_keeps_unknown_materials_unspecified(): void
+    {
+        $this->seed(CatalogSeeder::class);
+        $path = tempnam(sys_get_temp_dir(), 'legacy-units-test-');
+        $this->assertNotFalse($path);
+
+        try {
+            $writer = new Writer;
+            $writer->openToFile($path);
+            $writer->getCurrentSheet()->setName('victor');
+            $writer->addRow($this->header());
+            $writer->addRow($this->sourceRow([1, 'UNITS', 'Ana', '2026-01-02', 'CABLE THW #12', 'Centro', 10, 10, 0]));
+            $writer->addRow($this->sourceRow([2, 'UNITS', 'Ana', '2026-01-02', 'MATERIAL DESCONOCIDO', 'Centro', 1, 1, 0]));
+            $writer->close();
+
+            $this->artisan('legacy:import-control', ['file' => $path])->assertSuccessful();
+
+            $items = VoucherItem::query()->with(['material', 'unit'])->orderBy('id')->get();
+            $this->assertSame('m', $items[0]->unit->symbol);
+            $this->assertSame('s/e', $items[1]->unit->symbol);
+            $this->assertTrue(Material::query()->where('normalized_name', 'material desconocido')->sole()->needs_review);
         } finally {
             if (is_string($path) && is_file($path)) {
                 unlink($path);
