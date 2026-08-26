@@ -10,14 +10,14 @@ export function Page({
 }) {
     const widths = {
         content: 'max-w-[1280px]',
-        wide: 'max-w-[1520px]',
-        full: 'max-w-none',
+        wide: 'max-w-[1440px]',
+        full: 'max-w-[1440px]',
     };
 
     return (
         <div
             className={cn(
-                'mx-auto flex w-full flex-1 flex-col gap-6 px-4 py-5 sm:px-6 md:py-7 lg:px-8',
+                'mx-auto flex w-full flex-1 flex-col gap-6 px-4 py-6 min-[1200px]:px-8 md:px-6',
                 widths[width],
             )}
         >
@@ -31,11 +31,13 @@ export function PageHeader({
     description,
     eyebrow,
     actions,
+    size = 'headline',
 }: {
     title: string;
     description?: string;
     eyebrow?: string;
     actions?: ReactNode;
+    size?: 'headline' | 'display';
 }) {
     return (
         <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -45,7 +47,14 @@ export function PageHeader({
                         {eyebrow}
                     </p>
                 )}
-                <h1 className="text-[clamp(1.75rem,3vw,2rem)] leading-tight font-semibold tracking-[-0.025em] text-text-primary">
+                <h1
+                    className={cn(
+                        'font-bold text-text-primary',
+                        size === 'display'
+                            ? 'text-[2rem] leading-10 tracking-[-0.03em] md:text-[2.5rem] md:leading-12 md:font-extrabold'
+                            : 'text-[1.625rem] leading-8 tracking-[-0.02em] md:text-[2rem] md:leading-10',
+                    )}
+                >
                     {title}
                 </h1>
                 {description && (

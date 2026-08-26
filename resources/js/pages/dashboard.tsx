@@ -54,6 +54,7 @@ export default function Dashboard({ metrics, recent, oldest_pending }: Props) {
                 <PageHeader
                     eyebrow="Vista operativa"
                     title="Control de materiales"
+                    size="display"
                     description="Identifica primero lo que requiere atención y continúa con la actividad más reciente."
                     actions={
                         <Button asChild>

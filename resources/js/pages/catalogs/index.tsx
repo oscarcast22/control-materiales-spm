@@ -747,12 +747,12 @@ function CatalogTable({
     rows: React.ReactNode[][];
 }) {
     return (
-        <div className="max-h-96 overflow-auto rounded-md border bg-surface">
+        <div className="max-h-96 overflow-auto rounded-lg border bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_12px_rgba(26,20,107,0.04)]">
             <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-surface-subtle text-xs text-text-secondary">
+                <thead className="sticky top-0 border-b bg-surface-subtle text-[11px] font-bold tracking-[0.08em] text-text-secondary uppercase">
                     <tr>
                         {headers.map((h, i) => (
-                            <th key={i} className="px-3 py-2 text-left">
+                            <th key={i} className="px-4 py-3 text-left">
                                 {h}
                             </th>
                         ))}
@@ -762,10 +762,10 @@ function CatalogTable({
                     {rows.map((row, i) => (
                         <tr
                             key={i}
-                            className="border-t transition-colors hover:bg-hover/60"
+                            className="border-b transition-colors last:border-0 hover:bg-primary/[0.02]"
                         >
                             {row.map((cell, j) => (
-                                <td key={j} className="px-3 py-2">
+                                <td key={j} className="px-4 py-4">
                                     {cell}
                                 </td>
                             ))}

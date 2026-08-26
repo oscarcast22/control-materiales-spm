@@ -10,7 +10,7 @@ import {
 
 export function DataTableSurface({ children }: { children: ReactNode }) {
     return (
-        <div className="overflow-hidden rounded-lg border bg-surface">
+        <div className="overflow-hidden rounded-lg border bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_12px_rgba(26,20,107,0.04)]">
             {children}
         </div>
     );

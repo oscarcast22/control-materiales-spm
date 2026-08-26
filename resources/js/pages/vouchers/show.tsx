@@ -54,7 +54,7 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
     return (
         <>
             <Head title={`Vale ${voucher.folio}`} />
-            <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6 px-4 py-5 sm:px-6 md:py-7 lg:px-8">
+            <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6 px-4 py-6 min-[1200px]:px-8 md:px-6">
                 <div className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex items-start gap-3">
                         <IconButton
@@ -68,7 +68,7 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                         </IconButton>
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-3xl font-semibold tracking-[-0.025em]">
+                                <h1 className="text-[1.625rem] leading-8 font-bold tracking-[-0.02em] md:text-[2rem] md:leading-10">
                                     Vale {voucher.folio}
                                 </h1>
                                 <StatusBadge state={voucher.balance_state} />
@@ -369,7 +369,7 @@ function MaterialCard({
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="border-y bg-muted/40 text-left text-muted-foreground">
+                                <thead className="border-y bg-surface-subtle text-left text-[11px] font-bold tracking-[0.08em] text-text-secondary uppercase">
                                     <tr>
                                         <th className="px-3 py-2">Fecha</th>
                                         <th className="px-3 py-2">

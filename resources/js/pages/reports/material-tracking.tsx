@@ -350,7 +350,7 @@ export default function MaterialTracking({
 function MaterialTable({ rows }: { rows: MaterialSummary[] }) {
     return (
         <TableCard>
-            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-xs text-text-secondary">
+            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-[11px] font-bold tracking-[0.08em] text-text-secondary uppercase">
                 <tr>
                     <th className="px-5 py-3">Material</th>
                     <th className="px-4 py-3 text-right">Vales</th>
@@ -364,7 +364,7 @@ function MaterialTable({ rows }: { rows: MaterialSummary[] }) {
                 {rows.map((row) => (
                     <tr
                         key={`${row.material.id}-${row.unit.id}`}
-                        className="border-b transition-colors last:border-0 hover:bg-hover/60"
+                        className="border-b transition-colors last:border-0 hover:bg-primary/[0.02]"
                     >
                         <td className="px-5 py-4 font-medium">
                             {row.material.name}
@@ -408,7 +408,7 @@ function TechnicianTable({
 }) {
     return (
         <TableCard>
-            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-xs text-text-secondary">
+            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-[11px] font-bold tracking-[0.08em] text-text-secondary uppercase">
                 <tr>
                     <th className="px-5 py-3">Técnico</th>
                     <th className="px-4 py-3 text-right">Vales</th>
@@ -430,7 +430,7 @@ function TechnicianTable({
                     return (
                         <tr
                             key={row.technician.id}
-                            className="border-b transition-colors last:border-0 hover:bg-hover/60"
+                            className="border-b transition-colors last:border-0 hover:bg-primary/[0.02]"
                         >
                             <td className="px-5 py-4 font-medium">
                                 {row.technician.name}
@@ -470,7 +470,7 @@ function TechnicianTable({
 function DetailTable({ rows }: { rows: TrackingRow[] }) {
     return (
         <TableCard>
-            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-xs text-text-secondary">
+            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-[11px] font-bold tracking-[0.08em] text-text-secondary uppercase">
                 <tr>
                     <th className="px-5 py-3">Vale</th>
                     <th className="px-4 py-3">Técnico</th>
@@ -485,7 +485,7 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                 {rows.map((row) => (
                     <tr
                         key={`${row.voucher_id}-${row.id}`}
-                        className="border-b transition-colors last:border-0 hover:bg-hover/60"
+                        className="border-b transition-colors last:border-0 hover:bg-primary/[0.02]"
                     >
                         <td className="px-5 py-4">
                             <Link

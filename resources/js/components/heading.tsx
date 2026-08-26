@@ -13,7 +13,7 @@ export default function Heading({
                 className={
                     variant === 'small'
                         ? 'mb-0.5 text-base font-medium'
-                        : 'text-xl font-semibold tracking-tight'
+                        : 'text-xl font-bold tracking-[-0.02em]'
                 }
             >
                 {title}

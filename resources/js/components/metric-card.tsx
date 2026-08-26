@@ -30,13 +30,13 @@ export function MetricCard({
             className={cn(
                 'flex min-w-0 items-center gap-3 border-border',
                 emphasis === 'primary'
-                    ? 'rounded-lg border bg-surface p-5'
-                    : 'border-b py-3 last:border-b-0 sm:border-r sm:border-b-0 sm:px-4 sm:first:pl-0 sm:last:border-r-0',
+                    ? 'rounded-lg border bg-surface p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_12px_rgba(26,20,107,0.04)]'
+                    : 'border-b py-4 last:border-b-0 sm:border-r sm:border-b-0 sm:px-4 sm:first:pl-0 sm:last:border-r-0',
             )}
         >
             <div
                 className={cn(
-                    'flex shrink-0 items-center justify-center rounded-md',
+                    'flex shrink-0 items-center justify-center rounded',
                     emphasis === 'primary' ? 'size-11' : 'size-9',
                     tones[tone],
                 )}
@@ -52,7 +52,7 @@ export function MetricCard({
                 >
                     {value}
                 </p>
-                <p className="mt-1 text-xs leading-4 text-muted-foreground">
+                <p className="mt-1 text-[11px] leading-4 font-bold tracking-[0.08em] text-muted-foreground uppercase">
                     {label}
                 </p>
             </div>
