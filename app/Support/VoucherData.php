@@ -4,7 +4,7 @@ namespace App\Support;
 
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
-use App\Models\MaterialDisposition;
+use App\Models\MaterialApplication;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
 
@@ -32,7 +32,7 @@ final class VoucherData
     {
         $voucher->loadMissing([
             'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action',
-            'items.material', 'items.unit', 'items.dispositions', 'attachments',
+            'items.material', 'items.unit', 'items.applications.report.attachment', 'attachments',
         ]);
 
         $isEntry = $voucher->direction === VoucherDirection::Entry;
@@ -85,7 +85,6 @@ final class VoucherData
     public static function item(VoucherItem $item, bool $detailed = false, bool $isEntry = false): array
     {
         $used = $isEntry ? '0.000' : $item->usedQuantity();
-        $returned = $isEntry ? '0.000' : $item->returnedQuantity();
         $pending = $isEntry ? '0.000' : $item->pendingQuantity();
 
         return [
@@ -95,14 +94,12 @@ final class VoucherData
             'description' => $item->description_snapshot,
             'quantity' => $item->quantity,
             'used_quantity' => $used,
-            'returned_quantity' => $returned,
             'pending_quantity' => $pending,
             'balance_state' => $isEntry ? 'received' : ((float) $pending < 0 ? 'anomaly' : ((float) $pending === 0.0 ? 'settled' : 'pending')),
             'legacy_anomaly' => $item->legacy_anomaly,
-            'dispositions' => $detailed ? $item->dispositions->sortByDesc('occurred_on')->map(
-                fn (MaterialDisposition $row): array => [
+            'applications' => $detailed ? $item->applications->sortByDesc('occurred_on')->map(
+                fn (MaterialApplication $row): array => [
                     'id' => $row->id,
-                    'type' => $row->type->value,
                     'occurred_on' => $row->occurred_on->format('Y-m-d'),
                     'quantity' => $row->quantity,
                     'reference' => $row->reference,
@@ -111,6 +108,9 @@ final class VoucherData
                     'legacy_slot' => $row->legacy_slot,
                     'voided_at' => $row->voided_at?->toIso8601String(),
                     'void_reason' => $row->void_reason,
+                    'attachment' => $row->report?->attachment?->only([
+                        'id', 'original_name', 'mime_type', 'size',
+                    ]),
                 ],
             )->values() : [],
         ];

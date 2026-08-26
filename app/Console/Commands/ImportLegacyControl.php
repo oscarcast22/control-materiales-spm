@@ -2,13 +2,12 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\DispositionType;
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
 use App\Models\LegacyImportRow;
 use App\Models\Material;
 use App\Models\MaterialAlias;
-use App\Models\MaterialDisposition;
+use App\Models\MaterialApplication;
 use App\Models\Person;
 use App\Models\PersonAlias;
 use App\Models\StorageLocation;
@@ -44,7 +43,7 @@ class ImportLegacyControl extends Command
         'vouchers' => 0,
         'cancelled' => 0,
         'items' => 0,
-        'dispositions' => 0,
+        'applications' => 0,
         'unresolved' => 0,
         'review' => 0,
         'anomalies' => 0,
@@ -298,7 +297,7 @@ class ImportLegacyControl extends Command
                 continue;
             }
 
-            $dispositions = [];
+            $applications = [];
             $applied = 0.0;
             foreach ($row['reports'] as $report) {
                 $quantity = $report['quantity'];
@@ -317,8 +316,8 @@ class ImportLegacyControl extends Command
                     $rowIssues[] = 'application_before_voucher';
                     $reviewReasons[] = 'Una o más aplicaciones están fechadas antes que el vale.';
                 }
-                $dispositions[] = [...$parsed, 'slot' => $report['slot'], 'cell' => $report['cell'], 'quantity' => $quantity];
-                $this->stats['dispositions']++;
+                $applications[] = [...$parsed, 'slot' => $report['slot'], 'cell' => $report['cell'], 'quantity' => $quantity];
+                $this->stats['applications']++;
             }
 
             $anomaly = $applied > (float) $row['quantity'] + 0.0001;
@@ -333,7 +332,7 @@ class ImportLegacyControl extends Command
                 'row_number' => $number,
                 'material' => $row['material'],
                 'quantity' => $row['quantity'],
-                'dispositions' => $dispositions,
+                'applications' => $applications,
                 'anomaly' => $anomaly,
                 'issues' => $rowIssues,
             ];
@@ -495,16 +494,15 @@ class ImportLegacyControl extends Command
                     'quantity' => $dataItem['quantity'],
                     'legacy_anomaly' => $dataItem['anomaly'],
                 ]);
-                foreach ($dataItem['dispositions'] as $disposition) {
-                    MaterialDisposition::create([
+                foreach ($dataItem['applications'] as $application) {
+                    MaterialApplication::create([
                         'voucher_item_id' => $item->id,
-                        'type' => DispositionType::Consumption,
-                        'occurred_on' => $disposition['occurred_on'],
-                        'quantity' => $disposition['quantity'],
-                        'reference' => $disposition['reference'],
-                        'destination' => $disposition['destination'],
-                        'notes' => $disposition['notes'],
-                        'legacy_slot' => $disposition['slot'],
+                        'occurred_on' => $application['occurred_on'],
+                        'quantity' => $application['quantity'],
+                        'reference' => $application['reference'],
+                        'destination' => $application['destination'],
+                        'notes' => $application['notes'],
+                        'legacy_slot' => $application['slot'],
                     ]);
                 }
                 $staged[$dataItem['row_number']]->update([

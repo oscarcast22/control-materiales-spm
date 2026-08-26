@@ -25,7 +25,7 @@ final class MaterialTracking
             $data = VoucherData::make($voucher, true);
 
             return collect(VoucherData::itemRows($data['items']))->map(function (array $item) use ($voucher, $data): array {
-                unset($item['dispositions']);
+                unset($item['applications']);
 
                 return [
                     'voucher_id' => $voucher->id,
@@ -71,7 +71,6 @@ final class MaterialTracking
                     'technicians_count' => $materialRows->pluck('received_by.id')->unique()->count(),
                     'delivered_quantity' => self::sum($materialRows, 'quantity'),
                     'used_quantity' => self::sum($materialRows, 'used_quantity'),
-                    'returned_quantity' => self::sum($materialRows, 'returned_quantity'),
                     'pending_quantity' => self::sum($materialRows, 'pending_quantity'),
                 ];
             })

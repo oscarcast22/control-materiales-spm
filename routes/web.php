@@ -2,7 +2,8 @@
 
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\MaterialDispositionController;
+use App\Http\Controllers\MaterialApplicationAttachmentController;
+use App\Http\Controllers\MaterialApplicationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\VoucherAttachmentController;
 use App\Http\Controllers\VoucherController;
@@ -18,8 +19,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('vouchers/{voucher}/cancel', [VoucherController::class, 'cancel'])->name('vouchers.cancel');
     Route::post('vouchers/{voucher}/review', [VoucherController::class, 'review'])->name('vouchers.review');
     Route::get('vouchers/{voucher}/print', [VoucherController::class, 'print'])->name('vouchers.print');
-    Route::post('voucher-items/{item}/dispositions', [MaterialDispositionController::class, 'store'])->name('dispositions.store');
-    Route::post('dispositions/{disposition}/void', [MaterialDispositionController::class, 'void'])->name('dispositions.void');
+    Route::get('material-applications/vouchers', [MaterialApplicationController::class, 'searchVouchers'])->name('applications.vouchers.search');
+    Route::post('material-applications', [MaterialApplicationController::class, 'store'])->name('applications.store');
+    Route::post('material-applications/{application}/void', [MaterialApplicationController::class, 'void'])->name('applications.void');
+    Route::get('material-application-attachments/{attachment}', [MaterialApplicationAttachmentController::class, 'show'])->name('application-attachments.show');
     Route::get('attachments/{attachment}', [VoucherAttachmentController::class, 'show'])->name('attachments.show');
     Route::delete('attachments/{attachment}', [VoucherAttachmentController::class, 'destroy'])->name('attachments.destroy');
 

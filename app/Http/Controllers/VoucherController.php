@@ -33,7 +33,7 @@ class VoucherController extends Controller
     public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Voucher::class);
-        $query = Voucher::query()->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'items.material', 'items.unit', 'items.dispositions']);
+        $query = Voucher::query()->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'items.material', 'items.unit', 'items.applications']);
 
         if ($search = trim((string) $request->string('search'))) {
             $needle = '%'.mb_strtolower($search).'%';
@@ -70,7 +70,7 @@ class VoucherController extends Controller
             $operator = $status === 'pending' ? '>' : ($status === 'anomaly' ? '<' : '!=');
             $method = $status === 'settled' ? 'whereDoesntHave' : 'whereHas';
             $query->{$method}('items', function (Builder $item) use ($operator): void {
-                $item->whereRaw("quantity {$operator} (select COALESCE(SUM(quantity), 0) from material_dispositions where material_dispositions.voucher_item_id = voucher_items.id and voided_at is null)");
+                $item->whereRaw("quantity {$operator} (select COALESCE(SUM(quantity), 0) from material_applications where material_applications.voucher_item_id = voucher_items.id and voided_at is null)");
             });
         }
 
@@ -139,10 +139,10 @@ class VoucherController extends Controller
         $data = $this->validateVoucher($request, true);
         $this->ensureUniqueFolio($data['folio'], (int) $data['storage_location_id'], $voucher);
 
-        $hasMovements = $voucher->items()->whereHas('dispositions', fn (Builder $query) => $query->whereNull('voided_at'))->exists();
+        $hasMovements = $voucher->items()->whereHas('applications', fn (Builder $query) => $query->whereNull('voided_at'))->exists();
         if ($hasMovements && ($voucher->direction->value !== $data['direction'] || $voucher->storage_location_id !== (int) $data['storage_location_id'])) {
             throw ValidationException::withMessages([
-                'direction' => 'No se puede cambiar el área o el tipo de un vale que ya tiene comprobaciones o devoluciones.',
+                'direction' => 'No se puede cambiar el área o el tipo de un vale que ya tiene aplicaciones registradas.',
             ]);
         }
 
@@ -169,10 +169,10 @@ class VoucherController extends Controller
         $validated = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:1000']]);
 
         DB::transaction(function () use ($voucher, $validated, $request): void {
-            $locked = Voucher::query()->with('items.dispositions')->lockForUpdate()->findOrFail($voucher->id);
-            $hasAccounting = $locked->items->flatMap->dispositions->contains(fn ($row): bool => $row->voided_at === null);
+            $locked = Voucher::query()->with('items.applications')->lockForUpdate()->findOrFail($voucher->id);
+            $hasAccounting = $locked->items->flatMap->applications->contains(fn ($row): bool => $row->voided_at === null);
             if ($hasAccounting) {
-                throw ValidationException::withMessages(['reason' => 'No se puede cancelar un vale con aplicaciones o devoluciones activas.']);
+                throw ValidationException::withMessages(['reason' => 'No se puede cancelar un vale con aplicaciones activas.']);
             }
             $before = $locked->toArray();
             $locked->update([
@@ -284,7 +284,7 @@ class VoucherController extends Controller
             $item = isset($row['id'])
                 ? VoucherItem::query()->where('voucher_id', $voucher->id)->lockForUpdate()->findOrFail((int) $row['id'])
                 : new VoucherItem;
-            $accounted = $item->exists ? (float) $item->dispositions()->whereNull('voided_at')->sum('quantity') : 0.0;
+            $accounted = $item->exists ? (float) $item->applications()->whereNull('voided_at')->sum('quantity') : 0.0;
             if ((float) $row['quantity'] + 0.0001 < $accounted) {
                 throw ValidationException::withMessages(['items' => "La cantidad de {$material->name} no puede ser menor a {$accounted}, que ya está comprobado."]);
             }
@@ -302,9 +302,9 @@ class VoucherController extends Controller
             AuditEvent::record($item, $before ? 'updated' : 'created', $before, $item->fresh()->toArray());
         }
 
-        foreach ($voucher->items()->whereNotIn('id', $kept)->with('dispositions')->get() as $item) {
-            if ($item->dispositions->whereNull('voided_at')->isNotEmpty()) {
-                throw ValidationException::withMessages(['items' => 'No se puede quitar un material que ya tiene aplicaciones o devoluciones.']);
+        foreach ($voucher->items()->whereNotIn('id', $kept)->with('applications')->get() as $item) {
+            if ($item->applications->whereNull('voided_at')->isNotEmpty()) {
+                throw ValidationException::withMessages(['items' => 'No se puede quitar un material que ya tiene aplicaciones.']);
             }
             AuditEvent::record($item, 'removed', $item->toArray(), null);
             $item->delete();

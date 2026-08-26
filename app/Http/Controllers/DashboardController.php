@@ -17,7 +17,7 @@ class DashboardController extends Controller
     {
         Gate::authorize('viewAny', Voucher::class);
         $vouchers = Voucher::query()
-            ->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'items.material', 'items.unit', 'items.dispositions'])
+            ->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'items.material', 'items.unit', 'items.applications'])
             ->where('status', VoucherStatus::Active->value)
             ->whereDate('issued_on', '>=', MaterialTracking::START_DATE)
             ->orderByDesc('issued_on')

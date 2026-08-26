@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Enums\DispositionType;
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
 use App\Models\InventoryAdjustment;
@@ -23,7 +22,7 @@ final class InventorySummary
         $rows = [];
 
         $vouchers = Voucher::query()
-            ->with(['items.material', 'items.unit', 'items.dispositions'])
+            ->with(['items.material', 'items.unit'])
             ->where('status', VoucherStatus::Active->value)
             ->whereIn('storage_location_id', $locations->keys())
             ->whereDate('issued_on', '<=', $cutoff)
@@ -39,29 +38,15 @@ final class InventorySummary
                     continue;
                 }
                 $affectsVoucherStock = $voucher->issued_on->greaterThanOrEqualTo($location->tracking_started_on);
-                $returnedAfterStart = 0.0;
-                if ($voucher->direction === VoucherDirection::Exit) {
-                    foreach ($item->dispositions as $disposition) {
-                        if ($disposition->type === DispositionType::Return
-                            && $disposition->voided_at === null
-                            && $disposition->occurred_on->greaterThanOrEqualTo($location->tracking_started_on)
-                            && $disposition->occurred_on->lessThanOrEqualTo($cutoff)) {
-                            $returnedAfterStart += (float) $disposition->quantity;
-                        }
-                    }
-                }
-                if (! $affectsVoucherStock && $returnedAfterStart === 0.0) {
+                if (! $affectsVoucherStock) {
                     continue;
                 }
 
                 $key = self::key($location->id, $item->material_id, $item->unit_id);
                 $rows[$key] ??= self::blank($location, $item);
 
-                if ($affectsVoucherStock) {
-                    $bucket = $voucher->direction === VoucherDirection::Entry ? 'entries' : 'exits';
-                    $rows[$key][$bucket] += (float) $item->quantity;
-                }
-                $rows[$key]['returns'] += $returnedAfterStart;
+                $bucket = $voucher->direction === VoucherDirection::Entry ? 'entries' : 'exits';
+                $rows[$key][$bucket] += (float) $item->quantity;
             }
         }
 
@@ -81,14 +66,14 @@ final class InventorySummary
                 'location' => self::location($adjustment->location),
                 'material' => $adjustment->material->only(['id', 'name']),
                 'unit' => $adjustment->unit->only(['id', 'name', 'symbol']),
-                'entries' => 0.0, 'exits' => 0.0, 'returns' => 0.0, 'adjustments' => 0.0,
+                'entries' => 0.0, 'exits' => 0.0, 'adjustments' => 0.0,
             ];
             $rows[$key]['adjustments'] += (float) $adjustment->quantity_delta;
         }
 
         return collect($rows)->map(function (array $row): array {
-            $row['available'] = $row['entries'] - $row['exits'] + $row['returns'] + $row['adjustments'];
-            foreach (['entries', 'exits', 'returns', 'adjustments', 'available'] as $field) {
+            $row['available'] = $row['entries'] - $row['exits'] + $row['adjustments'];
+            foreach (['entries', 'exits', 'adjustments', 'available'] as $field) {
                 $row[$field] = number_format((float) $row[$field], 3, '.', '');
             }
 
@@ -108,7 +93,7 @@ final class InventorySummary
             'location' => self::location($location),
             'material' => $item->material->only(['id', 'name']),
             'unit' => $item->unit->only(['id', 'name', 'symbol']),
-            'entries' => 0.0, 'exits' => 0.0, 'returns' => 0.0, 'adjustments' => 0.0,
+            'entries' => 0.0, 'exits' => 0.0, 'adjustments' => 0.0,
         ];
     }
 

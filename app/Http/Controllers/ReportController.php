@@ -53,13 +53,13 @@ class ReportController extends Controller
         $writer->openToFile($path);
         $writer->getCurrentSheet()->setName('Resumen por material');
         $writer->addRow(Row::fromValues([
-            'Material', 'Unidad', 'Vales', 'Técnicos', 'Entregado', 'Aplicado', 'Devuelto', 'Pendiente',
+            'Material', 'Unidad', 'Vales', 'Técnicos', 'Entregado', 'Aplicado', 'Pendiente',
         ]));
         foreach ($tracking['by_material'] as $row) {
             $writer->addRow(Row::fromValues([
                 self::safe($row['material']['name']), self::safe($row['unit']['symbol']), $row['vouchers_count'],
                 $row['technicians_count'], (float) $row['delivered_quantity'], (float) $row['used_quantity'],
-                (float) $row['returned_quantity'], (float) $row['pending_quantity'],
+                (float) $row['pending_quantity'],
             ]));
         }
 
@@ -78,21 +78,20 @@ class ReportController extends Controller
         $sheet = $writer->addNewSheetAndMakeItCurrent();
         $sheet->setName('Detalle de vales');
         $writer->addRow(Row::fromValues([
-            'Folio', 'Fecha', 'Área', 'Técnico', 'Destino', 'Material', 'Unidad', 'Entregado', 'Aplicado', 'Devuelto', 'Pendiente', 'Estado',
+            'Folio', 'Fecha', 'Área', 'Técnico', 'Destino', 'Material', 'Unidad', 'Entregado', 'Aplicado', 'Pendiente', 'Estado',
         ]));
         foreach ($tracking['rows'] as $row) {
             $writer->addRow(Row::fromValues([
                 self::safe($row['folio']), $row['issued_on'], self::safe($row['location']['name']), self::safe($row['received_by']['name']),
                 self::safe($row['destination']), self::safe($row['description']), self::safe($row['unit']['symbol']),
-                (float) $row['quantity'], (float) $row['used_quantity'], (float) $row['returned_quantity'],
-                (float) $row['pending_quantity'], $row['balance_state'],
+                (float) $row['quantity'], (float) $row['used_quantity'], (float) $row['pending_quantity'], $row['balance_state'],
             ]));
         }
 
         $sheet = $writer->addNewSheetAndMakeItCurrent();
-        $sheet->setName('Aplicaciones y devoluciones');
+        $sheet->setName('Aplicaciones');
         $writer->addRow(Row::fromValues([
-            'Folio', 'Material', 'Tipo', 'Fecha', 'Cantidad', 'Referencia', 'Destino', 'Notas',
+            'Folio', 'Material', 'Fecha', 'Cantidad', 'Referencia', 'Destino', 'Notas',
         ]));
         foreach ($vouchers as $voucher) {
             $data = VoucherData::make($voucher, true);
@@ -100,12 +99,12 @@ class ReportController extends Controller
                 if (! in_array($item['id'], $itemIds, true)) {
                     continue;
                 }
-                foreach ($item['dispositions'] as $row) {
+                foreach ($item['applications'] as $row) {
                     if ($row['voided_at']) {
                         continue;
                     }
                     $writer->addRow(Row::fromValues([
-                        self::safe($data['folio']), self::safe($item['description']), $row['type'], $row['occurred_on'],
+                        self::safe($data['folio']), self::safe($item['description']), $row['occurred_on'],
                         (float) $row['quantity'], self::safe($row['reference'] ?? ''), self::safe($row['destination'] ?? ''),
                         self::safe($row['notes'] ?? ''),
                     ]));
@@ -125,7 +124,7 @@ class ReportController extends Controller
     {
         $query = Voucher::query()->with([
             'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action',
-            'items.material', 'items.unit', 'items.dispositions',
+            'items.material', 'items.unit', 'items.applications.report.attachment',
         ])->where('status', VoucherStatus::Active->value)
             ->where('direction', VoucherDirection::Exit->value)
             ->whereDate('issued_on', '>=', $filters['from']);
