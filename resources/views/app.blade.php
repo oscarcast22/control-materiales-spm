@@ -21,13 +21,8 @@
 
         {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style>
-            html {
-                background-color: oklch(1 0 0);
-            }
-
-            html.dark {
-                background-color: oklch(0.145 0 0);
-            }
+            html { background-color: #F6F8F8; }
+            html.dark { background-color: #0D1214; }
         </style>
 
         <link rel="icon" href="/favicon.ico" sizes="any">
