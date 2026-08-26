@@ -8,11 +8,17 @@ type Props = React.ComponentProps<'main'> & {
 
 export function AppContent({ variant = 'sidebar', children, ...props }: Props) {
     if (variant === 'sidebar') {
-        return <SidebarInset {...props}>{children}</SidebarInset>;
+        return (
+            <SidebarInset id="main-content" tabIndex={-1} {...props}>
+                {children}
+            </SidebarInset>
+        );
     }
 
     return (
         <main
+            id="main-content"
+            tabIndex={-1}
             className="mx-auto flex h-full w-full max-w-7xl flex-1 flex-col gap-4 rounded-xl"
             {...props}
         >

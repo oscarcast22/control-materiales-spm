@@ -9,6 +9,7 @@ import {
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import { ThemeMenu } from '@/components/theme-menu';
 import {
     Sidebar,
     SidebarContent,
@@ -50,7 +51,7 @@ const mainNavItems: NavItem[] = [
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -68,6 +69,7 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
+                <ThemeMenu />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
