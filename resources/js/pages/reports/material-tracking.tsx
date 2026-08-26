@@ -8,13 +8,21 @@ import {
     PackageOpen,
     Truck,
     Users,
+    X,
 } from 'lucide-react';
 import type { FormEvent } from 'react';
-import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { useId, useState } from 'react';
+import { FilterBar } from '@/components/filter-bar';
+import { MetricCard } from '@/components/metric-card';
+import { Page, PageHeader } from '@/components/page';
+import { StatusBadge } from '@/components/status-badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { FormField, FormLabel } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate, formatQuantity } from '@/lib/format';
 import type {
     Material,
@@ -74,12 +82,6 @@ type Props = {
     locations: StorageLocation[];
 };
 
-const stateLabel: Record<string, string> = {
-    pending: 'Pendiente',
-    settled: 'Liquidado',
-    anomaly: 'Inconsistencia',
-};
-
 export default function MaterialTracking({
     metrics,
     by_material,
@@ -111,6 +113,19 @@ export default function MaterialTracking({
         event.preventDefault();
         navigate(form);
     };
+    const clearFilters = () => {
+        const next = {
+            from: cutoff,
+            to: '',
+            received_by_id: '',
+            material_id: '',
+            storage_location_id: '',
+            state: '',
+            tab: form.tab,
+        };
+        setForm(next);
+        navigate(next);
+    };
     const changeTab = (tab: Tab) => {
         const next = { ...form, tab };
         setForm(next);
@@ -125,196 +140,210 @@ export default function MaterialTracking({
     return (
         <>
             <Head title="Seguimiento de material" />
-            <div className="flex flex-1 flex-col gap-5 p-4 md:p-7">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-sky-700">
-                            Control desde el 1 de enero de 2026
-                        </p>
-                        <h1 className="text-3xl font-bold tracking-tight">
-                            Seguimiento de material
-                        </h1>
-                        <p className="mt-1 text-muted-foreground">
-                            Material entregado a técnicos, aplicado, devuelto y
-                            pendiente de comprobar.
-                        </p>
+            <Page width="full">
+                <PageHeader
+                    eyebrow="Control desde el 1 de enero de 2026"
+                    title="Seguimiento de material"
+                    description="Material entregado a técnicos, aplicado, devuelto y pendiente de comprobar."
+                    actions={
+                        <Button variant="outline" asChild>
+                            <a href={`/reports/export?${query}`}>
+                                <Download data-icon="inline-start" />
+                                Exportar XLSX
+                            </a>
+                        </Button>
+                    }
+                />
+
+                <Alert variant="info">
+                    <AlertTriangle aria-hidden="true" />
+                    <AlertTitle>
+                        No representa existencias de almacén
+                    </AlertTitle>
+                    <AlertDescription>
+                        El pendiente es material que el técnico todavía debe
+                        aplicar en un trabajo o devolver. Las cantidades solo se
+                        suman cuando corresponden al mismo material y unidad.
+                    </AlertDescription>
+                </Alert>
+
+                <section
+                    aria-label="Métricas del seguimiento"
+                    className="flex flex-col gap-4"
+                >
+                    <div className="grid gap-3 md:grid-cols-3">
+                        <MetricCard
+                            label="Vales pendientes"
+                            value={metrics.pending_vouchers}
+                            icon={ClipboardCheck}
+                            tone="warning"
+                            emphasis="primary"
+                        />
+                        <MetricCard
+                            label="Partidas pendientes"
+                            value={metrics.pending_items}
+                            icon={PackageOpen}
+                            tone="warning"
+                            emphasis="primary"
+                        />
+                        <MetricCard
+                            label="Inconsistencias"
+                            value={metrics.anomalies}
+                            icon={AlertTriangle}
+                            tone="danger"
+                            emphasis="primary"
+                        />
                     </div>
-                    <Button variant="outline" asChild>
-                        <a href={`/reports/export?${query}`}>
-                            <Download className="mr-2 size-4" />
-                            Exportar XLSX
-                        </a>
-                    </Button>
-                </div>
+                    <div className="grid border-y sm:grid-cols-3">
+                        <MetricCard
+                            label="Vales entregados"
+                            value={metrics.delivered_vouchers}
+                            icon={Truck}
+                        />
+                        <MetricCard
+                            label="Vales liquidados"
+                            value={metrics.settled_vouchers}
+                            icon={CheckCircle2}
+                            tone="success"
+                        />
+                        <MetricCard
+                            label="Técnicos con pendientes"
+                            value={metrics.technicians_with_pending}
+                            icon={Users}
+                        />
+                    </div>
+                </section>
 
-                <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
-                    <strong>
-                        Este reporte no representa existencias de almacén.
-                    </strong>{' '}
-                    El pendiente es material que el técnico todavía debe aplicar
-                    en un trabajo o devolver. Las cantidades solo se suman
-                    cuando corresponden al mismo material y unidad.
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                    <Metric
-                        title="Vales entregados"
-                        value={metrics.delivered_vouchers}
-                        icon={Truck}
-                    />
-                    <Metric
-                        title="Vales pendientes"
-                        value={metrics.pending_vouchers}
-                        icon={ClipboardCheck}
-                        tone="amber"
-                    />
-                    <Metric
-                        title="Partidas pendientes"
-                        value={metrics.pending_items}
-                        icon={PackageOpen}
-                        tone="amber"
-                    />
-                    <Metric
-                        title="Vales liquidados"
-                        value={metrics.settled_vouchers}
-                        icon={CheckCircle2}
-                        tone="green"
-                    />
-                    <Metric
-                        title="Inconsistencias"
-                        value={metrics.anomalies}
-                        icon={AlertTriangle}
-                        tone="red"
-                    />
-                    <Metric
-                        title="Técnicos con pendientes"
-                        value={metrics.technicians_with_pending}
-                        icon={Users}
-                    />
-                </div>
-
-                <Card>
-                    <CardContent className="pt-6">
-                        <form
-                            onSubmit={submit}
-                            className="grid gap-3 md:grid-cols-2 xl:grid-cols-7"
-                        >
-                            <label className="grid gap-1 text-xs text-muted-foreground">
-                                Desde
-                                <Input
-                                    type="date"
-                                    min={cutoff}
-                                    value={form.from}
-                                    onChange={(event) =>
-                                        setForm({
-                                            ...form,
-                                            from: event.target.value,
-                                        })
-                                    }
-                                />
-                            </label>
-                            <label className="grid gap-1 text-xs text-muted-foreground">
-                                Hasta
-                                <Input
-                                    type="date"
-                                    min={cutoff}
-                                    value={form.to}
-                                    onChange={(event) =>
-                                        setForm({
-                                            ...form,
-                                            to: event.target.value,
-                                        })
-                                    }
-                                />
-                            </label>
-                            <FilterSelect
-                                value={form.received_by_id}
-                                onChange={(value) =>
-                                    setForm({ ...form, received_by_id: value })
-                                }
-                                empty="Todos los técnicos"
-                                options={receivers.map((person) => ({
-                                    value: person.id,
-                                    label: person.name,
-                                }))}
-                            />
-                            <FilterSelect
-                                value={form.material_id}
-                                onChange={(value) =>
-                                    setForm({ ...form, material_id: value })
-                                }
-                                empty="Todos los materiales"
-                                options={materials.map((material) => ({
-                                    value: material.id,
-                                    label: material.name,
-                                }))}
-                            />
-                            <FilterSelect
-                                value={form.storage_location_id}
-                                onChange={(value) =>
+                <FilterBar>
+                    <form
+                        onSubmit={submit}
+                        className="grid gap-3 md:grid-cols-2 xl:grid-cols-8"
+                    >
+                        <FormField>
+                            <FormLabel htmlFor="tracking-from">Desde</FormLabel>
+                            <Input
+                                id="tracking-from"
+                                type="date"
+                                min={cutoff}
+                                value={form.from}
+                                onChange={(event) =>
                                     setForm({
                                         ...form,
-                                        storage_location_id: value,
+                                        from: event.target.value,
                                     })
                                 }
-                                empty="Todas las áreas"
-                                options={locations.map((location) => ({
-                                    value: location.id,
-                                    label: location.name,
-                                }))}
                             />
-                            <FilterSelect
-                                value={form.state}
-                                onChange={(value) =>
-                                    setForm({ ...form, state: value })
+                        </FormField>
+                        <FormField>
+                            <FormLabel htmlFor="tracking-to">Hasta</FormLabel>
+                            <Input
+                                id="tracking-to"
+                                type="date"
+                                min={cutoff}
+                                value={form.to}
+                                onChange={(event) =>
+                                    setForm({
+                                        ...form,
+                                        to: event.target.value,
+                                    })
                                 }
-                                empty="Todos los estados"
-                                options={[
-                                    { value: 'pending', label: 'Pendiente' },
-                                    { value: 'settled', label: 'Liquidado' },
-                                    {
-                                        value: 'anomaly',
-                                        label: 'Inconsistencia',
-                                    },
-                                ]}
                             />
-                            <Button className="self-end">
-                                <Filter className="mr-2 size-4" />
-                                Filtrar
+                        </FormField>
+                        <FilterSelect
+                            label="Técnico"
+                            value={form.received_by_id}
+                            onChange={(value) =>
+                                setForm({ ...form, received_by_id: value })
+                            }
+                            empty="Todos los técnicos"
+                            options={receivers.map((person) => ({
+                                value: person.id,
+                                label: person.name,
+                            }))}
+                        />
+                        <FilterSelect
+                            label="Material"
+                            value={form.material_id}
+                            onChange={(value) =>
+                                setForm({ ...form, material_id: value })
+                            }
+                            empty="Todos los materiales"
+                            options={materials.map((material) => ({
+                                value: material.id,
+                                label: material.name,
+                            }))}
+                        />
+                        <FilterSelect
+                            label="Área"
+                            value={form.storage_location_id}
+                            onChange={(value) =>
+                                setForm({
+                                    ...form,
+                                    storage_location_id: value,
+                                })
+                            }
+                            empty="Todas las áreas"
+                            options={locations.map((location) => ({
+                                value: location.id,
+                                label: location.name,
+                            }))}
+                        />
+                        <FilterSelect
+                            label="Estado"
+                            value={form.state}
+                            onChange={(value) =>
+                                setForm({ ...form, state: value })
+                            }
+                            empty="Todos los estados"
+                            options={[
+                                { value: 'pending', label: 'Pendiente' },
+                                { value: 'settled', label: 'Liquidado' },
+                                {
+                                    value: 'anomaly',
+                                    label: 'Inconsistencia',
+                                },
+                            ]}
+                        />
+                        <div className="flex items-end gap-2 md:col-span-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={clearFilters}
+                            >
+                                <X data-icon="inline-start" />
+                                Limpiar
                             </Button>
-                        </form>
-                    </CardContent>
-                </Card>
+                            <Button>
+                                <Filter data-icon="inline-start" />
+                                Aplicar filtros
+                            </Button>
+                        </div>
+                    </form>
+                </FilterBar>
 
-                <div className="flex w-fit rounded-lg border bg-muted/30 p-1">
-                    <TabButton
-                        active={form.tab === 'material'}
-                        onClick={() => changeTab('material')}
-                    >
-                        Por material
-                    </TabButton>
-                    <TabButton
-                        active={form.tab === 'technician'}
-                        onClick={() => changeTab('technician')}
-                    >
-                        Por técnico
-                    </TabButton>
-                    <TabButton
-                        active={form.tab === 'detail'}
-                        onClick={() => changeTab('detail')}
-                    >
-                        Detalle
-                    </TabButton>
-                </div>
-
-                {form.tab === 'material' && (
-                    <MaterialTable rows={by_material} />
-                )}
-                {form.tab === 'technician' && (
-                    <TechnicianTable rows={by_technician} filters={form} />
-                )}
-                {form.tab === 'detail' && <DetailTable rows={rows} />}
-            </div>
+                <Tabs
+                    value={form.tab}
+                    onValueChange={(value) => changeTab(value as Tab)}
+                    className="gap-4"
+                >
+                    <TabsList aria-label="Vista del seguimiento">
+                        <TabsTrigger value="material">Por material</TabsTrigger>
+                        <TabsTrigger value="technician">
+                            Por técnico
+                        </TabsTrigger>
+                        <TabsTrigger value="detail">Detalle</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="material">
+                        <MaterialTable rows={by_material} />
+                    </TabsContent>
+                    <TabsContent value="technician">
+                        <TechnicianTable rows={by_technician} filters={form} />
+                    </TabsContent>
+                    <TabsContent value="detail">
+                        <DetailTable rows={rows} />
+                    </TabsContent>
+                </Tabs>
+            </Page>
         </>
     );
 }
@@ -322,7 +351,7 @@ export default function MaterialTracking({
 function MaterialTable({ rows }: { rows: MaterialSummary[] }) {
     return (
         <TableCard>
-            <thead className="border-b bg-muted/40 text-left text-muted-foreground">
+            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-xs text-text-secondary">
                 <tr>
                     <th className="px-5 py-3">Material</th>
                     <th className="px-4 py-3 text-right">Vales</th>
@@ -337,7 +366,7 @@ function MaterialTable({ rows }: { rows: MaterialSummary[] }) {
                 {rows.map((row) => (
                     <tr
                         key={`${row.material.id}-${row.unit.id}`}
-                        className="border-b last:border-0"
+                        className="border-b transition-colors last:border-0 hover:bg-hover/60"
                     >
                         <td className="px-5 py-4 font-medium">
                             {row.material.name}
@@ -385,7 +414,7 @@ function TechnicianTable({
 }) {
     return (
         <TableCard>
-            <thead className="border-b bg-muted/40 text-left text-muted-foreground">
+            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-xs text-text-secondary">
                 <tr>
                     <th className="px-5 py-3">Técnico</th>
                     <th className="px-4 py-3 text-right">Vales</th>
@@ -407,7 +436,7 @@ function TechnicianTable({
                     return (
                         <tr
                             key={row.technician.id}
-                            className="border-b last:border-0"
+                            className="border-b transition-colors last:border-0 hover:bg-hover/60"
                         >
                             <td className="px-5 py-4 font-medium">
                                 {row.technician.name}
@@ -418,19 +447,19 @@ function TechnicianTable({
                             <td className="px-4 py-4 text-right">
                                 {row.materials_count}
                             </td>
-                            <td className="px-4 py-4 text-right font-semibold text-amber-700">
+                            <td className="px-4 py-4 text-right font-semibold text-warning">
                                 {row.pending_items_count}
                             </td>
                             <td className="px-4 py-4 text-right">
                                 {row.settled_items_count}
                             </td>
-                            <td className="px-4 py-4 text-right text-red-700">
+                            <td className="px-4 py-4 text-right text-danger">
                                 {row.anomalies_count}
                             </td>
                             <td className="px-5 py-4 text-right">
                                 <Link
                                     href={`/reports/material-tracking?${query}`}
-                                    className="font-medium text-sky-700 hover:underline"
+                                    className="font-medium text-primary underline-offset-4 hover:underline"
                                 >
                                     Ver partidas
                                 </Link>
@@ -447,7 +476,7 @@ function TechnicianTable({
 function DetailTable({ rows }: { rows: TrackingRow[] }) {
     return (
         <TableCard>
-            <thead className="border-b bg-muted/40 text-left text-muted-foreground">
+            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-xs text-text-secondary">
                 <tr>
                     <th className="px-5 py-3">Vale</th>
                     <th className="px-4 py-3">Técnico</th>
@@ -463,12 +492,12 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                 {rows.map((row) => (
                     <tr
                         key={`${row.voucher_id}-${row.id}`}
-                        className="border-b last:border-0"
+                        className="border-b transition-colors last:border-0 hover:bg-hover/60"
                     >
                         <td className="px-5 py-4">
                             <Link
                                 href={`/vouchers/${row.voucher_id}`}
-                                className="font-semibold text-sky-700 hover:underline"
+                                className="font-semibold text-primary underline-offset-4 hover:underline"
                             >
                                 #{row.folio}
                             </Link>
@@ -499,17 +528,7 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                             emphasized
                         />
                         <td className="px-5 py-4">
-                            <Badge
-                                variant={
-                                    row.balance_state === 'anomaly'
-                                        ? 'destructive'
-                                        : row.balance_state === 'settled'
-                                          ? 'secondary'
-                                          : 'outline'
-                                }
-                            >
-                                {stateLabel[row.balance_state]}
-                            </Badge>
+                            <StatusBadge state={row.balance_state} />
                         </td>
                     </tr>
                 ))}
@@ -521,7 +540,7 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
 
 function TableCard({ children }: { children: React.ReactNode }) {
     return (
-        <Card>
+        <Card className="overflow-hidden py-0">
             <CardContent className="p-0">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">{children}</table>
@@ -544,7 +563,7 @@ function Quantity({
 
     return (
         <td
-            className={`px-4 py-4 text-right ${emphasized ? 'font-semibold' : ''} ${negative ? 'text-red-700' : ''}`}
+            className={`px-4 py-4 text-right tabular-nums ${emphasized ? 'font-semibold text-warning' : ''} ${negative ? 'text-danger' : ''}`}
         >
             {formatQuantity(value)} {unit}
         </td>
@@ -569,82 +588,35 @@ function EmptyRow({ show, columns }: { show: boolean; columns: number }) {
 }
 
 function FilterSelect({
+    label,
     value,
     onChange,
     empty,
     options,
 }: {
+    label: string;
     value: string;
     onChange: (value: string) => void;
     empty: string;
     options: { value: string | number; label: string }[];
 }) {
-    return (
-        <select
-            className="h-9 self-end rounded-md border bg-background px-3 text-sm"
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-        >
-            <option value="">{empty}</option>
-            {options.map((option) => (
-                <option key={option.value} value={option.value}>
-                    {option.label}
-                </option>
-            ))}
-        </select>
-    );
-}
-
-function TabButton({
-    active,
-    onClick,
-    children,
-}: {
-    active: boolean;
-    onClick: () => void;
-    children: React.ReactNode;
-}) {
-    return (
-        <Button
-            type="button"
-            variant={active ? 'default' : 'ghost'}
-            size="sm"
-            onClick={onClick}
-        >
-            {children}
-        </Button>
-    );
-}
-
-function Metric({
-    title,
-    value,
-    icon: Icon,
-    tone = 'blue',
-}: {
-    title: string;
-    value: number;
-    icon: typeof Truck;
-    tone?: 'blue' | 'amber' | 'green' | 'red';
-}) {
-    const colors = {
-        blue: 'bg-sky-50 text-sky-700 dark:bg-sky-950',
-        amber: 'bg-amber-50 text-amber-700 dark:bg-amber-950',
-        green: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950',
-        red: 'bg-red-50 text-red-700 dark:bg-red-950',
-    };
+    const id = useId();
 
     return (
-        <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-                <div className={`rounded-xl p-2.5 ${colors[tone]}`}>
-                    <Icon className="size-5" />
-                </div>
-                <div>
-                    <p className="text-2xl font-bold">{value}</p>
-                    <p className="text-xs text-muted-foreground">{title}</p>
-                </div>
-            </CardContent>
-        </Card>
+        <FormField>
+            <FormLabel htmlFor={id}>{label}</FormLabel>
+            <NativeSelect
+                id={id}
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+            >
+                <option value="">{empty}</option>
+                {options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </NativeSelect>
+        </FormField>
     );
 }

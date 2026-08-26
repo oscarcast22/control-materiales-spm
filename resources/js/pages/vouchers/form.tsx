@@ -1,12 +1,23 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, FileText, Plus, Save, Trash2 } from 'lucide-react';
+import {
+    ArrowLeft,
+    ClipboardCheck,
+    FileText,
+    Plus,
+    Save,
+    Trash2,
+} from 'lucide-react';
 import type { FormEvent } from 'react';
+import { cloneElement, isValidElement, useState } from 'react';
 import InputError from '@/components/input-error';
+import { PageHeader } from '@/components/page';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Textarea } from '@/components/ui/textarea';
 import type {
     Material,
     Named,
@@ -66,6 +77,9 @@ export default function VoucherForm({
     locations,
     authorizers,
 }: Props) {
+    const [unitOverrides, setUnitOverrides] = useState<boolean[]>(
+        () => voucher?.items.map(() => false) ?? [false],
+    );
     const form = useForm<FormData>({
         storage_location_id: voucher
             ? String(voucher.location.id)
@@ -110,10 +124,22 @@ export default function VoucherForm({
         const material = materials.find((m) => String(m.id) === materialId);
         changeLine(index, {
             material_id: materialId,
-            unit_id: material
-                ? String(material.default_unit_id)
-                : form.data.items[index].unit_id,
+            unit_id: material ? String(material.default_unit_id) : '',
         });
+        setUnitOverrides((current) =>
+            current.map((enabled, i) => (i === index ? false : enabled)),
+        );
+    };
+    const addLine = () => {
+        form.setData('items', [...form.data.items, blankLine()]);
+        setUnitOverrides((current) => [...current, false]);
+    };
+    const removeLine = (index: number) => {
+        form.setData(
+            'items',
+            form.data.items.filter((_, i) => i !== index),
+        );
+        setUnitOverrides((current) => current.filter((_, i) => i !== index));
     };
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -133,38 +159,66 @@ export default function VoucherForm({
             />
             <form
                 onSubmit={submit}
-                className="flex flex-1 flex-col gap-5 p-4 md:p-7"
+                className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-6 px-4 py-5 sm:px-6 md:py-7 lg:px-8"
             >
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="icon" asChild>
-                            <Link
-                                href={
-                                    voucher
-                                        ? `/vouchers/${voucher.id}`
-                                        : '/vouchers'
-                                }
+                <PageHeader
+                    title={voucher ? 'Editar vale' : 'Capturar vale'}
+                    description={
+                        voucher
+                            ? 'Corrige los datos del documento original sin alterar su historial.'
+                            : 'Registra el documento original y todos los materiales entregados.'
+                    }
+                    actions={
+                        <>
+                            <Button variant="ghost" asChild>
+                                <Link
+                                    href={
+                                        voucher
+                                            ? `/vouchers/${voucher.id}`
+                                            : '/vouchers'
+                                    }
+                                >
+                                    <ArrowLeft data-icon="inline-start" />
+                                    Volver
+                                </Link>
+                            </Button>
+                            <Button
+                                disabled={form.processing}
+                                aria-busy={form.processing}
                             >
-                                <ArrowLeft className="size-5" />
-                            </Link>
-                        </Button>
-                        <div>
-                            <h1 className="text-3xl font-bold">
-                                {voucher ? 'Editar vale' : 'Capturar vale'}
-                            </h1>
-                            <p className="text-muted-foreground">
-                                Registra el documento una sola vez y agrega
-                                todos sus materiales.
+                                <Save data-icon="inline-start" />
+                                {form.processing
+                                    ? 'Guardando…'
+                                    : 'Guardar vale'}
+                            </Button>
+                        </>
+                    }
+                />
+                {form.data.direction === 'exit' && (
+                    <Alert variant="info">
+                        <ClipboardCheck aria-hidden="true" />
+                        <AlertDescription>
+                            <p className="font-medium text-foreground">
+                                Este formulario registra el vale original.
                             </p>
-                        </div>
-                    </div>
-                    <Button disabled={form.processing}>
-                        <Save className="mr-2 size-4" />
-                        {form.processing ? 'Guardando…' : 'Guardar vale'}
-                    </Button>
-                </div>
+                            <p>
+                                Captura el vale → registra el material utilizado
+                                o devuelto desde su detalle → consulta el saldo
+                                pendiente actualizado.
+                            </p>
+                            {voucher && (
+                                <Link
+                                    className="font-medium text-primary underline-offset-4 hover:underline"
+                                    href={`/vouchers/${voucher.id}`}
+                                >
+                                    Ir al detalle para comprobar materiales
+                                </Link>
+                            )}
+                        </AlertDescription>
+                    </Alert>
+                )}
                 {Object.keys(form.errors).length > 0 && (
-                    <Alert variant="destructive">
+                    <Alert variant="destructive" aria-live="polite">
                         <AlertDescription>
                             Revisa los campos marcados antes de guardar.
                         </AlertDescription>
@@ -334,13 +388,12 @@ export default function VoucherForm({
                             <Field
                                 label={
                                     form.data.direction === 'entry'
-                                        ? 'Origen, destino o concepto de la entrada'
-                                        : 'Descripción de uso y destino'
+                                        ? 'Origen o concepto de la entrada'
+                                        : 'Destino del vale'
                                 }
                                 error={form.errors.destination}
                             >
-                                <textarea
-                                    className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                <Textarea
                                     value={form.data.destination}
                                     onChange={(e) =>
                                         form.setData(
@@ -364,27 +417,22 @@ export default function VoucherForm({
                                     : 'entregado'}
                             </CardTitle>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                La unidad queda guardada con el renglón aunque
-                                el catálogo cambie.
+                                La unidad se asigna desde el catálogo y queda
+                                guardada con el renglón.
                             </p>
                         </div>
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() =>
-                                form.setData('items', [
-                                    ...form.data.items,
-                                    blankLine(),
-                                ])
-                            }
+                            onClick={addLine}
                         >
-                            <Plus className="mr-2 size-4" />
+                            <Plus data-icon="inline-start" />
                             Agregar material
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className="flex flex-col gap-3">
                         {duplicateMaterials.length > 0 && (
-                            <Alert>
+                            <Alert variant="warning">
                                 <AlertDescription>
                                     Hay materiales repetidos. Puedes conservar
                                     renglones separados o sumar sus cantidades.
@@ -394,7 +442,7 @@ export default function VoucherForm({
                         {form.data.items.map((line, index) => (
                             <div
                                 key={line.id ?? `new-${index}`}
-                                className="grid items-end gap-3 rounded-xl border bg-muted/15 p-4 md:grid-cols-[minmax(240px,1fr)_180px_180px_auto]"
+                                className="grid items-end gap-3 border-t pt-4 first:border-t-0 first:pt-0 md:grid-cols-[minmax(240px,1fr)_210px_180px_auto]"
                             >
                                 <Field
                                     label={`Material ${index + 1}`}
@@ -404,8 +452,7 @@ export default function VoucherForm({
                                         ]
                                     }
                                 >
-                                    <select
-                                        className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                                    <NativeSelect
                                         value={line.material_id}
                                         onChange={(e) =>
                                             selectMaterial(
@@ -422,28 +469,30 @@ export default function VoucherForm({
                                                 {m.name}
                                             </option>
                                         ))}
-                                    </select>
+                                    </NativeSelect>
                                 </Field>
-                                <Field
-                                    label="Unidad"
+                                <UnitField
+                                    index={index}
+                                    line={line}
+                                    materials={materials}
+                                    units={units}
+                                    override={unitOverrides[index] ?? false}
                                     error={
                                         form.errors[
                                             `items.${index}.unit_id` as keyof typeof form.errors
                                         ]
                                     }
-                                >
-                                    <Select
-                                        value={line.unit_id}
-                                        onChange={(v) =>
-                                            changeLine(index, { unit_id: v })
-                                        }
-                                        placeholder="Unidad"
-                                        options={units.map((u) => ({
-                                            value: String(u.id),
-                                            label: `${u.name} (${u.symbol})`,
-                                        }))}
-                                    />
-                                </Field>
+                                    onChange={(unitId) =>
+                                        changeLine(index, { unit_id: unitId })
+                                    }
+                                    onOverrideChange={(enabled) =>
+                                        setUnitOverrides((current) =>
+                                            current.map((value, i) =>
+                                                i === index ? enabled : value,
+                                            ),
+                                        )
+                                    }
+                                />
                                 <Field
                                     label="Cantidad"
                                     error={
@@ -468,16 +517,12 @@ export default function VoucherForm({
                                     variant="ghost"
                                     size="icon"
                                     disabled={form.data.items.length === 1}
-                                    onClick={() =>
-                                        form.setData(
-                                            'items',
-                                            form.data.items.filter(
-                                                (_, i) => i !== index,
-                                            ),
-                                        )
-                                    }
+                                    onClick={() => removeLine(index)}
                                 >
-                                    <Trash2 className="size-4 text-destructive" />
+                                    <Trash2 className="text-destructive" />
+                                    <span className="sr-only">
+                                        Eliminar material {index + 1}
+                                    </span>
                                 </Button>
                             </div>
                         ))}
@@ -485,7 +530,7 @@ export default function VoucherForm({
                         <p className="text-sm text-muted-foreground">
                             ¿No aparece un material?{' '}
                             <Link
-                                className="font-medium text-sky-700 hover:underline"
+                                className="font-medium text-primary underline-offset-4 hover:underline"
                                 href="/catalogs"
                             >
                                 Agrégalo primero al catálogo.
@@ -518,8 +563,7 @@ export default function VoucherForm({
                             </p>
                         </Field>
                         <Field label="Observaciones" error={form.errors.notes}>
-                            <textarea
-                                className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                            <Textarea
                                 value={form.data.notes}
                                 onChange={(e) =>
                                     form.setData('notes', e.target.value)
@@ -534,10 +578,13 @@ export default function VoucherForm({
                                 {voucher.attachments.map((file) => (
                                     <a
                                         key={file.id}
-                                        className="mr-3 inline-flex items-center text-sm text-sky-700 hover:underline"
+                                        className="mr-3 inline-flex items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
                                         href={`/attachments/${file.id}`}
                                     >
-                                        <FileText className="mr-1 size-4" />
+                                        <FileText
+                                            className="mr-1 size-4"
+                                            aria-hidden="true"
+                                        />
                                         {file.original_name}
                                     </a>
                                 ))}
@@ -547,6 +594,121 @@ export default function VoucherForm({
                 </Card>
             </form>
         </>
+    );
+}
+
+function UnitField({
+    index,
+    line,
+    materials,
+    units,
+    override,
+    error,
+    onChange,
+    onOverrideChange,
+}: {
+    index: number;
+    line: Line;
+    materials: Material[];
+    units: Unit[];
+    override: boolean;
+    error?: string;
+    onChange: (unitId: string) => void;
+    onOverrideChange: (enabled: boolean) => void;
+}) {
+    const material = materials.find(
+        (item) => String(item.id) === line.material_id,
+    );
+    const currentUnit = units.find((unit) => String(unit.id) === line.unit_id);
+    const defaultUnit = units.find(
+        (unit) => unit.id === material?.default_unit_id,
+    );
+    const showSelector =
+        Boolean(material) &&
+        (override || !currentUnit || currentUnit.symbol === 's/e');
+    const fieldId = `item-${index}-unit`;
+
+    return (
+        <div
+            className="flex min-w-0 flex-col gap-2"
+            data-invalid={!!error || undefined}
+        >
+            <div className="flex min-h-4 items-center justify-between gap-2">
+                <Label
+                    htmlFor={showSelector ? fieldId : undefined}
+                    className="text-[13px] font-medium text-text-secondary"
+                >
+                    Unidad
+                </Label>
+                {material && !showSelector && currentUnit && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="-my-1.5 h-7 px-2 text-xs"
+                        onClick={() => onOverrideChange(true)}
+                    >
+                        Cambiar
+                    </Button>
+                )}
+                {showSelector && override && defaultUnit && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="-my-1.5 h-7 px-2 text-xs"
+                        onClick={() => {
+                            onChange(String(defaultUnit.id));
+                            onOverrideChange(false);
+                        }}
+                    >
+                        Usar habitual
+                    </Button>
+                )}
+            </div>
+            {showSelector ? (
+                <NativeSelect
+                    id={fieldId}
+                    value={line.unit_id}
+                    aria-invalid={!!error || undefined}
+                    onChange={(event) => onChange(event.target.value)}
+                >
+                    <option value="">Seleccionar unidad</option>
+                    {units.map((unit) => (
+                        <option key={unit.id} value={unit.id}>
+                            {unit.name} ({unit.symbol})
+                        </option>
+                    ))}
+                </NativeSelect>
+            ) : (
+                <div className="flex h-10 items-center rounded-md border border-border bg-muted/40 px-3 text-sm font-medium text-foreground">
+                    {currentUnit
+                        ? `${currentUnit.name} (${currentUnit.symbol})`
+                        : 'Se asignará al elegir material'}
+                </div>
+            )}
+            {showSelector && defaultUnit?.symbol === 's/e' && (
+                <p className="text-xs leading-4 text-muted-foreground">
+                    Este material no tiene una unidad habitual. Selecciona la
+                    indicada en el vale.
+                </p>
+            )}
+            {showSelector &&
+                !override &&
+                currentUnit?.symbol === 's/e' &&
+                defaultUnit?.symbol !== 's/e' && (
+                    <p className="text-xs leading-4 text-muted-foreground">
+                        La unidad guardada está sin especificar. Selecciona la
+                        indicada en el vale.
+                    </p>
+                )}
+            {showSelector && override && defaultUnit?.symbol !== 's/e' && (
+                <p className="text-xs leading-4 text-muted-foreground">
+                    La excepción sólo se guardará en este vale.
+                </p>
+            )}
+            <InputError message={error} />
+        </div>
     );
 }
 
@@ -560,9 +722,21 @@ function Field({
     children: React.ReactNode;
 }) {
     return (
-        <div className="grid gap-2">
-            <Label>{label}</Label>
-            {children}
+        <div
+            className="flex min-w-0 flex-col gap-2"
+            data-invalid={!!error || undefined}
+        >
+            <Label className="flex flex-col gap-2 text-[13px] font-medium text-text-secondary">
+                <span>{label}</span>
+                {isValidElement(children)
+                    ? cloneElement(
+                          children as React.ReactElement<{
+                              'aria-invalid'?: boolean;
+                          }>,
+                          { 'aria-invalid': !!error || undefined },
+                      )
+                    : children}
+            </Label>
             <InputError message={error} />
         </div>
     );
@@ -572,17 +746,18 @@ function Select({
     onChange,
     placeholder,
     options,
+    ...props
 }: {
     value: string;
     onChange: (value: string) => void;
     placeholder: string;
     options: { value: string; label: string }[];
-}) {
+} & Pick<React.ComponentProps<'select'>, 'aria-invalid'>) {
     return (
-        <select
-            className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+        <NativeSelect
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            {...props}
         >
             <option value="">{placeholder}</option>
             {options.map((option) => (
@@ -590,6 +765,6 @@ function Select({
                     {option.label}
                 </option>
             ))}
-        </select>
+        </NativeSelect>
     );
 }

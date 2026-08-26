@@ -1,6 +1,8 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
+    CircleCheck,
+    ClipboardCheck,
     FileText,
     Pencil,
     Printer,
@@ -9,22 +11,17 @@ import {
 } from 'lucide-react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
+import { StatusBadge } from '@/components/status-badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { formatBytes, formatDate, formatQuantity } from '@/lib/format';
 import type { Disposition, Voucher, VoucherItem } from '@/types';
-
-const labels: Record<string, string> = {
-    pending: 'Pendiente',
-    settled: 'Liquidado',
-    anomaly: 'Anomalía',
-    cancelled: 'Cancelado',
-    received: 'Entrada recibida',
-};
 
 export default function VoucherShow({ voucher }: { voucher: Voucher }) {
     const cancel = () => {
@@ -58,36 +55,26 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
     return (
         <>
             <Head title={`Vale ${voucher.folio}`} />
-            <div className="flex flex-1 flex-col gap-5 p-4 md:p-7">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6 px-4 py-5 sm:px-6 md:py-7 lg:px-8">
+                <div className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex items-start gap-3">
-                        <Button variant="ghost" size="icon" asChild>
+                        <IconButton
+                            label="Volver a vales"
+                            variant="ghost"
+                            asChild
+                        >
                             <Link href="/vouchers">
-                                <ArrowLeft className="size-5" />
+                                <ArrowLeft />
                             </Link>
-                        </Button>
+                        </IconButton>
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-3xl font-bold">
-                                    Vale #{voucher.folio}
+                                <h1 className="text-3xl font-semibold tracking-[-0.025em]">
+                                    Vale {voucher.folio}
                                 </h1>
-                                <Badge
-                                    variant={
-                                        voucher.balance_state === 'anomaly'
-                                            ? 'destructive'
-                                            : voucher.balance_state ===
-                                                'settled'
-                                              ? 'secondary'
-                                              : 'outline'
-                                    }
-                                >
-                                    {labels[voucher.balance_state]}
-                                </Badge>
+                                <StatusBadge state={voucher.balance_state} />
                                 {voucher.needs_review && (
-                                    <Badge
-                                        className="border-amber-400 text-amber-700"
-                                        variant="outline"
-                                    >
+                                    <Badge variant="warning">
                                         Requiere revisión
                                     </Badge>
                                 )}
@@ -107,7 +94,7 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                 href={`/vouchers/${voucher.id}/print`}
                                 target="_blank"
                             >
-                                <Printer className="mr-2 size-4" />
+                                <Printer data-icon="inline-start" />
                                 Imprimir
                             </a>
                         </Button>
@@ -115,7 +102,7 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                             <>
                                 <Button variant="outline" asChild>
                                     <Link href={`/vouchers/${voucher.id}/edit`}>
-                                        <Pencil className="mr-2 size-4" />
+                                        <Pencil data-icon="inline-start" />
                                         Editar
                                     </Link>
                                 </Button>
@@ -134,14 +121,14 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                     </Alert>
                 )}
                 {voucher.review_reasons.length > 0 && (
-                    <Alert className="border-amber-400 bg-amber-50 text-amber-950">
+                    <Alert variant="warning">
                         <AlertDescription>
                             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                 <div>
                                     <p className="font-medium">
                                         Incidencias detectadas al importar
                                     </p>
-                                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                                    <ul className="mt-2 flex list-disc flex-col gap-1 pl-5">
                                         {voucher.review_reasons.map(
                                             (reason) => (
                                                 <li key={reason}>{reason}</li>
@@ -201,7 +188,31 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                         )}
                     </CardContent>
                 </Card>
-                <div className="space-y-5">
+                <div className="flex flex-col gap-5">
+                    {voucher.direction === 'exit' && (
+                        <div className="flex flex-col gap-3 border-y border-border-strong bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                            <div className="flex items-start gap-3">
+                                <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary-subtle text-primary">
+                                    <ClipboardCheck
+                                        className="size-5"
+                                        aria-hidden="true"
+                                    />
+                                </span>
+                                <div>
+                                    <h2 className="font-semibold">
+                                        Comprobación de materiales
+                                    </h2>
+                                    <p className="mt-0.5 text-sm text-muted-foreground">
+                                        Registra para cada material lo utilizado
+                                        en un trabajo o lo que fue devuelto.
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="shrink-0 rounded-md border bg-surface px-3 py-2 text-xs font-medium text-text-secondary">
+                                Pendiente = entregado − aplicado − devuelto
+                            </p>
+                        </div>
+                    )}
                     {voucher.items.map((item) => (
                         <MaterialCard
                             key={item.id}
@@ -224,7 +235,7 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                     className="flex items-center justify-between rounded-lg border p-3"
                                 >
                                     <a
-                                        className="flex min-w-0 items-center gap-2 text-sm font-medium text-sky-700 hover:underline"
+                                        className="flex min-w-0 items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
                                         href={`/attachments/${file.id}`}
                                     >
                                         <FileText className="size-5 shrink-0" />
@@ -275,7 +286,9 @@ function MaterialCard({
 }) {
     return (
         <Card
-            className={item.balance_state === 'anomaly' ? 'border-red-400' : ''}
+            className={
+                item.balance_state === 'anomaly' ? 'border-danger/55' : ''
+            }
         >
             <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
@@ -285,7 +298,7 @@ function MaterialCard({
                     </p>
                 </div>
                 <div
-                    className={`grid gap-4 text-center ${direction === 'entry' ? 'grid-cols-1' : 'grid-cols-4'}`}
+                    className={`grid gap-4 text-center ${direction === 'entry' ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-4'}`}
                 >
                     <Quantity
                         label={direction === 'entry' ? 'Recibido' : 'Entregado'}
@@ -295,7 +308,7 @@ function MaterialCard({
                     {direction === 'exit' && (
                         <>
                             <Quantity
-                                label="Usado"
+                                label="Aplicado"
                                 value={item.used_quantity}
                                 unit={item.unit.symbol}
                             />
@@ -314,7 +327,7 @@ function MaterialCard({
                     )}
                 </div>
             </CardHeader>
-            <CardContent className="space-y-5">
+            <CardContent className="flex flex-col gap-5">
                 {item.balance_state === 'anomaly' && (
                     <Alert variant="destructive">
                         <AlertDescription>
@@ -331,44 +344,71 @@ function MaterialCard({
                             defaultDestination={defaultDestination}
                         />
                     )}
+                {direction === 'exit' &&
+                    active &&
+                    item.balance_state === 'settled' && (
+                        <Alert variant="success">
+                            <CircleCheck aria-hidden="true" />
+                            <AlertDescription>
+                                <p className="font-medium text-foreground">
+                                    Material completamente comprobado
+                                </p>
+                                <p>
+                                    Todo lo entregado fue aplicado o devuelto;
+                                    no queda saldo por registrar.
+                                </p>
+                            </AlertDescription>
+                        </Alert>
+                    )}
                 {direction === 'exit' && (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="border-y bg-muted/40 text-left text-muted-foreground">
-                                <tr>
-                                    <th className="px-3 py-2">Fecha</th>
-                                    <th className="px-3 py-2">Tipo</th>
-                                    <th className="px-3 py-2">
-                                        Referencia / destino
-                                    </th>
-                                    <th className="px-3 py-2 text-right">
-                                        Cantidad
-                                    </th>
-                                    <th className="px-3 py-2"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {item.dispositions.map((row) => (
-                                    <DispositionRow
-                                        key={row.id}
-                                        row={row}
-                                        unit={item.unit.symbol}
-                                        active={active}
-                                    />
-                                ))}
-                                {item.dispositions.length === 0 && (
+                    <div className="flex flex-col gap-3">
+                        <div>
+                            <h3 className="text-sm font-semibold">
+                                Historial de movimientos
+                            </h3>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                Aplicaciones, devoluciones y movimientos
+                                anulados de este material.
+                            </p>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="border-y bg-muted/40 text-left text-muted-foreground">
                                     <tr>
-                                        <td
-                                            colSpan={5}
-                                            className="px-3 py-8 text-center text-muted-foreground"
-                                        >
-                                            Aún no hay aplicaciones ni
-                                            devoluciones.
-                                        </td>
+                                        <th className="px-3 py-2">Fecha</th>
+                                        <th className="px-3 py-2">Tipo</th>
+                                        <th className="px-3 py-2">
+                                            Referencia / destino
+                                        </th>
+                                        <th className="px-3 py-2 text-right">
+                                            Cantidad
+                                        </th>
+                                        <th className="px-3 py-2"></th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {item.dispositions.map((row) => (
+                                        <DispositionRow
+                                            key={row.id}
+                                            row={row}
+                                            unit={item.unit.symbol}
+                                            active={active}
+                                        />
+                                    ))}
+                                    {item.dispositions.length === 0 && (
+                                        <tr>
+                                            <td
+                                                colSpan={5}
+                                                className="px-3 py-8 text-center text-muted-foreground"
+                                            >
+                                                Aún no hay aplicaciones ni
+                                                devoluciones.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </CardContent>
@@ -398,72 +438,162 @@ function DispositionForm({
             onSuccess: () => form.reset('quantity', 'reference', 'notes'),
         });
     };
+    const isReturn = form.data.type === 'return';
+    const fieldId = (name: string) => `item-${item.id}-${name}`;
 
     return (
         <form
             onSubmit={submit}
-            className="grid gap-3 rounded-xl border bg-sky-50/50 p-4 md:grid-cols-6 dark:bg-sky-950/20"
+            className="flex flex-col gap-5 rounded-md border border-primary/25 bg-primary-subtle/35 p-4 sm:p-5"
         >
             <div>
-                <Label>Tipo</Label>
-                <select
-                    className="mt-2 h-9 w-full rounded-md border bg-background px-3 text-sm"
+                <h3 className="font-semibold">Registrar comprobación</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Indica qué ocurrió con una parte del material entregado.
+                </p>
+            </div>
+            <div className="flex flex-col gap-2">
+                <Label>¿Qué ocurrió con el material?</Label>
+                <RadioGroup
+                    aria-label="Qué ocurrió con el material"
+                    aria-invalid={!!form.errors.type || undefined}
+                    className="grid gap-3 sm:grid-cols-2"
                     value={form.data.type}
-                    onChange={(e) => form.setData('type', e.target.value)}
+                    onValueChange={(value) => form.setData('type', value)}
                 >
-                    <option value="consumption">Aplicación</option>
-                    <option value="return">Devolución</option>
-                </select>
+                    <Label
+                        htmlFor={fieldId('consumption')}
+                        className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-[background-color,border-color,box-shadow] ${!isReturn ? 'border-primary bg-surface shadow-xs ring-2 ring-primary/10' : 'border-border-strong bg-surface hover:bg-hover'}`}
+                    >
+                        <RadioGroupItem
+                            id={fieldId('consumption')}
+                            value="consumption"
+                            className="mt-0.5"
+                        />
+                        <Wrench
+                            className="mt-0.5 size-4 shrink-0 text-primary"
+                            aria-hidden="true"
+                        />
+                        <span>
+                            <span className="block font-medium">
+                                Material utilizado
+                            </span>
+                            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                                Aplicación en un trabajo o servicio.
+                            </span>
+                        </span>
+                    </Label>
+                    <Label
+                        htmlFor={fieldId('return')}
+                        className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-[background-color,border-color,box-shadow] ${isReturn ? 'border-primary bg-surface shadow-xs ring-2 ring-primary/10' : 'border-border-strong bg-surface hover:bg-hover'}`}
+                    >
+                        <RadioGroupItem
+                            id={fieldId('return')}
+                            value="return"
+                            className="mt-0.5"
+                        />
+                        <RotateCcw
+                            className="mt-0.5 size-4 shrink-0 text-primary"
+                            aria-hidden="true"
+                        />
+                        <span>
+                            <span className="block font-medium">
+                                Material devuelto
+                            </span>
+                            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                                Regresó sin utilizarse y deja de estar
+                                pendiente.
+                            </span>
+                        </span>
+                    </Label>
+                </RadioGroup>
+                <InputError message={form.errors.type} />
             </div>
-            <div>
-                <Label>Fecha</Label>
-                <Input
-                    className="mt-2"
-                    type="date"
-                    value={form.data.occurred_on}
-                    onChange={(e) =>
-                        form.setData('occurred_on', e.target.value)
-                    }
-                />
-            </div>
-            <div>
-                <Label>Cantidad</Label>
-                <Input
-                    className="mt-2"
-                    inputMode="decimal"
-                    value={form.data.quantity}
-                    onChange={(e) => form.setData('quantity', e.target.value)}
-                    placeholder={`Máx. ${formatQuantity(item.pending_quantity)}`}
-                />
-                <InputError message={form.errors.quantity} />
-            </div>
-            <div>
-                <Label>Reporte / orden</Label>
-                <Input
-                    className="mt-2"
-                    value={form.data.reference}
-                    onChange={(e) => form.setData('reference', e.target.value)}
-                    placeholder="Opcional"
-                />
-            </div>
-            <div className="md:col-span-2">
-                <Label>Destino</Label>
-                <div className="mt-2 flex gap-2">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="flex flex-col gap-2">
+                    <Label htmlFor={fieldId('date')}>Fecha</Label>
                     <Input
+                        id={fieldId('date')}
+                        type="date"
+                        value={form.data.occurred_on}
+                        onChange={(e) =>
+                            form.setData('occurred_on', e.target.value)
+                        }
+                        aria-invalid={!!form.errors.occurred_on || undefined}
+                    />
+                    <InputError message={form.errors.occurred_on} />
+                </div>
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-baseline justify-between gap-2">
+                        <Label htmlFor={fieldId('quantity')}>Cantidad</Label>
+                        <span
+                            id={fieldId('quantity-help')}
+                            className="text-xs text-muted-foreground"
+                        >
+                            Disponible: {formatQuantity(item.pending_quantity)}{' '}
+                            {item.unit.symbol}
+                        </span>
+                    </div>
+                    <Input
+                        id={fieldId('quantity')}
+                        inputMode="decimal"
+                        value={form.data.quantity}
+                        onChange={(e) =>
+                            form.setData('quantity', e.target.value)
+                        }
+                        placeholder="0.000"
+                        aria-describedby={fieldId('quantity-help')}
+                        aria-invalid={!!form.errors.quantity || undefined}
+                    />
+                    <InputError message={form.errors.quantity} />
+                </div>
+                <div className="flex flex-col gap-2">
+                    <Label htmlFor={fieldId('reference')}>
+                        Reporte / orden (opcional)
+                    </Label>
+                    <Input
+                        id={fieldId('reference')}
+                        value={form.data.reference}
+                        onChange={(e) =>
+                            form.setData('reference', e.target.value)
+                        }
+                        placeholder="Ej. reporte 22072"
+                        aria-invalid={!!form.errors.reference || undefined}
+                    />
+                    <InputError message={form.errors.reference} />
+                </div>
+                <div className="flex flex-col gap-2">
+                    <Label htmlFor={fieldId('destination')}>
+                        Destino (opcional)
+                    </Label>
+                    <Input
+                        id={fieldId('destination')}
                         value={form.data.destination}
                         onChange={(e) =>
                             form.setData('destination', e.target.value)
                         }
+                        aria-invalid={!!form.errors.destination || undefined}
                     />
-                    <Button disabled={form.processing}>
-                        {form.data.type === 'return' ? (
-                            <RotateCcw className="mr-2 size-4" />
-                        ) : (
-                            <Wrench className="mr-2 size-4" />
-                        )}
-                        {form.processing ? 'Guardando' : 'Registrar'}
-                    </Button>
+                    <InputError message={form.errors.destination} />
                 </div>
+            </div>
+            <div className="flex justify-end border-t border-primary/15 pt-4">
+                <Button
+                    className="w-full sm:w-auto"
+                    disabled={form.processing}
+                    aria-busy={form.processing}
+                >
+                    {isReturn ? (
+                        <RotateCcw data-icon="inline-start" />
+                    ) : (
+                        <Wrench data-icon="inline-start" />
+                    )}
+                    {form.processing
+                        ? 'Guardando…'
+                        : isReturn
+                          ? 'Registrar devolución'
+                          : 'Registrar material utilizado'}
+                </Button>
             </div>
         </form>
     );
@@ -552,7 +682,7 @@ function Quantity({
             <p className="text-xs text-muted-foreground">{label}</p>
             <p
                 className={
-                    strong ? 'font-bold text-amber-700' : 'font-semibold'
+                    strong ? 'font-semibold text-warning' : 'font-semibold'
                 }
             >
                 {formatQuantity(value)}{' '}

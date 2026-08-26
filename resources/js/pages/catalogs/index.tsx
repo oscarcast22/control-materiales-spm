@@ -3,6 +3,7 @@ import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
+import { Page, PageHeader } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import type { Material, Person, Program, StorageLocation, Unit } from '@/types';
 
 type Props = {
@@ -38,22 +40,21 @@ export default function Catalogs({
     return (
         <>
             <Head title="Catálogos" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-7">
-                <div>
-                    <h1 className="text-3xl font-bold">Catálogos</h1>
-                    <p className="text-muted-foreground">
-                        Evitan volver a escribir nombres y conservan unidades
-                        consistentes.
-                    </p>
-                </div>
+            <Page width="wide">
+                <PageHeader
+                    title="Catálogos"
+                    description="Administra nombres, unidades y clasificaciones reutilizables sin alterar el historial registrado."
+                />
                 <div className="grid gap-6 xl:grid-cols-2">
                     <LocationSection locations={locations} />
                     <MaterialSection materials={materials} units={units} />
                     <PeopleSection people={people} />
                     <UnitSection units={units} />
-                    <ProgramSection programs={programs} />
+                    <div className="xl:col-span-2">
+                        <ProgramSection programs={programs} />
+                    </div>
                 </div>
-            </div>
+            </Page>
         </>
     );
 }
@@ -69,7 +70,7 @@ function LocationSection({ locations }: { locations: StorageLocation[] }) {
             <CardHeader>
                 <CardTitle>Áreas de resguardo</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col gap-4">
                 <p className="text-sm text-muted-foreground">
                     Identifican el área que entregó o recibió cada vale.
                 </p>
@@ -97,12 +98,12 @@ function LocationSection({ locations }: { locations: StorageLocation[] }) {
                         }
                         placeholder="Nombre"
                     />
-                    <Button>
-                        <Plus className="size-4" />
+                    <Button aria-label="Agregar área de resguardo">
+                        <Plus />
                     </Button>
                 </form>
                 <InputError message={form.errors.code ?? form.errors.name} />
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                     {locations.map((location) => (
                         <LocationRow key={location.id} location={location} />
                     ))}
@@ -181,10 +182,10 @@ function MaterialSection({
                     <Badge variant="secondary">{materials.length}</Badge>
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col gap-4">
                 <form
                     onSubmit={submit}
-                    className="grid grid-cols-[1fr_150px_auto] gap-2"
+                    className="grid gap-2 sm:grid-cols-[1fr_150px_auto]"
                 >
                     <div>
                         <Input
@@ -196,8 +197,7 @@ function MaterialSection({
                         />
                         <InputError message={form.errors.name} />
                     </div>
-                    <select
-                        className="h-9 rounded-md border bg-background px-3 text-sm"
+                    <NativeSelect
                         value={form.data.default_unit_id}
                         onChange={(e) =>
                             form.setData('default_unit_id', e.target.value)
@@ -211,9 +211,12 @@ function MaterialSection({
                                     {u.symbol}
                                 </option>
                             ))}
-                    </select>
-                    <Button disabled={form.processing}>
-                        <Plus className="size-4" />
+                    </NativeSelect>
+                    <Button
+                        disabled={form.processing}
+                        aria-label="Agregar material"
+                    >
+                        <Plus />
                     </Button>
                 </form>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -244,7 +247,7 @@ function MaterialSection({
                             {m.needs_review && (
                                 <Badge
                                     variant="outline"
-                                    className="ml-2 border-amber-400"
+                                    className="ml-2 border-warning/40 bg-warning-subtle text-warning"
                                 >
                                     Revisar
                                 </Badge>
@@ -302,8 +305,8 @@ function PeopleSection({ people }: { people: Person[] }) {
                     Personas <Badge variant="secondary">{people.length}</Badge>
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <form onSubmit={submit} className="space-y-3">
+            <CardContent className="flex flex-col gap-4">
+                <form onSubmit={submit} className="flex flex-col gap-3">
                     <div className="flex gap-2">
                         <div className="flex-1">
                             <Input
@@ -315,8 +318,11 @@ function PeopleSection({ people }: { people: Person[] }) {
                             />
                             <InputError message={form.errors.name} />
                         </div>
-                        <Button disabled={form.processing}>
-                            <Plus className="size-4" />
+                        <Button
+                            disabled={form.processing}
+                            aria-label="Agregar persona"
+                        >
+                            <Plus />
                         </Button>
                     </div>
                     <div className="flex gap-5 text-sm">
@@ -374,7 +380,7 @@ function PeopleSection({ people }: { people: Person[] }) {
                             {p.needs_review && (
                                 <Badge
                                     variant="outline"
-                                    className="ml-2 border-amber-400"
+                                    className="ml-2 border-warning/40 bg-warning-subtle text-warning"
                                 >
                                     Revisar
                                 </Badge>
@@ -437,7 +443,7 @@ function MaterialReviewControl({
                             onSuccess: () => setOpen(false),
                         });
                     }}
-                    className="space-y-4"
+                    className="flex flex-col gap-4"
                 >
                     <DialogHeader>
                         <DialogTitle>Revisar material</DialogTitle>
@@ -446,7 +452,7 @@ function MaterialReviewControl({
                             nombre anterior se conservará como alias.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <Label htmlFor={`material-name-${material.id}`}>
                             Nombre
                         </Label>
@@ -459,13 +465,12 @@ function MaterialReviewControl({
                         />
                         <InputError message={form.errors.name} />
                     </div>
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <Label htmlFor={`material-unit-${material.id}`}>
                             Unidad predeterminada
                         </Label>
-                        <select
+                        <NativeSelect
                             id={`material-unit-${material.id}`}
-                            className="h-9 w-full rounded-md border bg-background px-3 text-sm"
                             value={form.data.default_unit_id}
                             onChange={(event) =>
                                 form.setData(
@@ -479,7 +484,7 @@ function MaterialReviewControl({
                                     {unit.name} ({unit.symbol})
                                 </option>
                             ))}
-                        </select>
+                        </NativeSelect>
                         <InputError message={form.errors.default_unit_id} />
                     </div>
                     <DialogFooter>
@@ -518,7 +523,7 @@ function PersonReviewControl({ person }: { person: Person }) {
                             onSuccess: () => setOpen(false),
                         });
                     }}
-                    className="space-y-4"
+                    className="flex flex-col gap-4"
                 >
                     <DialogHeader>
                         <DialogTitle>Revisar persona</DialogTitle>
@@ -528,7 +533,7 @@ function PersonReviewControl({ person }: { person: Person }) {
                             alias.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <Label htmlFor={`person-name-${person.id}`}>
                             Nombre
                         </Label>
@@ -541,7 +546,7 @@ function PersonReviewControl({ person }: { person: Person }) {
                         />
                         <InputError message={form.errors.name} />
                     </div>
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                         <Label className="flex items-center gap-2">
                             <Checkbox
                                 checked={form.data.can_receive_material}
@@ -593,10 +598,10 @@ function UnitSection({ units }: { units: Unit[] }) {
             <CardHeader>
                 <CardTitle>Unidades</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col gap-4">
                 <form
                     onSubmit={submit}
-                    className="grid grid-cols-[1fr_100px_auto] gap-2"
+                    className="grid gap-2 sm:grid-cols-[1fr_100px_auto]"
                 >
                     <Input
                         value={form.data.name}
@@ -608,8 +613,8 @@ function UnitSection({ units }: { units: Unit[] }) {
                         onChange={(e) => form.setData('symbol', e.target.value)}
                         placeholder="Símbolo"
                     />
-                    <Button>
-                        <Plus className="size-4" />
+                    <Button aria-label="Agregar unidad">
+                        <Plus />
                     </Button>
                 </form>
                 <CatalogTable
@@ -640,7 +645,7 @@ function ProgramSection({ programs }: { programs: Program[] }) {
             <CardHeader>
                 <CardTitle>Programas y acciones</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-5">
+            <CardContent className="flex flex-col gap-5">
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
@@ -649,7 +654,7 @@ function ProgramSection({ programs }: { programs: Program[] }) {
                             onSuccess: () => program.reset(),
                         });
                     }}
-                    className="grid grid-cols-[140px_1fr_auto] gap-2"
+                    className="grid gap-2 sm:grid-cols-[140px_1fr_auto]"
                 >
                     <Input
                         value={program.data.code}
@@ -665,8 +670,8 @@ function ProgramSection({ programs }: { programs: Program[] }) {
                         }
                         placeholder="Nombre opcional"
                     />
-                    <Button>
-                        <Plus className="size-4" />
+                    <Button aria-label="Agregar programa">
+                        <Plus />
                     </Button>
                 </form>
                 <form
@@ -677,10 +682,9 @@ function ProgramSection({ programs }: { programs: Program[] }) {
                             onSuccess: () => action.reset(),
                         });
                     }}
-                    className="grid grid-cols-[140px_160px_1fr_auto] gap-2"
+                    className="grid gap-2 lg:grid-cols-[140px_160px_1fr_auto]"
                 >
-                    <select
-                        className="h-9 rounded-md border bg-background px-3 text-sm"
+                    <NativeSelect
                         value={action.data.program_id}
                         onChange={(e) =>
                             action.setData('program_id', e.target.value)
@@ -692,7 +696,7 @@ function ProgramSection({ programs }: { programs: Program[] }) {
                                 {p.code}
                             </option>
                         ))}
-                    </select>
+                    </NativeSelect>
                     <Input
                         value={action.data.code}
                         onChange={(e) => action.setData('code', e.target.value)}
@@ -703,11 +707,11 @@ function ProgramSection({ programs }: { programs: Program[] }) {
                         onChange={(e) => action.setData('name', e.target.value)}
                         placeholder="Nombre opcional"
                     />
-                    <Button>
-                        <Plus className="size-4" />
+                    <Button aria-label="Agregar acción">
+                        <Plus />
                     </Button>
                 </form>
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                     {programs.map((p) => (
                         <div key={p.id} className="rounded-lg border p-3">
                             <div className="flex items-center justify-between">
@@ -743,9 +747,9 @@ function CatalogTable({
     rows: React.ReactNode[][];
 }) {
     return (
-        <div className="max-h-96 overflow-auto rounded-lg border">
+        <div className="max-h-96 overflow-auto rounded-md border bg-surface">
             <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-muted">
+                <thead className="sticky top-0 bg-surface-subtle text-xs text-text-secondary">
                     <tr>
                         {headers.map((h, i) => (
                             <th key={i} className="px-3 py-2 text-left">
@@ -756,7 +760,10 @@ function CatalogTable({
                 </thead>
                 <tbody>
                     {rows.map((row, i) => (
-                        <tr key={i} className="border-t">
+                        <tr
+                            key={i}
+                            className="border-t transition-colors hover:bg-hover/60"
+                        >
                             {row.map((cell, j) => (
                                 <td key={j} className="px-3 py-2">
                                     {cell}
@@ -819,9 +826,9 @@ function MergeControl({
     };
 
     return (
-        <select
+        <NativeSelect
             aria-label="Fusionar con"
-            className="h-8 max-w-28 rounded border bg-background px-2 text-xs"
+            className="h-8 max-w-32 text-xs"
             defaultValue=""
             onChange={(e) => {
                 merge(e.target.value);
@@ -834,6 +841,6 @@ function MergeControl({
                     {o.name}
                 </option>
             ))}
-        </select>
+        </NativeSelect>
     );
 }

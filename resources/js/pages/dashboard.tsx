@@ -6,11 +6,22 @@ import {
     ClipboardCheck,
     PackageOpen,
     Plus,
+    SearchCheck,
     Users,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { DataTableSurface, TableEmpty } from '@/components/data-table';
+import { MetricCard } from '@/components/metric-card';
+import { Page, PageHeader, SectionHeader } from '@/components/page';
+import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { formatDate, formatQuantity } from '@/lib/format';
 import type { StorageLocation, Voucher, VoucherItem } from '@/types';
 
@@ -21,6 +32,7 @@ type PendingRow = Omit<VoucherItem, 'dispositions'> & {
     received_by: { id: number; name: string };
     location: StorageLocation;
 };
+
 type Props = {
     metrics: {
         pending_vouchers: number;
@@ -34,169 +46,166 @@ type Props = {
     oldest_pending: PendingRow[];
 };
 
-const stateLabel: Record<string, string> = {
-    pending: 'Pendiente',
-    settled: 'Liquidado',
-    anomaly: 'Anomalía',
-    cancelled: 'Cancelado',
-    received: 'Entrada recibida',
-};
-
 export default function Dashboard({ metrics, recent, oldest_pending }: Props) {
     return (
         <>
             <Head title="Resumen" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-7">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-sky-700">
-                            Alumbrado público
-                        </p>
-                        <h1 className="text-3xl font-bold tracking-tight">
-                            Control de materiales
-                        </h1>
-                        <p className="mt-1 text-muted-foreground">
-                            Vales, aplicaciones y sobrantes en un solo lugar.
-                        </p>
+            <Page width="wide">
+                <PageHeader
+                    eyebrow="Vista operativa"
+                    title="Control de materiales"
+                    description="Identifica primero lo que requiere atención y continúa con la actividad más reciente."
+                    actions={
+                        <Button asChild>
+                            <Link href="/vouchers/create">
+                                <Plus data-icon="inline-start" />
+                                Capturar vale
+                            </Link>
+                        </Button>
+                    }
+                />
+
+                <section aria-labelledby="prioridades-title">
+                    <h2 id="prioridades-title" className="sr-only">
+                        Prioridades operativas
+                    </h2>
+                    <div className="grid gap-3 md:grid-cols-3">
+                        <MetricCard
+                            label="Vales con saldo pendiente"
+                            value={metrics.pending_vouchers}
+                            icon={ClipboardCheck}
+                            tone="warning"
+                            emphasis="primary"
+                        />
+                        <MetricCard
+                            label="Partidas aún por comprobar"
+                            value={metrics.pending_items}
+                            icon={PackageOpen}
+                            tone="warning"
+                            emphasis="primary"
+                        />
+                        <MetricCard
+                            label="Inconsistencias que requieren atención"
+                            value={metrics.anomalies}
+                            icon={AlertTriangle}
+                            tone="danger"
+                            emphasis="primary"
+                        />
                     </div>
-                    <Button asChild>
-                        <Link href="/vouchers/create">
-                            <Plus className="mr-2 size-4" />
-                            Capturar vale
-                        </Link>
-                    </Button>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-                    <Metric
-                        title="Vales pendientes"
-                        value={metrics.pending_vouchers}
-                        icon={ClipboardCheck}
-                        tone="blue"
-                    />
-                    <Metric
-                        title="Materiales pendientes"
-                        value={metrics.pending_items}
-                        icon={PackageOpen}
-                        tone="amber"
-                    />
-                    <Metric
-                        title="Vales liquidados"
-                        value={metrics.settled_vouchers}
-                        icon={CheckCircle2}
-                        tone="green"
-                    />
-                    <Metric
-                        title="Anomalías"
-                        value={metrics.anomalies}
-                        icon={AlertTriangle}
-                        tone="red"
-                    />
-                    <Metric
-                        title="Por revisar"
-                        value={metrics.needs_review}
-                        icon={AlertTriangle}
-                        tone="slate"
-                    />
-                    <Metric
-                        title="Técnicos con pendientes"
-                        value={metrics.technicians_with_pending}
-                        icon={Users}
-                        tone="amber"
-                    />
-                </div>
-                <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
-                    <Card>
-                        <CardHeader className="flex-row items-center justify-between">
-                            <CardTitle>Pendientes más antiguos</CardTitle>
-                            <Button variant="ghost" size="sm" asChild>
-                                <Link href="/reports/material-tracking?tab=detail&state=pending">
-                                    Ver todos{' '}
-                                    <ArrowRight className="ml-1 size-4" />
-                                </Link>
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="border-y bg-muted/40 text-left text-muted-foreground">
-                                        <tr>
-                                            <th className="px-6 py-3">Vale</th>
-                                            <th className="px-4 py-3">
-                                                Técnico
-                                            </th>
-                                            <th className="px-4 py-3">
-                                                Material
-                                            </th>
-                                            <th className="px-6 py-3 text-right">
+                    <div className="mt-4 grid border-y sm:grid-cols-3">
+                        <MetricCard
+                            label="Vales liquidados"
+                            value={metrics.settled_vouchers}
+                            icon={CheckCircle2}
+                            tone="success"
+                        />
+                        <MetricCard
+                            label="Registros por revisar"
+                            value={metrics.needs_review}
+                            icon={SearchCheck}
+                            tone="info"
+                        />
+                        <MetricCard
+                            label="Técnicos con pendientes"
+                            value={metrics.technicians_with_pending}
+                            icon={Users}
+                            tone="neutral"
+                        />
+                    </div>
+                </section>
+
+                <div className="grid gap-7 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,.85fr)]">
+                    <section className="min-w-0" aria-labelledby="oldest-title">
+                        <SectionHeader
+                            title="Pendientes más antiguos"
+                            description="Partidas abiertas ordenadas por antigüedad."
+                            action={
+                                <Button variant="ghost" size="sm" asChild>
+                                    <Link href="/reports/material-tracking?tab=detail&state=pending">
+                                        Ver seguimiento
+                                        <ArrowRight data-icon="inline-end" />
+                                    </Link>
+                                </Button>
+                            }
+                        />
+                        <div className="mt-3">
+                            <DataTableSurface>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Vale</TableHead>
+                                            <TableHead>Técnico</TableHead>
+                                            <TableHead>Material</TableHead>
+                                            <TableHead className="text-right">
                                                 Pendiente
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                                            </TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
                                         {oldest_pending.map((row) => (
-                                            <tr
+                                            <TableRow
                                                 key={`${row.voucher_id}-${row.id}`}
-                                                className="border-b last:border-0"
                                             >
-                                                <td className="px-6 py-3">
+                                                <TableCell>
                                                     <Link
-                                                        className="font-semibold text-sky-700 hover:underline"
+                                                        className="font-semibold text-primary underline-offset-4 hover:underline"
                                                         href={`/vouchers/${row.voucher_id}`}
                                                     >
-                                                        #{row.folio}
+                                                        Vale {row.folio}
                                                     </Link>
-                                                    <div className="text-xs text-muted-foreground">
+                                                    <p className="mt-0.5 text-xs text-muted-foreground">
                                                         {row.location.name} ·{' '}
                                                         {formatDate(
                                                             row.issued_on,
                                                         )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3">
+                                                    </p>
+                                                </TableCell>
+                                                <TableCell>
                                                     {row.received_by.name}
-                                                </td>
-                                                <td className="px-4 py-3">
+                                                </TableCell>
+                                                <TableCell className="max-w-72 truncate">
                                                     {row.description}
-                                                </td>
-                                                <td className="px-6 py-3 text-right font-semibold text-amber-700">
+                                                </TableCell>
+                                                <TableCell className="text-right font-semibold text-warning tabular-nums">
                                                     {formatQuantity(
                                                         row.pending_quantity,
                                                     )}{' '}
-                                                    {row.unit.symbol}
-                                                </td>
-                                            </tr>
+                                                    <span className="text-xs font-normal text-muted-foreground">
+                                                        {row.unit.symbol}
+                                                    </span>
+                                                </TableCell>
+                                            </TableRow>
                                         ))}
                                         {oldest_pending.length === 0 && (
-                                            <tr>
-                                                <td
-                                                    colSpan={4}
-                                                    className="px-6 py-12 text-center text-muted-foreground"
-                                                >
-                                                    No hay material pendiente.
-                                                </td>
-                                            </tr>
+                                            <TableEmpty
+                                                colSpan={4}
+                                                title="Sin material pendiente"
+                                                description="Todas las partidas registradas están comprobadas o devueltas."
+                                            />
                                         )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Actividad reciente</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-1">
+                                    </TableBody>
+                                </Table>
+                            </DataTableSurface>
+                        </div>
+                    </section>
+
+                    <section aria-labelledby="recent-title">
+                        <SectionHeader
+                            title="Actividad reciente"
+                            description="Últimos vales capturados o actualizados."
+                        />
+                        <div className="mt-3 overflow-hidden rounded-lg border bg-surface">
                             {recent.map((voucher) => (
                                 <Link
                                     key={voucher.id}
                                     href={`/vouchers/${voucher.id}`}
-                                    className="flex items-center justify-between rounded-lg px-3 py-3 transition hover:bg-muted"
+                                    className="group flex min-h-16 items-center justify-between gap-4 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-hover focus-visible:bg-hover focus-visible:ring-3 focus-visible:ring-ring/25 focus-visible:outline-none focus-visible:ring-inset"
                                 >
-                                    <div>
-                                        <p className="font-medium">
-                                            Vale #{voucher.folio}
+                                    <div className="min-w-0">
+                                        <p className="font-medium group-hover:text-primary">
+                                            Vale {voucher.folio}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
                                             {voucher.location.name} ·{' '}
                                             {voucher.direction === 'entry'
                                                 ? 'Entrada'
@@ -205,63 +214,20 @@ export default function Dashboard({ metrics, recent, oldest_pending }: Props) {
                                             {formatDate(voucher.issued_on)}
                                         </p>
                                     </div>
-                                    <Badge
-                                        variant={
-                                            voucher.balance_state === 'settled'
-                                                ? 'secondary'
-                                                : voucher.balance_state ===
-                                                    'anomaly'
-                                                  ? 'destructive'
-                                                  : 'outline'
-                                        }
-                                    >
-                                        {stateLabel[voucher.balance_state]}
-                                    </Badge>
+                                    <StatusBadge
+                                        state={voucher.balance_state}
+                                    />
                                 </Link>
                             ))}
                             {recent.length === 0 && (
-                                <p className="py-10 text-center text-sm text-muted-foreground">
+                                <p className="px-4 py-12 text-center text-sm text-muted-foreground">
                                     Todavía no hay vales capturados.
                                 </p>
                             )}
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </section>
                 </div>
-            </div>
+            </Page>
         </>
-    );
-}
-
-function Metric({
-    title,
-    value,
-    icon: Icon,
-    tone,
-}: {
-    title: string;
-    value: number;
-    icon: typeof ClipboardCheck;
-    tone: 'blue' | 'amber' | 'green' | 'red' | 'slate';
-}) {
-    const colors = {
-        blue: 'bg-sky-50 text-sky-700 dark:bg-sky-950',
-        amber: 'bg-amber-50 text-amber-700 dark:bg-amber-950',
-        green: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950',
-        red: 'bg-red-50 text-red-700 dark:bg-red-950',
-        slate: 'bg-slate-100 text-slate-700 dark:bg-slate-900',
-    };
-
-    return (
-        <Card>
-            <CardContent className="flex items-center gap-4 p-5">
-                <div className={`rounded-xl p-3 ${colors[tone]}`}>
-                    <Icon className="size-5" />
-                </div>
-                <div>
-                    <p className="text-2xl font-bold">{value}</p>
-                    <p className="text-xs text-muted-foreground">{title}</p>
-                </div>
-            </CardContent>
-        </Card>
     );
 }
