@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $needs_review
  * @property-read Unit $defaultUnit
  * @property-read Collection<int, MaterialAlias> $aliases
+ * @property-read Collection<int, StorageLocation> $voucherTypes
  */
 class Material extends Model
 {
@@ -41,5 +43,11 @@ class Material extends Model
     public function aliases(): HasMany
     {
         return $this->hasMany(MaterialAlias::class);
+    }
+
+    /** @return BelongsToMany<StorageLocation, $this> */
+    public function voucherTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(StorageLocation::class, 'material_storage_location');
     }
 }

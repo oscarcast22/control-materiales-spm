@@ -39,6 +39,12 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::create('material_storage_location', function (Blueprint $table) {
+            $table->foreignId('material_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('storage_location_id')->constrained()->cascadeOnDelete();
+            $table->primary(['material_id', 'storage_location_id']);
+        });
+
         Schema::create('material_aliases', function (Blueprint $table) {
             $table->id();
             $table->foreignId('material_id')->constrained()->cascadeOnDelete();
@@ -75,21 +81,50 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::create('actions', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('program_id')->constrained()->cascadeOnDelete();
+            $table->string('code')->unique();
+            $table->string('name')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('destinations', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('normalized_name')->unique();
+            $table->boolean('is_active')->default(true);
+            $table->boolean('needs_review')->default(false);
+            $table->timestamps();
+        });
+
+        Schema::create('destination_aliases', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('destination_id')->constrained()->cascadeOnDelete();
+            $table->string('alias');
+            $table->string('normalized_alias')->unique();
+            $table->timestamps();
+        });
+
         Schema::create('vouchers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('storage_location_id')->constrained()->restrictOnDelete();
             $table->string('folio');
             $table->string('folio_key');
-            $table->string('direction', 20);
+            $table->string('direction', 20)->nullable();
             $table->date('issued_on');
-            $table->time('issued_time')->nullable();
-            $table->foreignId('received_by_id')->constrained('people')->restrictOnDelete();
-            $table->foreignId('delivered_by_id')->constrained('people')->restrictOnDelete();
+            $table->foreignId('received_by_id')->nullable()->constrained('people')->restrictOnDelete();
+            $table->foreignId('delivered_by_id')->nullable()->constrained('people')->restrictOnDelete();
             $table->foreignId('authorized_by_id')->nullable()->constrained('people')->nullOnDelete();
             $table->foreignId('program_id')->nullable()->constrained()->nullOnDelete();
-            $table->text('destination');
+            $table->foreignId('action_id')->nullable()->constrained('actions')->nullOnDelete();
+            $table->text('usage_description')->nullable();
             $table->text('notes')->nullable();
             $table->string('status', 20)->default('active');
+            $table->string('loaned_to_name')->nullable();
+            $table->date('loaned_on')->nullable();
+            $table->date('returned_on')->nullable();
             $table->boolean('needs_review')->default(false);
             $table->json('review_reasons')->nullable();
             $table->timestamp('cancelled_at')->nullable();
@@ -102,6 +137,12 @@ return new class extends Migration
             $table->index(['issued_on', 'status']);
             $table->index(['received_by_id', 'issued_on']);
             $table->index(['storage_location_id', 'direction', 'issued_on'], 'vouchers_location_direction_date_index');
+        });
+
+        Schema::create('destination_voucher', function (Blueprint $table) {
+            $table->foreignId('destination_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('voucher_id')->constrained()->cascadeOnDelete();
+            $table->primary(['destination_id', 'voucher_id']);
         });
 
         Schema::create('voucher_items', function (Blueprint $table) {
@@ -136,7 +177,7 @@ return new class extends Migration
             $table->date('occurred_on');
             $table->decimal('quantity', 12, 3);
             $table->string('reference')->nullable();
-            $table->text('destination')->nullable();
+            $table->text('destination_snapshot')->nullable();
             $table->text('notes')->nullable();
             $table->unsignedSmallInteger('legacy_slot')->nullable();
             $table->timestamp('voided_at')->nullable();
@@ -230,11 +271,16 @@ return new class extends Migration
         Schema::dropIfExists('material_applications');
         Schema::dropIfExists('material_application_reports');
         Schema::dropIfExists('voucher_items');
+        Schema::dropIfExists('destination_voucher');
         Schema::dropIfExists('vouchers');
+        Schema::dropIfExists('destination_aliases');
+        Schema::dropIfExists('destinations');
+        Schema::dropIfExists('actions');
         Schema::dropIfExists('programs');
         Schema::dropIfExists('person_aliases');
         Schema::dropIfExists('people');
         Schema::dropIfExists('material_aliases');
+        Schema::dropIfExists('material_storage_location');
         Schema::dropIfExists('materials');
         Schema::dropIfExists('storage_locations');
         Schema::dropIfExists('units');

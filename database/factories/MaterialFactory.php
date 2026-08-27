@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Material;
+use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Support\Normalizer;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -12,6 +13,13 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class MaterialFactory extends Factory
 {
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Material $material): void {
+            $material->voucherTypes()->syncWithoutDetaching(StorageLocation::query()->pluck('id'));
+        });
+    }
+
     /**
      * Define the model's default state.
      *

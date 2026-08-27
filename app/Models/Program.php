@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\ProgramFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -22,5 +23,11 @@ class Program extends Model
     protected function casts(): array
     {
         return ['is_active' => 'boolean'];
+    }
+
+    /** @return HasMany<Action, $this> */
+    public function actions(): HasMany
+    {
+        return $this->hasMany(Action::class);
     }
 }

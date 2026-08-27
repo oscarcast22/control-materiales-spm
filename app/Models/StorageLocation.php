@@ -6,6 +6,7 @@ use Database\Factories\StorageLocationFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -17,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property-read Collection<int, Voucher> $vouchers
  * @property-read Collection<int, InventoryAdjustment> $adjustments
+ * @property-read Collection<int, Material> $materials
  */
 class StorageLocation extends Model
 {
@@ -40,5 +42,11 @@ class StorageLocation extends Model
     public function adjustments(): HasMany
     {
         return $this->hasMany(InventoryAdjustment::class);
+    }
+
+    /** @return BelongsToMany<Material, $this> */
+    public function materials(): BelongsToMany
+    {
+        return $this->belongsToMany(Material::class, 'material_storage_location');
     }
 }

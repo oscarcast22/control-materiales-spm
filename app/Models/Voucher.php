@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -17,27 +18,32 @@ use Illuminate\Support\Carbon;
  * @property string $folio
  * @property string $folio_key
  * @property int $storage_location_id
- * @property VoucherDirection $direction
+ * @property VoucherDirection|null $direction
  * @property Carbon $issued_on
- * @property string|null $issued_time
- * @property int $received_by_id
- * @property int $delivered_by_id
+ * @property int|null $received_by_id
+ * @property int|null $delivered_by_id
  * @property int|null $authorized_by_id
  * @property int|null $program_id
- * @property string $destination
+ * @property int|null $action_id
+ * @property string|null $usage_description
  * @property string|null $notes
  * @property VoucherStatus $status
+ * @property string|null $loaned_to_name
+ * @property Carbon|null $loaned_on
+ * @property Carbon|null $returned_on
  * @property bool $needs_review
  * @property array<int, string>|null $review_reasons
  * @property Carbon|null $cancelled_at
  * @property string|null $cancellation_reason
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Person $receivedBy
- * @property-read Person $deliveredBy
+ * @property-read Person|null $receivedBy
+ * @property-read Person|null $deliveredBy
  * @property-read Person|null $authorizedBy
  * @property-read StorageLocation $location
  * @property-read Program|null $program
+ * @property-read Action|null $action
+ * @property-read Collection<int, Destination> $destinations
  * @property-read Collection<int, VoucherItem> $items
  * @property-read Collection<int, VoucherAttachment> $attachments
  * @property-read Collection<int, MaterialApplicationReport> $applicationReports
@@ -48,9 +54,10 @@ class Voucher extends Model
     use HasFactory;
 
     protected $fillable = [
-        'storage_location_id', 'folio', 'folio_key', 'direction', 'issued_on', 'issued_time',
-        'received_by_id', 'delivered_by_id', 'authorized_by_id', 'program_id',
-        'destination', 'notes', 'status', 'needs_review', 'review_reasons', 'cancelled_at', 'cancelled_by', 'cancellation_reason',
+        'storage_location_id', 'folio', 'folio_key', 'direction', 'issued_on',
+        'received_by_id', 'delivered_by_id', 'authorized_by_id', 'program_id', 'action_id',
+        'usage_description', 'notes', 'status', 'loaned_to_name', 'loaned_on', 'returned_on',
+        'needs_review', 'review_reasons', 'cancelled_at', 'cancelled_by', 'cancellation_reason',
         'created_by', 'updated_by',
     ];
 
@@ -62,6 +69,8 @@ class Voucher extends Model
             'status' => VoucherStatus::class,
             'needs_review' => 'boolean',
             'review_reasons' => 'array',
+            'loaned_on' => 'date:Y-m-d',
+            'returned_on' => 'date:Y-m-d',
             'cancelled_at' => 'datetime',
         ];
     }
@@ -94,6 +103,18 @@ class Voucher extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
+    }
+
+    /** @return BelongsTo<Action, $this> */
+    public function action(): BelongsTo
+    {
+        return $this->belongsTo(Action::class);
+    }
+
+    /** @return BelongsToMany<Destination, $this> */
+    public function destinations(): BelongsToMany
+    {
+        return $this->belongsToMany(Destination::class);
     }
 
     /** @return HasMany<VoucherItem, $this> */

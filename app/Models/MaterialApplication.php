@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $occurred_on
  * @property string $quantity
  * @property string|null $reference
- * @property string|null $destination
+ * @property string|null $destination_snapshot
  * @property string|null $notes
  * @property int|null $legacy_slot
  * @property Carbon|null $voided_at
@@ -30,7 +30,7 @@ class MaterialApplication extends Model
     use HasFactory;
 
     protected $fillable = [
-        'voucher_item_id', 'application_report_id', 'occurred_on', 'quantity', 'reference', 'destination', 'notes',
+        'voucher_item_id', 'application_report_id', 'occurred_on', 'quantity', 'reference', 'destination_snapshot', 'notes',
         'legacy_slot', 'voided_at', 'voided_by', 'void_reason', 'created_by', 'updated_by',
     ];
 
