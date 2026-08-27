@@ -34,8 +34,8 @@ class MaterialApplicationController extends Controller
         }
 
         $vouchers = Voucher::query()
-            ->with(['location', 'receivedBy', 'items.material', 'items.unit', 'items.applications'])
-            ->where('status', VoucherStatus::Active->value)
+            ->with(['location', 'receivedBy', 'destinations', 'items.material', 'items.unit', 'items.applications'])
+            ->whereIn('status', VoucherStatus::operationalValues())
             ->where('direction', VoucherDirection::Exit->value)
             ->where('folio_key', 'like', "%{$folioKey}%")
             ->whereHas('items', fn ($item) => $item->whereRaw(
@@ -49,9 +49,9 @@ class MaterialApplicationController extends Controller
                 'id' => $voucher->id,
                 'folio' => $voucher->folio,
                 'issued_on' => $voucher->issued_on->format('Y-m-d'),
-                'location' => $voucher->location->only(['id', 'name', 'code']),
-                'received_by' => $voucher->receivedBy->only(['id', 'name']),
-                'destination' => $voucher->destination,
+                'voucher_type' => $voucher->location->only(['id', 'name', 'code']),
+                'received_by' => $voucher->receivedBy?->only(['id', 'name']),
+                'destination_summary' => VoucherData::destinationSummary($voucher),
                 'items' => $voucher->items
                     ->map(fn (VoucherItem $item): array => VoucherData::item($item))
                     ->filter(fn (array $item): bool => (float) $item['pending_quantity'] > 0)
@@ -80,10 +80,10 @@ class MaterialApplicationController extends Controller
 
         try {
             DB::transaction(function () use ($data, $request, $file, $storedPath): void {
-                $voucher = Voucher::query()->lockForUpdate()->findOrFail((int) $data['voucher_id']);
-                if ($voucher->direction !== VoucherDirection::Exit || $voucher->status !== VoucherStatus::Active) {
+                $voucher = Voucher::query()->with('destinations')->lockForUpdate()->findOrFail((int) $data['voucher_id']);
+                if ($voucher->direction !== VoucherDirection::Exit || ! in_array($voucher->status->value, VoucherStatus::operationalValues(), true)) {
                     throw ValidationException::withMessages([
-                        'voucher_id' => 'Sólo se pueden registrar aplicaciones en vales de salida activos.',
+                        'voucher_id' => 'Sólo se pueden registrar aplicaciones en vales de salida activos o prestados.',
                     ]);
                 }
 
@@ -129,7 +129,7 @@ class MaterialApplicationController extends Controller
                         'occurred_on' => $data['occurred_on'],
                         'quantity' => $row['quantity'],
                         'reference' => $report->reference,
-                        'destination' => $voucher->destination,
+                        'destination_snapshot' => VoucherData::destinationSummary($voucher),
                         'created_by' => $request->user()?->id,
                         'updated_by' => $request->user()?->id,
                     ]);

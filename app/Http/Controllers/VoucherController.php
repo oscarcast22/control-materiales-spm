@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
+use App\Models\Action;
 use App\Models\AuditEvent;
+use App\Models\Destination;
+use App\Models\DestinationAlias;
 use App\Models\Material;
 use App\Models\Person;
+use App\Models\Program;
 use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Models\Voucher;
@@ -33,13 +37,15 @@ class VoucherController extends Controller
     public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Voucher::class);
-        $query = Voucher::query()->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'items.material', 'items.unit', 'items.applications']);
+        $query = Voucher::query()->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'destinations', 'items.material', 'items.unit', 'items.applications']);
 
         if ($search = trim((string) $request->string('search'))) {
             $needle = '%'.mb_strtolower($search).'%';
             $query->where(function (Builder $query) use ($needle): void {
                 $query->whereRaw('LOWER(folio) LIKE ?', [$needle])
-                    ->orWhereRaw('LOWER(destination) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(usage_description) LIKE ?', [$needle])
+                    ->orWhereHas('destinations', fn (Builder $destination) => $destination->whereRaw('LOWER(name) LIKE ?', [$needle]))
+                    ->orWhereRaw('LOWER(loaned_to_name) LIKE ?', [$needle])
                     ->orWhereHas('receivedBy', fn (Builder $person) => $person->whereRaw('LOWER(name) LIKE ?', [$needle]))
                     ->orWhereHas('items.material', fn (Builder $material) => $material->whereRaw('LOWER(name) LIKE ?', [$needle]));
             });
@@ -53,8 +59,8 @@ class VoucherController extends Controller
         if ($request->filled('received_by_id')) {
             $query->where('received_by_id', $request->integer('received_by_id'));
         }
-        if ($request->filled('storage_location_id')) {
-            $query->where('storage_location_id', $request->integer('storage_location_id'));
+        if ($request->filled('voucher_type_id')) {
+            $query->where('storage_location_id', $request->integer('voucher_type_id'));
         }
         if ($request->filled('direction')) {
             $query->where('direction', $request->string('direction')->value());
@@ -63,10 +69,12 @@ class VoucherController extends Controller
         $status = $request->string('status')->value();
         if ($status === 'cancelled') {
             $query->where('status', VoucherStatus::Cancelled->value);
+        } elseif ($status === 'loaned') {
+            $query->where('status', VoucherStatus::Loaned->value);
         } elseif ($status === 'review') {
             $query->where('needs_review', true);
         } elseif (in_array($status, ['pending', 'settled', 'anomaly'], true)) {
-            $query->where('status', VoucherStatus::Active->value)->where('direction', VoucherDirection::Exit->value);
+            $query->whereIn('status', VoucherStatus::operationalValues())->where('direction', VoucherDirection::Exit->value);
             $operator = $status === 'pending' ? '>' : ($status === 'anomaly' ? '<' : '!=');
             $method = $status === 'settled' ? 'whereDoesntHave' : 'whereHas';
             $query->{$method}('items', function (Builder $item) use ($operator): void {
@@ -79,9 +87,9 @@ class VoucherController extends Controller
 
         return Inertia::render('vouchers/index', [
             'vouchers' => $vouchers,
-            'filters' => $request->only(['search', 'from', 'to', 'received_by_id', 'storage_location_id', 'direction', 'status']),
+            'filters' => $request->only(['search', 'from', 'to', 'received_by_id', 'voucher_type_id', 'direction', 'status']),
             'receivers' => Person::query()->where('can_receive_material', true)->orderBy('name')->get(['id', 'name']),
-            'locations' => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'voucherTypes' => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'tracking_started_on']),
         ]);
     }
 
@@ -99,15 +107,17 @@ class VoucherController extends Controller
         $this->ensureUniqueFolio($data['folio'], (int) $data['storage_location_id']);
 
         $voucher = DB::transaction(function () use ($data, $request): Voucher {
+            $destinationIds = $this->resolveDestinations($data);
             $voucher = Voucher::create([
-                ...Arr::except($data, ['items', 'attachments']),
+                ...Arr::except($data, ['items', 'attachments', 'destination_ids', 'new_destinations']),
                 'folio_key' => Normalizer::folio($data['folio']),
                 'status' => VoucherStatus::Active,
                 'created_by' => $request->user()?->id,
                 'updated_by' => $request->user()?->id,
             ]);
+            $voucher->destinations()->sync($destinationIds);
             $this->syncItems($voucher, $data['items'], $request);
-            AuditEvent::record($voucher, 'created', null, $voucher->fresh()->toArray());
+            AuditEvent::record($voucher, 'created', null, $this->voucherAuditData($voucher));
 
             return $voucher;
         });
@@ -115,6 +125,40 @@ class VoucherController extends Controller
         $this->storeAttachments($voucher, $request);
 
         return redirect()->route('vouchers.show', $voucher)->with('success', "Vale {$voucher->folio} capturado correctamente.");
+    }
+
+    public function storeCancelled(Request $request): RedirectResponse
+    {
+        Gate::authorize('create', Voucher::class);
+        $data = $request->validate([
+            'voucher_type_id' => ['required', 'integer', Rule::exists('storage_locations', 'id')->where('is_active', true)],
+            'folio' => ['required', 'string', 'max:50'],
+            'issued_on' => ['required', 'date'],
+            'cancellation_reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $data['folio'] = trim($data['folio']);
+        $this->ensureUniqueFolio($data['folio'], (int) $data['voucher_type_id']);
+
+        $voucher = DB::transaction(function () use ($data, $request): Voucher {
+            $voucher = Voucher::create([
+                'storage_location_id' => $data['voucher_type_id'],
+                'folio' => $data['folio'],
+                'folio_key' => Normalizer::folio($data['folio']),
+                'issued_on' => $data['issued_on'],
+                'status' => VoucherStatus::Cancelled,
+                'cancelled_at' => now(),
+                'cancelled_by' => $request->user()?->id,
+                'cancellation_reason' => trim((string) ($data['cancellation_reason'] ?? ''))
+                    ?: 'Folio cancelado para conservar la continuidad de la numeración.',
+                'created_by' => $request->user()?->id,
+                'updated_by' => $request->user()?->id,
+            ]);
+            AuditEvent::record($voucher, 'created_cancelled', null, $voucher->toArray());
+
+            return $voucher;
+        });
+
+        return redirect()->route('vouchers.show', $voucher)->with('success', "Folio {$voucher->folio} registrado como cancelado.");
     }
 
     public function show(Voucher $voucher): Response
@@ -140,22 +184,24 @@ class VoucherController extends Controller
         $this->ensureUniqueFolio($data['folio'], (int) $data['storage_location_id'], $voucher);
 
         $hasMovements = $voucher->items()->whereHas('applications', fn (Builder $query) => $query->whereNull('voided_at'))->exists();
-        if ($hasMovements && ($voucher->direction->value !== $data['direction'] || $voucher->storage_location_id !== (int) $data['storage_location_id'])) {
+        if ($hasMovements && ($voucher->direction?->value !== $data['direction'] || $voucher->storage_location_id !== (int) $data['storage_location_id'])) {
             throw ValidationException::withMessages([
-                'direction' => 'No se puede cambiar el área o el tipo de un vale que ya tiene aplicaciones registradas.',
+                'direction' => 'No se puede cambiar el tipo de vale o el movimiento cuando ya existen aplicaciones registradas.',
             ]);
         }
 
         DB::transaction(function () use ($voucher, $data, $request): void {
-            $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
-            $before = $locked->toArray();
+            $locked = Voucher::query()->with('destinations')->lockForUpdate()->findOrFail($voucher->id);
+            $before = $this->voucherAuditData($locked);
+            $destinationIds = $this->resolveDestinations($data);
             $locked->update([
-                ...Arr::except($data, ['items', 'attachments']),
+                ...Arr::except($data, ['items', 'attachments', 'destination_ids', 'new_destinations']),
                 'folio_key' => Normalizer::folio($data['folio']),
                 'updated_by' => $request->user()?->id,
             ]);
+            $locked->destinations()->sync($destinationIds);
             $this->syncItems($locked, $data['items'], $request);
-            AuditEvent::record($locked, 'updated', $before, $locked->fresh()->toArray());
+            AuditEvent::record($locked, 'updated', $before, $this->voucherAuditData($locked));
         });
 
         $this->storeAttachments($voucher, $request);
@@ -188,6 +234,61 @@ class VoucherController extends Controller
         return redirect()->route('vouchers.show', $voucher)->with('success', 'Vale cancelado.');
     }
 
+    public function loan(Request $request, Voucher $voucher): RedirectResponse
+    {
+        Gate::authorize('update', $voucher);
+        abort_unless($voucher->status === VoucherStatus::Active, 422, 'Sólo un vale activo se puede marcar como prestado.');
+        $data = $request->validate([
+            'loaned_to_name' => ['required', 'string', 'max:255'],
+        ]);
+
+        DB::transaction(function () use ($voucher, $data, $request): void {
+            $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
+            $before = $locked->toArray();
+            $locked->update([
+                'status' => VoucherStatus::Loaned,
+                'loaned_to_name' => trim($data['loaned_to_name']),
+                'loaned_on' => now()->toDateString(),
+                'returned_on' => null,
+                'updated_by' => $request->user()?->id,
+            ]);
+            AuditEvent::record($locked, 'loaned', $before, $locked->fresh()->toArray());
+        });
+
+        return back()->with('success', 'El vale quedó marcado como prestado.');
+    }
+
+    public function returnLoan(Request $request, Voucher $voucher): RedirectResponse
+    {
+        Gate::authorize('update', $voucher);
+        abort_unless($voucher->status === VoucherStatus::Loaned, 422, 'Este vale no está marcado como prestado.');
+
+        if (
+            $voucher->direction === null
+            || $voucher->received_by_id === null
+            || $voucher->delivered_by_id === null
+            || ($voucher->destinations()->doesntExist() && trim((string) $voucher->usage_description) === '')
+            || ! $voucher->items()->exists()
+        ) {
+            throw ValidationException::withMessages([
+                'loaned_to_name' => 'Completa el movimiento, las personas, el destino y los materiales antes de marcar el vale como devuelto.',
+            ]);
+        }
+
+        DB::transaction(function () use ($voucher, $request): void {
+            $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
+            $before = $locked->toArray();
+            $locked->update([
+                'status' => VoucherStatus::Active,
+                'returned_on' => now()->toDateString(),
+                'updated_by' => $request->user()?->id,
+            ]);
+            AuditEvent::record($locked, 'returned', $before, $locked->fresh()->toArray());
+        });
+
+        return back()->with('success', 'El vale quedó marcado como devuelto.');
+    }
+
     public function review(Request $request, Voucher $voucher): RedirectResponse
     {
         Gate::authorize('update', $voucher);
@@ -215,13 +316,32 @@ class VoucherController extends Controller
     /** @return array<string, mixed> */
     private function catalogData(?Voucher $voucher = null): array
     {
+        $programs = Program::query()->where('is_active', true);
+        if ($voucher?->program_id !== null) {
+            $programs->orWhere('id', $voucher->program_id);
+        }
+        $actions = Action::query()->with('program:id,code')->where('is_active', true);
+        if ($voucher?->action_id !== null) {
+            $actions->orWhere('id', $voucher->action_id);
+        }
+        $destinations = Destination::query()->where('is_active', true);
+        if ($voucher !== null) {
+            $destinations->orWhereIn('id', $voucher->destinations()->pluck('destinations.id'));
+        }
+
         return [
-            'materials' => Material::query()->with('defaultUnit')->where('is_active', true)->orderBy('name')->get(),
+            'materials' => Material::query()->with(['defaultUnit', 'voucherTypes:id,name,code'])->where('is_active', true)->orderBy('name')->get(),
             'units' => Unit::query()->where('is_active', true)->orderBy('name')->get(),
-            'locations' => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(),
+            'voucherTypes' => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(),
             'receivers' => $this->peopleForRole('can_receive_material', $voucher?->received_by_id),
             'deliverers' => $this->peopleForRole('can_deliver_material', $voucher?->delivered_by_id),
             'authorizers' => $this->peopleForRole('can_authorize_material', $voucher?->authorized_by_id),
+            'programs' => $programs->orderBy('code')->get(),
+            'actions' => $actions->orderBy('code')->get(),
+            'destinations' => $destinations
+                ->with('aliases:id,destination_id,alias')
+                ->orderBy('name')
+                ->get(['id', 'name', 'is_active', 'needs_review']),
         ];
     }
 
@@ -229,16 +349,42 @@ class VoucherController extends Controller
     private function validateVoucher(Request $request, ?Voucher $voucher = null): array
     {
         $updating = $voucher !== null;
+        $currentDestinationIds = $voucher?->destinations()->pluck('destinations.id')->all() ?? [];
+        $selectedVoucherType = StorageLocation::query()
+            ->whereKey($request->input('voucher_type_id'))
+            ->where('is_active', true)
+            ->first();
+        $usesProgramAndAction = $selectedVoucherType?->code === 'warehouse';
+        $authorizers = $this->peopleForRole('can_authorize_material', $voucher?->authorized_by_id);
+        if ($authorizers->isEmpty()) {
+            throw ValidationException::withMessages([
+                'authorized_by_id' => 'Configura al menos una persona que autorice material antes de guardar el vale.',
+            ]);
+        }
         $data = $request->validate([
-            'storage_location_id' => ['required', Rule::exists('storage_locations', 'id')->where('is_active', true)],
+            'voucher_type_id' => ['required', Rule::exists('storage_locations', 'id')->where('is_active', true)],
             'folio' => ['required', 'string', 'max:50'],
             'direction' => ['required', Rule::enum(VoucherDirection::class)],
             'issued_on' => ['required', 'date'],
-            'issued_time' => ['nullable', 'date_format:H:i'],
             'received_by_id' => ['required', $this->personRoleRule('can_receive_material', $voucher?->received_by_id)],
             'delivered_by_id' => ['required', $this->personRoleRule('can_deliver_material', $voucher?->delivered_by_id)],
-            'authorized_by_id' => ['nullable', $this->personRoleRule('can_authorize_material', $voucher?->authorized_by_id)],
-            'destination' => ['required', 'string', 'max:3000'],
+            'authorized_by_id' => [$authorizers->count() > 1 ? 'required' : 'nullable', $this->personRoleRule('can_authorize_material', $voucher?->authorized_by_id)],
+            'program_id' => $usesProgramAndAction
+                ? ['nullable', 'integer', Rule::exists('programs', 'id')->where('is_active', true)]
+                : ['exclude'],
+            'action_id' => $usesProgramAndAction
+                ? ['nullable', 'integer', Rule::exists('actions', 'id')->where('is_active', true)]
+                : ['exclude'],
+            'destination_ids' => ['nullable', 'array', 'max:10'],
+            'destination_ids.*' => ['required', 'integer', 'distinct', Rule::exists('destinations', 'id')->where(function ($query) use ($currentDestinationIds): void {
+                $query->where('is_active', true);
+                if ($currentDestinationIds !== []) {
+                    $query->orWhereIn('id', $currentDestinationIds);
+                }
+            })],
+            'new_destinations' => ['nullable', 'array', 'max:10'],
+            'new_destinations.*' => ['required', 'string', 'max:255', 'distinct'],
+            'usage_description' => ['nullable', 'string', 'max:3000'],
             'notes' => ['nullable', 'string', 'max:5000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.id' => [$updating ? 'nullable' : 'prohibited', 'integer'],
@@ -249,10 +395,105 @@ class VoucherController extends Controller
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
         ]);
 
+        $eligibleMaterialIds = Material::query()
+            ->whereHas('voucherTypes', fn (Builder $query) => $query->whereKey($data['voucher_type_id']))
+            ->pluck('id')
+            ->map(fn (int $id): int => $id)
+            ->all();
+        $materialErrors = [];
+        foreach ($data['items'] as $index => $item) {
+            if (! in_array((int) $item['material_id'], $eligibleMaterialIds, true)) {
+                $materialErrors["items.{$index}.material_id"] = 'Este material no está disponible para el tipo de vale seleccionado.';
+            }
+        }
+        if ($materialErrors !== []) {
+            throw ValidationException::withMessages($materialErrors);
+        }
+
+        $data['destination_ids'] = array_values(array_map('intval', $data['destination_ids'] ?? []));
+        $data['new_destinations'] = array_values(array_filter(array_map(
+            fn (string $name): string => trim($name),
+            $data['new_destinations'] ?? [],
+        )));
+        $normalizedNewDestinations = array_map(fn (string $name): string => Normalizer::key($name), $data['new_destinations']);
+        if (count($normalizedNewDestinations) !== count(array_unique($normalizedNewDestinations))) {
+            throw ValidationException::withMessages(['new_destinations' => 'La misma ubicación aparece más de una vez.']);
+        }
+        $data['usage_description'] = filled($data['usage_description'] ?? null)
+            ? trim((string) $data['usage_description'])
+            : null;
+        if ($data['destination_ids'] === [] && $data['new_destinations'] === [] && $data['usage_description'] === null) {
+            throw ValidationException::withMessages([
+                'destination_ids' => 'Selecciona una ubicación o agrega una descripción de uso o actividad.',
+            ]);
+        }
+        if (count($data['destination_ids']) + count($data['new_destinations']) > 10) {
+            throw ValidationException::withMessages([
+                'destination_ids' => 'Puedes asociar como máximo diez ubicaciones al mismo vale.',
+            ]);
+        }
+
+        $data['storage_location_id'] = $data['voucher_type_id'];
+        unset($data['voucher_type_id']);
+        if ($authorizers->count() === 1) {
+            $data['authorized_by_id'] = $authorizers->firstOrFail()->id;
+        }
+        if (! $usesProgramAndAction) {
+            $data['program_id'] = null;
+            $data['action_id'] = null;
+        } elseif (! empty($data['action_id'])) {
+            $actionBelongsToProgram = ! empty($data['program_id'])
+                && Action::query()->whereKey($data['action_id'])->where('program_id', $data['program_id'])->exists();
+            if (! $actionBelongsToProgram) {
+                throw ValidationException::withMessages([
+                    'action_id' => 'Selecciona una acción que pertenezca al programa elegido.',
+                ]);
+            }
+        }
         $data['folio'] = trim($data['folio']);
-        $data['destination'] = trim($data['destination']);
 
         return $data;
+    }
+
+    /** @param array<string, mixed> $data
+     * @return list<int>
+     */
+    private function resolveDestinations(array $data): array
+    {
+        $ids = array_map('intval', $data['destination_ids'] ?? []);
+        foreach ($data['new_destinations'] ?? [] as $name) {
+            $key = Normalizer::key($name);
+            $alias = DestinationAlias::query()->where('normalized_alias', $key)->first();
+            $destination = $alias
+                ? $alias->destination
+                : Destination::query()->where('normalized_name', $key)->first();
+            if ($destination && ! $destination->is_active) {
+                throw ValidationException::withMessages([
+                    'new_destinations' => "La ubicación {$destination->name} está inactiva; reactívala desde Catálogos.",
+                ]);
+            }
+            if (! $destination) {
+                $destination = Destination::create([
+                    'name' => $name,
+                    'normalized_name' => $key,
+                ]);
+                AuditEvent::record($destination, 'created_from_voucher', null, $destination->toArray());
+            }
+            $ids[] = $destination->id;
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /** @return array<string, mixed> */
+    private function voucherAuditData(Voucher $voucher): array
+    {
+        $voucher->load('destinations:id');
+
+        return [
+            ...$voucher->toArray(),
+            'destination_ids' => $voucher->destinations->pluck('id')->all(),
+        ];
     }
 
     /** @return Collection<int, Person> */

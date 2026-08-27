@@ -7,18 +7,19 @@ use App\Enums\VoucherStatus;
 use App\Models\Voucher;
 use App\Support\MaterialTracking;
 use App\Support\VoucherData;
+use App\Support\VoucherSequence;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(VoucherSequence $voucherSequence): Response
     {
         Gate::authorize('viewAny', Voucher::class);
         $vouchers = Voucher::query()
-            ->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'items.material', 'items.unit', 'items.applications'])
-            ->where('status', VoucherStatus::Active->value)
+            ->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'destinations', 'items.material', 'items.unit', 'items.applications'])
+            ->whereIn('status', VoucherStatus::operationalValues())
             ->whereDate('issued_on', '>=', MaterialTracking::START_DATE)
             ->orderByDesc('issued_on')
             ->get();
@@ -42,6 +43,7 @@ class DashboardController extends Controller
             ],
             'recent' => $vouchers->take(8)->map(fn (Voucher $voucher): array => VoucherData::make($voucher))->values(),
             'oldest_pending' => $pendingItems->take(10)->values(),
+            'voucher_sequence' => $voucherSequence->summary(),
         ]);
     }
 }

@@ -16,7 +16,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     Route::resource('vouchers', VoucherController::class)->except('destroy');
+    Route::post('vouchers/cancelled', [VoucherController::class, 'storeCancelled'])->name('vouchers.cancelled.store');
     Route::post('vouchers/{voucher}/cancel', [VoucherController::class, 'cancel'])->name('vouchers.cancel');
+    Route::post('vouchers/{voucher}/loan', [VoucherController::class, 'loan'])->name('vouchers.loan');
+    Route::post('vouchers/{voucher}/return', [VoucherController::class, 'returnLoan'])->name('vouchers.return');
     Route::post('vouchers/{voucher}/review', [VoucherController::class, 'review'])->name('vouchers.review');
     Route::get('vouchers/{voucher}/print', [VoucherController::class, 'print'])->name('vouchers.print');
     Route::get('material-applications/vouchers', [MaterialApplicationController::class, 'searchVouchers'])->name('applications.vouchers.search');
@@ -31,10 +34,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('catalogs/materials/{material}', [CatalogController::class, 'updateMaterial'])->name('catalogs.materials.update');
     Route::post('catalogs/people', [CatalogController::class, 'storePerson'])->name('catalogs.people.store');
     Route::put('catalogs/people/{person}', [CatalogController::class, 'updatePerson'])->name('catalogs.people.update');
+    Route::post('catalogs/destinations', [CatalogController::class, 'storeDestination'])->name('catalogs.destinations.store');
+    Route::put('catalogs/destinations/{destination}', [CatalogController::class, 'updateDestination'])->name('catalogs.destinations.update');
     Route::post('catalogs/units', [CatalogController::class, 'storeUnit'])->name('catalogs.units.store');
     Route::post('catalogs/programs', [CatalogController::class, 'storeProgram'])->name('catalogs.programs.store');
-    Route::post('catalogs/locations', [CatalogController::class, 'storeLocation'])->name('catalogs.locations.store');
-    Route::put('catalogs/locations/{location}', [CatalogController::class, 'updateLocation'])->name('catalogs.locations.update');
+    Route::post('catalogs/actions', [CatalogController::class, 'storeAction'])->name('catalogs.actions.store');
+    Route::post('catalogs/voucher-types', [CatalogController::class, 'storeVoucherType'])->name('catalogs.voucher-types.store');
+    Route::put('catalogs/voucher-types/{voucherType}', [CatalogController::class, 'updateVoucherType'])->name('catalogs.voucher-types.update');
     Route::post('catalogs/{type}/{id}/toggle', [CatalogController::class, 'toggle'])->name('catalogs.toggle');
     Route::post('catalogs/{type}/{source}/merge', [CatalogController::class, 'merge'])->name('catalogs.merge');
 

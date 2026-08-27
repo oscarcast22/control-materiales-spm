@@ -34,8 +34,11 @@ class ReportController extends Controller
             'filters' => $filters,
             'cutoff' => MaterialTracking::START_DATE,
             'receivers' => Person::query()->where('can_receive_material', true)->orderBy('name')->get(['id', 'name']),
-            'materials' => Material::query()->orderBy('name')->get(['id', 'name']),
-            'locations' => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'materials' => Material::query()
+                ->with('defaultUnit:id,name,symbol')
+                ->orderBy('name')
+                ->get(['id', 'name', 'default_unit_id']),
+            'voucherTypes' => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -78,12 +81,12 @@ class ReportController extends Controller
         $sheet = $writer->addNewSheetAndMakeItCurrent();
         $sheet->setName('Detalle de vales');
         $writer->addRow(Row::fromValues([
-            'Folio', 'Fecha', 'Área', 'Técnico', 'Destino', 'Material', 'Unidad', 'Entregado', 'Aplicado', 'Pendiente', 'Estado',
+            'Folio', 'Fecha', 'Tipo de vale', 'Técnico', 'Destino', 'Material', 'Unidad', 'Entregado', 'Aplicado', 'Pendiente', 'Estado',
         ]));
         foreach ($tracking['rows'] as $row) {
             $writer->addRow(Row::fromValues([
-                self::safe($row['folio']), $row['issued_on'], self::safe($row['location']['name']), self::safe($row['received_by']['name']),
-                self::safe($row['destination']), self::safe($row['description']), self::safe($row['unit']['symbol']),
+                self::safe($row['folio']), $row['issued_on'], self::safe($row['voucher_type']['name']), self::safe($row['received_by']['name']),
+                self::safe($row['destination_summary'] ?? ''), self::safe($row['description']), self::safe($row['unit']['symbol']),
                 (float) $row['quantity'], (float) $row['used_quantity'], (float) $row['pending_quantity'], $row['balance_state'],
             ]));
         }
@@ -105,7 +108,7 @@ class ReportController extends Controller
                     }
                     $writer->addRow(Row::fromValues([
                         self::safe($data['folio']), self::safe($item['description']), $row['occurred_on'],
-                        (float) $row['quantity'], self::safe($row['reference'] ?? ''), self::safe($row['destination'] ?? ''),
+                        (float) $row['quantity'], self::safe($row['reference'] ?? ''), self::safe($row['destination_snapshot'] ?? ''),
                         self::safe($row['notes'] ?? ''),
                     ]));
                 }
@@ -117,15 +120,15 @@ class ReportController extends Controller
     }
 
     /**
-     * @param  array{from: string, to: string|null, received_by_id: int|null, material_id: int|null, storage_location_id: int|null, state: string|null, tab: string}  $filters
+     * @param  array{from: string, to: string|null, received_by_id: int|null, material_id: int|null, voucher_type_id: int|null, state: string|null, tab: string}  $filters
      * @return Builder<Voucher>
      */
     private function trackingVoucherQuery(array $filters): Builder
     {
         $query = Voucher::query()->with([
-            'location', 'receivedBy', 'deliveredBy', 'authorizedBy',
+            'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'destinations',
             'items.material', 'items.unit', 'items.applications.report.attachment',
-        ])->where('status', VoucherStatus::Active->value)
+        ])->whereIn('status', VoucherStatus::operationalValues())
             ->where('direction', VoucherDirection::Exit->value)
             ->whereDate('issued_on', '>=', $filters['from']);
 
@@ -135,8 +138,8 @@ class ReportController extends Controller
         if ($filters['received_by_id']) {
             $query->where('received_by_id', $filters['received_by_id']);
         }
-        if ($filters['storage_location_id']) {
-            $query->where('storage_location_id', $filters['storage_location_id']);
+        if ($filters['voucher_type_id']) {
+            $query->where('storage_location_id', $filters['voucher_type_id']);
         }
         if ($filters['material_id']) {
             $query->whereHas('items', fn (Builder $items) => $items->where('material_id', $filters['material_id']));
@@ -145,7 +148,7 @@ class ReportController extends Controller
         return $query->orderByDesc('issued_on')->orderByDesc('id');
     }
 
-    /** @return array{from: string, to: string|null, received_by_id: int|null, material_id: int|null, storage_location_id: int|null, state: string|null, tab: string} */
+    /** @return array{from: string, to: string|null, received_by_id: int|null, material_id: int|null, voucher_type_id: int|null, state: string|null, tab: string} */
     private function trackingFilters(Request $request): array
     {
         $data = $request->validate([
@@ -153,7 +156,7 @@ class ReportController extends Controller
             'to' => ['nullable', 'date'],
             'received_by_id' => ['nullable', 'integer', 'exists:people,id'],
             'material_id' => ['nullable', 'integer', 'exists:materials,id'],
-            'storage_location_id' => ['nullable', 'integer', 'exists:storage_locations,id'],
+            'voucher_type_id' => ['nullable', 'integer', 'exists:storage_locations,id'],
             'state' => ['nullable', Rule::in(['pending', 'settled', 'anomaly'])],
             'tab' => ['nullable', Rule::in(['material', 'technician', 'detail'])],
         ]);
@@ -173,7 +176,7 @@ class ReportController extends Controller
             'to' => $to?->toDateString(),
             'received_by_id' => isset($data['received_by_id']) ? (int) $data['received_by_id'] : null,
             'material_id' => isset($data['material_id']) ? (int) $data['material_id'] : null,
-            'storage_location_id' => isset($data['storage_location_id']) ? (int) $data['storage_location_id'] : null,
+            'voucher_type_id' => isset($data['voucher_type_id']) ? (int) $data['voucher_type_id'] : null,
             'state' => $data['state'] ?? null,
             'tab' => $data['tab'] ?? 'material',
         ];
