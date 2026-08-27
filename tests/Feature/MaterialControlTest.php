@@ -4,16 +4,23 @@ namespace Tests\Feature;
 
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
+use App\Models\Action;
+use App\Models\Destination;
+use App\Models\DestinationAlias;
+use App\Models\LegacyImportRow;
 use App\Models\Material;
 use App\Models\MaterialApplication;
 use App\Models\MaterialApplicationReport;
 use App\Models\Person;
+use App\Models\Program;
 use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
+use App\Support\Normalizer;
 use App\Support\VoucherData;
+use App\Support\VoucherSequence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -38,15 +45,18 @@ class MaterialControlTest extends TestCase
         $user = User::factory()->create();
         [$technician, $issuer, $unit, $first, $second] = $this->catalogs();
         $location = StorageLocation::factory()->create();
+        $first->voucherTypes()->sync([$location->id]);
+        $second->voucherTypes()->sync([$location->id]);
+        $destination = Destination::factory()->create(['name' => 'Colonia Centro', 'normalized_name' => 'colonia centro']);
         $payload = [
-            'storage_location_id' => $location->id,
+            'voucher_type_id' => $location->id,
             'folio' => ' 001-A ',
             'direction' => VoucherDirection::Exit->value,
             'issued_on' => '2026-08-24',
-            'issued_time' => '09:30',
             'received_by_id' => $technician->id,
             'delivered_by_id' => $issuer->id,
-            'destination' => 'Colonia Centro',
+            'destination_ids' => [$destination->id],
+            'usage_description' => 'Trabajo programado',
             'notes' => 'Trabajo programado',
             'items' => [
                 ['material_id' => $first->id, 'unit_id' => $unit->id, 'quantity' => 10],
@@ -60,6 +70,7 @@ class MaterialControlTest extends TestCase
         $response->assertRedirect(route('vouchers.show', $voucher));
         $this->assertSame('001-A', $voucher->folio);
         $this->assertSame(2, $voucher->items()->count());
+        $this->assertSame([$destination->id], $voucher->destinations()->pluck('destinations.id')->all());
         $this->assertDatabaseHas('audit_events', ['event' => 'created', 'auditable_type' => Voucher::class]);
 
         $this->actingAs($user)->from(route('vouchers.create'))->post(route('vouchers.store'), [
@@ -71,16 +82,270 @@ class MaterialControlTest extends TestCase
         $otherLocation = StorageLocation::factory()->create();
         $this->actingAs($user)->post(route('vouchers.store'), [
             ...$payload,
-            'storage_location_id' => $otherLocation->id,
+            'voucher_type_id' => $otherLocation->id,
             'folio' => '001 a',
         ])->assertSessionHasNoErrors();
         $this->assertSame(2, Voucher::query()->count());
+    }
+
+    public function test_a_cancelled_folio_can_be_registered_without_people_or_materials(): void
+    {
+        $user = User::factory()->create();
+        $location = StorageLocation::factory()->create(['code' => 'warehouse']);
+
+        $response = $this->actingAs($user)->post(route('vouchers.cancelled.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => '16576',
+            'issued_on' => '2026-08-27',
+            'cancellation_reason' => '',
+        ]);
+
+        $voucher = Voucher::query()->sole();
+        $response->assertRedirect(route('vouchers.show', $voucher));
+        $this->assertSame(VoucherStatus::Cancelled, $voucher->status);
+        $this->assertNull($voucher->direction);
+        $this->assertNull($voucher->received_by_id);
+        $this->assertNull($voucher->delivered_by_id);
+        $this->assertSame(0, $voucher->items()->count());
+        $this->assertSame(
+            'Folio cancelado para conservar la continuidad de la numeración.',
+            $voucher->cancellation_reason,
+        );
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'created_cancelled',
+            'auditable_type' => Voucher::class,
+            'auditable_id' => $voucher->id,
+        ]);
+    }
+
+    public function test_a_voucher_accepts_multiple_catalogued_and_inline_locations_or_only_an_activity(): void
+    {
+        $user = User::factory()->create();
+        [$technician, $issuer, $unit, $material] = $this->catalogs();
+        $voucherType = StorageLocation::factory()->create();
+        $material->voucherTypes()->sync([$voucherType->id]);
+        $known = Destination::factory()->create([
+            'name' => 'Poblado Otinapa',
+            'normalized_name' => 'poblado otinapa',
+        ]);
+        $payload = [
+            'voucher_type_id' => $voucherType->id,
+            'folio' => 'DEST-1',
+            'direction' => VoucherDirection::Exit->value,
+            'issued_on' => '2026-08-27',
+            'received_by_id' => $technician->id,
+            'delivered_by_id' => $issuer->id,
+            'destination_ids' => [$known->id],
+            'new_destinations' => ['Fracc. Nuevo Horizonte'],
+            'usage_description' => 'Actualización de luminarias',
+            'items' => [[
+                'material_id' => $material->id,
+                'unit_id' => $unit->id,
+                'quantity' => 1,
+            ]],
+        ];
+
+        $this->actingAs($user)->post(route('vouchers.store'), $payload)->assertSessionHasNoErrors();
+
+        $voucher = Voucher::query()->sole();
+        $this->assertSame('Actualización de luminarias', $voucher->usage_description);
+        $this->assertEqualsCanonicalizing(
+            ['Poblado Otinapa', 'Fracc. Nuevo Horizonte'],
+            $voucher->destinations()->pluck('name')->all(),
+        );
+        $this->assertSame(0, Destination::query()
+            ->where('normalized_name', 'fracc nuevo horizonte')
+            ->sole()
+            ->aliases()
+            ->count());
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'created_from_voucher',
+            'auditable_type' => Destination::class,
+        ]);
+
+        $this->actingAs($user)->post(route('vouchers.store'), [
+            ...$payload,
+            'folio' => 'DEST-2',
+            'destination_ids' => [],
+            'new_destinations' => [],
+            'usage_description' => 'Uso interno en camioneta Hilux',
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($user)->post(route('vouchers.store'), [
+            ...$payload,
+            'folio' => 'DEST-3',
+            'destination_ids' => [],
+            'new_destinations' => [],
+            'usage_description' => '',
+        ])->assertSessionHasErrors('destination_ids');
+        $this->assertSame(2, Voucher::query()->count());
+    }
+
+    public function test_destinations_can_be_created_reviewed_and_deduplicated_from_catalogs(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('catalogs.destinations.store'), [
+            'name' => ' Colonia San Carlos ',
+        ])->assertSessionHasNoErrors();
+        $destination = Destination::query()->sole();
+        $this->assertSame(0, $destination->aliases()->count());
+
+        $this->actingAs($user)->post(route('catalogs.destinations.store'), [
+            'name' => 'colonia san-cárlos',
+        ])->assertSessionHasErrors('name');
+
+        $destination->update(['needs_review' => true]);
+        $this->actingAs($user)->put(route('catalogs.destinations.update', $destination), [
+            'name' => 'Col. San Carlos',
+        ])->assertSessionHasNoErrors();
+
+        $destination->refresh();
+        $this->assertSame('Col. San Carlos', $destination->name);
+        $this->assertFalse($destination->needs_review);
+        $this->assertTrue(DestinationAlias::query()
+            ->where('destination_id', $destination->id)
+            ->where('normalized_alias', 'colonia san carlos')
+            ->exists());
+        $this->assertFalse(DestinationAlias::query()
+            ->where('destination_id', $destination->id)
+            ->where('normalized_alias', 'col san carlos')
+            ->exists());
+        $this->assertSame(1, $destination->aliases()->count());
+
+        $this->actingAs($user)->post(route('catalogs.destinations.store'), [
+            'name' => 'Colonia San Carlos',
+        ])->assertSessionHasErrors('name');
+    }
+
+    public function test_materials_must_belong_to_the_selected_voucher_type(): void
+    {
+        $user = User::factory()->create();
+        [$technician, $issuer, $unit, $material] = $this->catalogs();
+        $warehouse = StorageLocation::factory()->create(['code' => 'warehouse']);
+        $yard = StorageLocation::factory()->create(['code' => 'yard']);
+        $material->voucherTypes()->sync([$warehouse->id]);
+
+        $this->actingAs($user)->post(route('vouchers.store'), [
+            'voucher_type_id' => $yard->id,
+            'folio' => '3753',
+            'direction' => VoucherDirection::Exit->value,
+            'issued_on' => '2026-08-27',
+            'received_by_id' => $technician->id,
+            'delivered_by_id' => $issuer->id,
+            'usage_description' => 'Prueba',
+            'items' => [[
+                'material_id' => $material->id,
+                'unit_id' => $unit->id,
+                'quantity' => 1,
+            ]],
+        ])->assertSessionHasErrors('items.0.material_id');
+
+        $this->assertDatabaseCount('vouchers', 0);
+    }
+
+    public function test_program_and_action_are_kept_for_warehouse_and_cleared_for_yard(): void
+    {
+        $user = User::factory()->create();
+        [$technician, $issuer, $unit, $material] = $this->catalogs();
+        $warehouse = StorageLocation::factory()->create(['code' => 'warehouse']);
+        $yard = StorageLocation::factory()->create(['code' => 'yard']);
+        $material->voucherTypes()->sync([$warehouse->id, $yard->id]);
+        $destination = Destination::factory()->create();
+        $program = Program::factory()->create(['code' => 'SPM-06']);
+        $action = Action::factory()->create([
+            'program_id' => $program->id,
+            'code' => 'SPM-06-01',
+        ]);
+        $payload = [
+            'voucher_type_id' => $warehouse->id,
+            'folio' => 'CLAS-1',
+            'direction' => VoucherDirection::Exit->value,
+            'issued_on' => '2026-08-27',
+            'received_by_id' => $technician->id,
+            'delivered_by_id' => $issuer->id,
+            'program_id' => $program->id,
+            'action_id' => $action->id,
+            'destination_ids' => [$destination->id],
+            'items' => [[
+                'material_id' => $material->id,
+                'unit_id' => $unit->id,
+                'quantity' => 1,
+            ]],
+        ];
+
+        $this->actingAs($user)->post(route('vouchers.store'), $payload)
+            ->assertSessionHasNoErrors();
+
+        $voucher = Voucher::query()->sole();
+        $this->assertSame($program->id, $voucher->program_id);
+        $this->assertSame($action->id, $voucher->action_id);
+
+        $this->actingAs($user)->put(route('vouchers.update', $voucher), [
+            ...$payload,
+            'voucher_type_id' => $yard->id,
+            'items' => [[
+                'id' => $voucher->items()->sole()->id,
+                'material_id' => $material->id,
+                'unit_id' => $unit->id,
+                'quantity' => 1,
+            ]],
+        ])->assertSessionHasNoErrors();
+
+        $voucher->refresh();
+        $this->assertSame($yard->id, $voucher->storage_location_id);
+        $this->assertNull($voucher->program_id);
+        $this->assertNull($voucher->action_id);
+    }
+
+    public function test_folio_sequence_counts_cancelled_vouchers_and_ignores_unimported_traces(): void
+    {
+        config()->set('material-control.voucher_sequence_starts', [
+            'warehouse' => 16576,
+            'yard' => 3753,
+        ]);
+        $warehouse = StorageLocation::factory()->create(['code' => 'warehouse', 'name' => 'Almacén']);
+        $yard = StorageLocation::factory()->create(['code' => 'yard', 'name' => 'Patio']);
+        foreach ([
+            [$warehouse, '16576', VoucherStatus::Active],
+            [$warehouse, '16578', VoucherStatus::Cancelled],
+            [$warehouse, 'A-16579', VoucherStatus::Active],
+            [$yard, '3753', VoucherStatus::Loaned],
+            [$yard, '3755', VoucherStatus::Active],
+        ] as [$location, $folio, $status]) {
+            Voucher::factory()->create([
+                'storage_location_id' => $location->id,
+                'folio' => $folio,
+                'folio_key' => Normalizer::folio($folio),
+                'status' => $status,
+            ]);
+        }
+        LegacyImportRow::create([
+            'source_hash' => str_repeat('f', 64),
+            'source_name' => 'prueba.xlsx',
+            'sheet_name' => 'Vale de Almacen',
+            'row_number' => 9,
+            'raw_data' => ['folio' => '16580'],
+            'issue_codes' => ['unresolved_material'],
+        ]);
+
+        $summary = app(VoucherSequence::class)->summary();
+
+        $this->assertSame(4, $summary['total_missing']);
+        $this->assertSame([16577, 16579, 16580], collect($summary['types'])->firstWhere('voucher_type.code', 'warehouse')['missing']);
+        $this->assertSame([3754], collect($summary['types'])->firstWhere('voucher_type.code', 'yard')['missing']);
     }
 
     public function test_multiple_materials_can_be_applied_in_one_report_without_exceeding_their_balances(): void
     {
         $user = User::factory()->create();
         $item = $this->voucherItem(10);
+        $destination = Destination::factory()->create([
+            'name' => 'Col. San Carlos',
+            'normalized_name' => 'col san carlos',
+        ]);
+        $item->voucher->destinations()->attach($destination);
+        $item->voucher->update(['usage_description' => 'Actualización LED']);
         $secondMaterial = Material::factory()->create(['default_unit_id' => $item->unit_id]);
         $secondItem = VoucherItem::factory()->create([
             'voucher_id' => $item->voucher_id,
@@ -106,6 +371,10 @@ class MaterialControlTest extends TestCase
         $this->assertSame('1.000', $secondItem->fresh()->pendingQuantity());
         $this->assertSame(1, MaterialApplicationReport::query()->count());
         $this->assertSame(2, MaterialApplication::query()->count());
+        $this->assertSame(
+            ['Col. San Carlos · Actualización LED'],
+            MaterialApplication::query()->distinct()->pluck('destination_snapshot')->all(),
+        );
 
         $this->actingAs($user)->post(route('applications.store'), [
             'voucher_id' => $item->voucher_id,
@@ -163,6 +432,38 @@ class MaterialControlTest extends TestCase
         $this->assertSame(VoucherStatus::Active, $item->voucher->fresh()->status);
     }
 
+    public function test_a_loan_tracks_the_physical_voucher_without_changing_material_balance(): void
+    {
+        $user = User::factory()->create();
+        $item = $this->voucherItem(10);
+
+        $this->actingAs($user)->post(route('vouchers.loan', $item->voucher), [
+            'loaned_to_name' => 'Marco Ruiz',
+        ])->assertSessionHasNoErrors();
+
+        $voucher = $item->voucher->fresh();
+        $this->assertSame(VoucherStatus::Loaned, $voucher->status);
+        $this->assertSame('Marco Ruiz', $voucher->loaned_to_name);
+        $this->assertSame('10.000', $item->fresh()->pendingQuantity());
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'loaned',
+            'auditable_type' => Voucher::class,
+            'auditable_id' => $voucher->id,
+        ]);
+
+        $this->actingAs($user)->post(route('applications.store'), [
+            'voucher_id' => $voucher->id,
+            'occurred_on' => '2026-08-27',
+            'items' => [['voucher_item_id' => $item->id, 'quantity' => 2]],
+        ])->assertSessionHasNoErrors();
+        $this->assertSame('8.000', $item->fresh()->pendingQuantity());
+
+        $this->actingAs($user)->post(route('vouchers.return', $voucher))
+            ->assertSessionHasNoErrors();
+        $this->assertSame(VoucherStatus::Active, $voucher->fresh()->status);
+        $this->assertNotNull($voucher->fresh()->returned_on);
+    }
+
     public function test_voucher_attachments_are_private_and_downloadable_only_after_authentication(): void
     {
         Storage::fake('local');
@@ -171,13 +472,13 @@ class MaterialControlTest extends TestCase
         $location = StorageLocation::factory()->create();
 
         $this->actingAs($user)->post(route('vouchers.store'), [
-            'storage_location_id' => $location->id,
+            'voucher_type_id' => $location->id,
             'folio' => 'ADJ-1',
             'direction' => VoucherDirection::Exit->value,
             'issued_on' => '2026-08-24',
             'received_by_id' => $technician->id,
             'delivered_by_id' => $issuer->id,
-            'destination' => 'Taller municipal',
+            'usage_description' => 'Taller municipal',
             'items' => [['material_id' => $material->id, 'unit_id' => $unit->id, 'quantity' => 2]],
             'attachments' => [UploadedFile::fake()->create('vale.pdf', 100, 'application/pdf')],
         ])->assertSessionHasNoErrors();
@@ -363,6 +664,10 @@ class MaterialControlTest extends TestCase
             ->where('metrics.pending_items', 1)
             ->where('metrics.settled_vouchers', 1)
             ->where('metrics.technicians_with_pending', 1)
+            ->where('materials', fn ($materials) => $materials->contains(
+                fn ($candidate) => $candidate['id'] === $material->id
+                    && $candidate['default_unit']['symbol'] === $unit->symbol,
+            ))
             ->has('by_material', 1)
             ->where('by_material.0.delivered_quantity', '15.000')
             ->where('by_material.0.used_quantity', '11.000')
@@ -384,6 +689,7 @@ class MaterialControlTest extends TestCase
     public function test_imported_catalog_records_can_be_corrected_reviewed_and_keep_their_old_aliases(): void
     {
         $user = User::factory()->create();
+        $location = StorageLocation::factory()->create();
         $piece = Unit::factory()->create(['symbol' => 'pza']);
         $metre = Unit::factory()->create(['symbol' => 'm']);
         $material = Material::factory()->create([
@@ -403,6 +709,7 @@ class MaterialControlTest extends TestCase
         $this->actingAs($user)->put(route('catalogs.materials.update', $material), [
             'name' => 'Cable POT calibre 14',
             'default_unit_id' => $metre->id,
+            'voucher_type_ids' => [$location->id],
         ])->assertSessionHasNoErrors();
         $this->actingAs($user)->put(route('catalogs.people.update', $person), [
             'name' => 'Miguel Rodríguez',
@@ -472,19 +779,19 @@ class MaterialControlTest extends TestCase
                 ->where('authorizers.0.id', $authorizer->id));
 
         $payload = [
-            'storage_location_id' => $location->id,
+            'voucher_type_id' => $location->id,
             'folio' => 'ROLES-1',
             'direction' => VoucherDirection::Exit->value,
             'issued_on' => '2026-08-26',
             'received_by_id' => $receiver->id,
             'delivered_by_id' => $unrelated->id,
             'authorized_by_id' => $unrelated->id,
-            'destination' => 'Prueba de funciones',
+            'usage_description' => 'Prueba de funciones',
             'items' => [['material_id' => $material->id, 'unit_id' => $unit->id, 'quantity' => 1]],
         ];
 
         $this->actingAs($user)->post(route('vouchers.store'), $payload)
-            ->assertSessionHasErrors(['delivered_by_id', 'authorized_by_id']);
+            ->assertSessionHasErrors('delivered_by_id');
 
         $this->actingAs($user)->post(route('vouchers.store'), [
             ...$payload,
@@ -493,6 +800,7 @@ class MaterialControlTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $voucher = Voucher::query()->sole();
+        $this->assertSame($authorizer->id, $voucher->authorized_by_id);
         $item = $voucher->items()->sole();
         $deliverer->update(['can_deliver_material' => false, 'is_active' => false]);
         $authorizer->update(['can_authorize_material' => false, 'is_active' => false]);
@@ -603,7 +911,10 @@ class MaterialControlTest extends TestCase
     private function catalogs(): array
     {
         $technician = Person::factory()->create(['can_deliver_material' => false]);
-        $issuer = Person::factory()->create(['can_receive_material' => false]);
+        $issuer = Person::factory()->create([
+            'can_receive_material' => false,
+            'can_authorize_material' => true,
+        ]);
         $unit = Unit::factory()->create(['name' => 'Pieza', 'symbol' => fake()->unique()->lexify('p??')]);
         $first = Material::factory()->create(['default_unit_id' => $unit->id]);
         $second = Material::factory()->create(['default_unit_id' => $unit->id]);

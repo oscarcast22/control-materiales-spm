@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Destination;
+use App\Models\DestinationAlias;
 use App\Models\LegacyImportRow;
 use App\Models\Material;
 use App\Models\MaterialAlias;
@@ -10,7 +12,8 @@ use App\Models\PersonAlias;
 use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Models\VoucherItem;
-use Database\Seeders\CatalogSeeder;
+use App\Support\CuratedDestinationCatalog;
+use App\Support\Normalizer;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -38,39 +41,108 @@ class CatalogSeederTest extends TestCase
 
     public function test_the_curated_catalog_is_seeded_without_excel_and_is_idempotent(): void
     {
-        $this->seed(CatalogSeeder::class);
+        $this->seed(DatabaseSeeder::class);
 
-        $this->assertDatabaseCount('materials', 377);
-        $this->assertDatabaseCount('material_aliases', 414);
+        $this->assertDatabaseCount('materials', 843);
+        $this->assertDatabaseCount('material_aliases', 879);
+        $this->assertDatabaseCount('material_storage_location', 860);
         $this->assertDatabaseCount('people', 44);
-        $this->assertDatabaseCount('person_aliases', 55);
+        $this->assertDatabaseCount('person_aliases', 56);
+        $this->assertDatabaseCount('destinations', 309);
+        $this->assertDatabaseCount('destination_aliases', 7);
         $this->assertDatabaseCount('units', 7);
         $this->assertDatabaseCount('programs', 1);
-        $this->assertFalse(Schema::hasTable('actions'));
+        $this->assertTrue(Schema::hasTable('actions'));
+        $this->assertDatabaseCount('actions', 1);
         $this->assertDatabaseCount('vouchers', 0);
         $this->assertSame(18, Person::query()->where('needs_review', true)->count());
-        $this->assertSame(0, Person::query()->where('can_deliver_material', true)->count());
+        $this->assertSame(176, Material::query()->where('needs_review', true)->count());
+        $this->assertSame(760, StorageLocation::query()->where('code', 'warehouse')->sole()->materials()->count());
+        $this->assertSame(100, StorageLocation::query()->where('code', 'yard')->sole()->materials()->count());
+        $this->assertSame(2, Person::query()->where('can_deliver_material', true)->count());
+        $this->assertSame(0, Person::query()
+            ->whereIn('normalized_name', ['nelson treto', 'fco fierro'])
+            ->where('can_receive_material', true)
+            ->count());
         $this->assertSame(1, Person::query()->where('can_authorize_material', true)->count());
         $this->assertDatabaseHas('person_aliases', [
             'normalized_alias' => 'piano',
             'person_id' => Person::query()->where('normalized_name', 'cipriano salas')->sole()->id,
         ]);
+        $this->assertDatabaseHas('destination_aliases', [
+            'normalized_alias' => 'vientisiete de noviembre',
+            'destination_id' => Destination::query()->where('normalized_name', 'poblado veintisiete de noviembre')->sole()->id,
+        ]);
+        $destinationMappings = app(CuratedDestinationCatalog::class)->legacyMappings();
+        $this->assertSame(527, count($destinationMappings));
+        $this->assertSame(70, collect($destinationMappings)->where('needs_review', true)->count());
+        $this->assertSame([
+            'destinations' => ['Poblado Otinapa'],
+            'usage_description' => 'Mantenimiento',
+            'needs_review' => false,
+        ], $destinationMappings['mto poblado otinapa']);
+        $this->assertSame([
+            'destinations' => ['Aquiles Serdan'],
+            'usage_description' => 'Mantenimiento',
+            'needs_review' => false,
+        ], $destinationMappings['mnto aquiles serdan']);
+        $this->assertSame([
+            'destinations' => ['Av. Circuito Interior'],
+            'usage_description' => 'Mantenimiento',
+            'needs_review' => false,
+        ], $destinationMappings['mnto av circuito interior']);
+        $this->assertSame([
+            'destinations' => ['Acereros'],
+            'usage_description' => 'Fortalecimiento',
+            'needs_review' => false,
+        ], $destinationMappings['fortalecimiento acereros']);
+        $this->assertSame([
+            'destinations' => [],
+            'usage_description' => 'Mantenimiento: Poblado el Nayar y el Tunal',
+            'needs_review' => true,
+        ], $destinationMappings['mtno poblado el nayar y el tunal']);
+        $this->assertDatabaseMissing('destination_aliases', [
+            'normalized_alias' => 'mto poblado otinapa',
+        ]);
+        $this->assertDatabaseMissing('destination_aliases', [
+            'normalized_alias' => 'poblado otinapa',
+        ]);
+        $this->assertDatabaseHas('destinations', ['normalized_name' => 'fco villa viejo']);
+        $this->assertSame([], Destination::query()
+            ->pluck('normalized_name')
+            ->filter(fn (string $name): bool => preg_match(
+                '/^(mto|mnto|mtno|mantenimiento|fort|fortalecimiento|fortalecimineto|fabricacion|reportes?|alumbrado|iluminacion|domo|circuitos?)\b/',
+                $name,
+            ) === 1)
+            ->values()
+            ->all());
+        $knownDestinationKeys = Destination::query()->pluck('normalized_name')
+            ->merge(DestinationAlias::query()->pluck('normalized_alias'))
+            ->unique();
+        $referencedDestinationKeys = collect($destinationMappings)
+            ->flatMap(fn (array $mapping): array => $mapping['destinations'])
+            ->map(fn (string $name): string => Normalizer::key($name))
+            ->unique();
+        $this->assertSame([], $referencedDestinationKeys->diff($knownDestinationKeys)->values()->all());
 
-        $this->seed(CatalogSeeder::class);
+        $this->seed(DatabaseSeeder::class);
 
-        $this->assertDatabaseCount('materials', 377);
-        $this->assertDatabaseCount('material_aliases', 414);
+        $this->assertDatabaseCount('materials', 843);
+        $this->assertDatabaseCount('material_aliases', 879);
+        $this->assertDatabaseCount('material_storage_location', 860);
         $this->assertDatabaseCount('people', 44);
-        $this->assertDatabaseCount('person_aliases', 55);
+        $this->assertDatabaseCount('person_aliases', 56);
+        $this->assertDatabaseCount('destinations', 309);
+        $this->assertDatabaseCount('destination_aliases', 7);
 
         $this->assertSame([
             'jgo' => 4,
-            'kg' => 4,
-            'm' => 28,
+            'kg' => 2,
+            'm' => 45,
             'm³' => 2,
-            'pza' => 303,
-            'rollo' => 7,
-            's/e' => 29,
+            'pza' => 552,
+            'rollo' => 39,
+            's/e' => 199,
         ], Unit::query()
             ->withCount('materials')
             ->get()
@@ -81,7 +153,7 @@ class CatalogSeederTest extends TestCase
 
     public function test_reseeding_only_upgrades_unspecified_material_units(): void
     {
-        $this->seed(CatalogSeeder::class);
+        $this->seed(DatabaseSeeder::class);
 
         $unspecified = Unit::query()->where('symbol', 's/e')->sole();
         $piece = Unit::query()->where('symbol', 'pza')->sole();
@@ -90,7 +162,7 @@ class CatalogSeederTest extends TestCase
         $bracket->update(['default_unit_id' => $unspecified->id]);
         $cable->update(['default_unit_id' => $piece->id]);
 
-        $this->seed(CatalogSeeder::class);
+        $this->seed(DatabaseSeeder::class);
 
         $this->assertSame('pza', $bracket->fresh()->defaultUnit->symbol);
         $this->assertSame('pza', $cable->fresh()->defaultUnit->symbol);
@@ -108,7 +180,7 @@ class CatalogSeederTest extends TestCase
 
     public function test_curated_units_can_be_previewed_and_applied_to_traced_legacy_items(): void
     {
-        $this->seed(CatalogSeeder::class);
+        $this->seed(DatabaseSeeder::class);
 
         $unspecified = Unit::query()->where('symbol', 's/e')->sole();
         $material = Material::query()->where('normalized_name', 'abrazadera 1bs')->sole();
@@ -156,9 +228,9 @@ class CatalogSeederTest extends TestCase
         $this->assertDatabaseCount('audit_events', 2);
     }
 
-    public function test_safe_aliases_are_merged_and_different_specs_remain_separate(): void
+    public function test_safe_aliases_are_merged_and_spreadsheet_headers_remain_distinct(): void
     {
-        $this->seed(CatalogSeeder::class);
+        $this->seed(DatabaseSeeder::class);
 
         $abbreviation = MaterialAlias::query()->where('normalized_alias', 'abrazadera 2 bs')->firstOrFail();
         $this->assertSame('ABRAZADERA 2BS', $abbreviation->material->name);
@@ -176,8 +248,19 @@ class CatalogSeederTest extends TestCase
         );
 
         $this->assertTrue(Material::query()->where('normalized_name', 'bastidor b1')->exists());
-        $this->assertTrue(Material::query()->where('normalized_name', 'bastidor b4')->exists());
+        $this->assertTrue(Material::query()->where('normalized_name', 'bastidor')->exists());
+        $this->assertFalse(Material::query()->where('normalized_name', 'bastidor b4')->exists());
         $this->assertTrue(Material::query()->where('normalized_name', 'soldadura 60 11')->exists());
-        $this->assertTrue(Material::query()->where('normalized_name', 'soldadura 7018')->exists());
+        $this->assertFalse(Material::query()->where('normalized_name', 'soldadura 7018')->exists());
+        $this->assertDatabaseHas('materials', [
+            'normalized_name' => 'cintas de aislar de vinilo temflex',
+            'default_unit_id' => Unit::query()->where('symbol', 'rollo')->sole()->id,
+            'needs_review' => false,
+        ]);
+        $this->assertDatabaseHas('materials', [
+            'normalized_name' => 'alambre desnudo de cobre cal 6',
+            'default_unit_id' => Unit::query()->where('symbol', 's/e')->sole()->id,
+            'needs_review' => true,
+        ]);
     }
 }

@@ -3,18 +3,18 @@
 namespace Tests\Feature;
 
 use App\Enums\VoucherDirection;
-use App\Models\LegacyImportRow;
+use App\Enums\VoucherStatus;
+use App\Models\Action;
+use App\Models\Destination;
 use App\Models\Material;
-use App\Models\MaterialApplication;
+use App\Models\Person;
+use App\Models\Program;
 use App\Models\StorageLocation;
+use App\Models\Unit;
 use App\Models\Voucher;
-use App\Models\VoucherItem;
-use App\Support\InventorySummary;
-use Database\Seeders\CatalogSeeder;
+use App\Support\LegacyControlWorkbook;
+use App\Support\Normalizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use OpenSpout\Common\Entity\Cell;
-use OpenSpout\Common\Entity\Comment\Comment;
-use OpenSpout\Common\Entity\Comment\TextRun;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 use Tests\TestCase;
@@ -23,221 +23,230 @@ class LegacyImportTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_legacy_import_is_traceable_and_idempotent(): void
+    public function test_numeric_values_above_material_headers_are_ignored(): void
     {
-        $path = tempnam(sys_get_temp_dir(), 'legacy-test-');
-        $this->assertNotFalse($path);
+        $path = $this->workbook([
+            $this->warehouseRow('16576', 'SALIDA', '2026-08-24', 'Centro', 'Israel Jurado', 'Nelson Treto', 2, null),
+        ], [], 'Cable POT calibre 14', true);
 
         try {
-            $writer = new Writer;
-            $writer->openToFile($path);
-            $writer->getCurrentSheet()->setName('victor');
-            $writer->addRow($this->header());
-            $writer->addRow($this->sourceRow([1, 'V-001', 'Juan Pérez', '2026-01-02', 'Cable calibre 12', 'Centro', 10, 5, 5]));
-            $writer->addRow($this->sourceRow([2, 'V-001', 'Juan Pérez', '2026-01-02', 'Conector', 'Centro', 3, 3, 0]));
-            $writer->close();
+            $rows = app(LegacyControlWorkbook::class)->read($path);
 
-            $this->artisan('legacy:import-control', ['file' => $path])->assertSuccessful();
-            $this->assertSame(1, Voucher::query()->count());
-            $this->assertSame(2, LegacyImportRow::query()->count());
-            $this->assertSame(1, MaterialApplication::query()->count());
-            $this->assertSame('2026-01-02', MaterialApplication::query()->sole()->occurred_on->format('Y-m-d'));
-            $this->assertSame('5.000', Voucher::query()->sole()->items()->firstOrFail()->pendingQuantity());
-            $this->assertSame(VoucherDirection::Exit, Voucher::query()->sole()->direction);
-            $this->assertSame('warehouse', Voucher::query()->sole()->location->code);
-            $this->assertFalse(Voucher::query()->sole()->deliveredBy->can_deliver_material);
-            $this->assertSame([], InventorySummary::rows());
-
-            $this->artisan('legacy:import-control', ['file' => $path])
-                ->expectsOutputToContain('ya fue importado')
-                ->assertSuccessful();
-            $this->assertSame(1, Voucher::query()->count());
-            $this->assertSame(2, LegacyImportRow::query()->count());
+            $this->assertCount(1, $rows);
+            $this->assertSame('Cable POT calibre 14', $rows[0]['items'][0]['material']);
+            $this->assertSame(2.0, $rows[0]['items'][0]['quantity']);
         } finally {
-            if (is_string($path) && is_file($path)) {
+            if (is_file($path)) {
                 unlink($path);
             }
         }
     }
 
-    public function test_legacy_import_uses_curated_units_and_keeps_unknown_materials_unspecified(): void
+    public function test_august_import_is_atomic_traceable_and_preserves_historical_loans(): void
     {
-        $this->seed(CatalogSeeder::class);
-        $path = tempnam(sys_get_temp_dir(), 'legacy-units-test-');
-        $this->assertNotFalse($path);
+        $catalog = $this->catalog();
+        $path = $this->workbook([
+            $this->warehouseRow('16577', 'SALIDA', '2026-08-24', 'Actualización LED 2026 Blvd. Guadiana', 'Israel Jurado', 'Nelson Treto', 2, 1),
+            $this->warehouseRow('16579', 'CANCELADO', '2026-08-25', 'San Carlos', 'Israel Jurado', '', 1, 1),
+            $this->warehouseRow('16582', 'Prestado', '2026-08-25', '', 'Marco', '', null, null),
+            $this->warehouseRow('16583', 'SALIDA', '2026-08-26', 'Circuito interior', '', 'Nelson Treto', 1, 1),
+            $this->warehouseRow('OLD', 'SALIDA', '2025-08-24', 'Viejo', 'Israel Jurado', 'Nelson Treto', 1, 1),
+        ], [
+            $this->yardRow('3753', 'SALIDA', '2026-08-25', '5 de Mayo', 'Israel Jurado', 'Nelson Treto', 3),
+        ]);
 
         try {
-            $writer = new Writer;
-            $writer->openToFile($path);
-            $writer->getCurrentSheet()->setName('victor');
-            $writer->addRow($this->header());
-            $writer->addRow($this->sourceRow([1, 'UNITS', 'Ana', '2026-01-02', 'CABLE THW #12', 'Centro', 10, 10, 0]));
-            $writer->addRow($this->sourceRow([2, 'UNITS', 'Ana', '2026-01-02', 'MATERIAL DESCONOCIDO', 'Centro', 1, 1, 0]));
-            $writer->close();
-
-            $this->artisan('legacy:import-control', ['file' => $path])->assertSuccessful();
-
-            $items = VoucherItem::query()->with(['material', 'unit'])->orderBy('id')->get();
-            $this->assertSame('m', $items[0]->unit->symbol);
-            $this->assertSame('s/e', $items[1]->unit->symbol);
-            $this->assertTrue(Material::query()->where('normalized_name', 'material desconocido')->sole()->needs_review);
-        } finally {
-            if (is_string($path) && is_file($path)) {
-                unlink($path);
-            }
-        }
-    }
-
-    public function test_legacy_import_skips_old_rows_keeps_the_new_part_of_a_mixed_folio_and_stages_undated_rows(): void
-    {
-        $path = tempnam(sys_get_temp_dir(), 'legacy-cutoff-test-');
-        $this->assertNotFalse($path);
-
-        try {
-            $writer = new Writer;
-            $writer->openToFile($path);
-            $writer->getCurrentSheet()->setName('victor');
-            $writer->addRow($this->header());
-            $writer->addRow($this->sourceRow([1, 'OLD', 'Ana', '2025-12-31', 'Cable', 'Centro', 1, 1, 0]));
-            $writer->addRow($this->sourceRow([2, 'MIXED', 'Ana', '2025-12-31', 'Cable', 'Centro', 1, 1, 0]));
-            $writer->addRow($this->sourceRow([3, 'MIXED', 'Ana', '2026-01-02', 'Conector', 'Centro', 1, 1, 0]));
-            $writer->addRow($this->sourceRow([4, 'NO-DATE', 'Ana', null, 'Cable', 'Centro', 1, 1, 0]));
-            $writer->addRow($this->sourceRow([5, 'NEW', 'Ana', '2026-01-02', 'Cable', 'Centro', 2, 2, 0]));
-            $writer->close();
-
             $this->artisan('legacy:import-control', ['file' => $path])
-                ->expectsOutputToContain('skipped_before_cutoff')
-                ->expectsOutputToContain('partial_cutoff_rows')
-                ->expectsOutputToContain('unresolved_missing_date')
+                ->expectsOutputToContain('cancelled_ready')
+                ->expectsOutputToContain('missing_receiver')
                 ->assertSuccessful();
 
-            $this->assertSame(['MIXED', 'NEW'], Voucher::query()->pluck('folio')->all());
-            $this->assertTrue(Voucher::query()->where('folio', 'MIXED')->sole()->needs_review);
-            $this->assertSame(3, LegacyImportRow::query()->count());
+            $this->assertDatabaseCount('vouchers', 4);
+            $this->assertDatabaseCount('legacy_import_rows', 5);
+            $this->assertDatabaseCount('material_applications', 0);
+            $active = Voucher::query()->where('folio', '16577')->sole();
+            $this->assertSame(VoucherDirection::Exit, $active->direction);
+            $this->assertSame($catalog['program']->id, $active->program_id);
+            $this->assertSame($catalog['action']->id, $active->action_id);
+            $this->assertSame($catalog['authorizer']->id, $active->authorized_by_id);
+            $this->assertSame('warehouse', $active->location->code);
+            $this->assertSame(2, $active->items()->count());
+            $this->assertSame(['Blvd. Guadiana'], $active->destinations()->pluck('name')->all());
+            $this->assertSame('Actualización LED 2026', $active->usage_description);
+
+            $yard = Voucher::query()->where('folio', '3753')->sole();
+            $this->assertSame('yard', $yard->location->code);
+            $this->assertNull($yard->program_id);
+            $this->assertNull($yard->action_id);
+
+            $loan = Voucher::query()->where('folio', '16582')->sole();
+            $this->assertSame(VoucherStatus::Loaned, $loan->status);
+            $this->assertNull($loan->direction);
+            $this->assertSame('Marco', $loan->loaned_to_name);
+            $this->assertSame(0, $loan->items()->count());
+
+            $cancelled = Voucher::query()->where('folio', '16579')->sole();
+            $this->assertSame(VoucherStatus::Cancelled, $cancelled->status);
+            $this->assertNull($cancelled->received_by_id);
+            $this->assertNull($cancelled->delivered_by_id);
+            $this->assertSame(0, $cancelled->items()->count());
+
             $this->assertDatabaseHas('legacy_import_rows', [
                 'row_number' => 5,
                 'imported_type' => null,
                 'imported_id' => null,
             ]);
+
+            $this->artisan('legacy:import-control', ['file' => $path])
+                ->expectsOutputToContain('ya fue importado')
+                ->assertSuccessful();
+            $this->assertDatabaseCount('vouchers', 4);
         } finally {
-            if (is_string($path) && is_file($path)) {
+            if (is_file($path)) {
                 unlink($path);
             }
         }
     }
 
-    public function test_an_undated_voucher_can_be_inferred_from_a_report_comment(): void
+    public function test_import_omits_the_whole_voucher_when_a_material_is_unresolved(): void
     {
-        $path = tempnam(sys_get_temp_dir(), 'legacy-inferred-test-');
-        $this->assertNotFalse($path);
+        $this->catalog();
+        $path = $this->workbook([
+            $this->warehouseRow('UNKNOWN', 'SALIDA', '2026-08-24', 'Centro', 'Israel Jurado', 'Nelson Treto', 2, null),
+        ], [], 'Material no catalogado');
 
         try {
-            $writer = new Writer;
-            $writer->openToFile($path);
-            $writer->getCurrentSheet()->setName('victor');
-            $writer->addRow($this->header());
-            $writer->addRow($this->sourceRow(
-                [1, 'INFERRED', 'Ana', null, 'Cable', 'Contreras', 2, 1, 1],
-                'Persona revisora:'.PHP_EOL.'15/4/26 Patio 22072',
-            ));
-            $writer->close();
-
-            $this->artisan('legacy:import-control', ['file' => $path])->assertSuccessful();
-
-            $voucher = Voucher::query()->sole();
-            $application = MaterialApplication::query()->sole();
-            $this->assertSame('2026-04-15', $voucher->issued_on->format('Y-m-d'));
-            $this->assertTrue($voucher->needs_review);
-            $this->assertContains('La fecha del vale se infirió como 2026-04-15 a partir de la información disponible.', $voucher->review_reasons);
-            $this->assertSame('2026-04-15', $application->occurred_on->format('Y-m-d'));
-            $this->assertSame('22072', $application->reference);
-            $this->assertSame('Patio', $application->destination);
-            $this->assertSame(2, LegacyImportRow::query()->sole()->row_number);
-        } finally {
-            if (is_string($path) && is_file($path)) {
-                unlink($path);
-            }
-        }
-    }
-
-    public function test_dry_run_performs_the_full_analysis_without_writing(): void
-    {
-        $path = tempnam(sys_get_temp_dir(), 'legacy-dry-run-test-');
-        $this->assertNotFalse($path);
-
-        try {
-            $writer = new Writer;
-            $writer->openToFile($path);
-            $writer->getCurrentSheet()->setName('victor');
-            $writer->addRow($this->header());
-            $writer->addRow($this->sourceRow([1, 'DRY', 'Ana', '2026-01-02', 'Cable', 'Centro', 2, 2, 0]));
-            $writer->close();
-
-            $this->artisan('legacy:import-control', ['file' => $path, '--dry-run' => true])
-                ->expectsOutputToContain('Simulación completa')
-                ->expectsOutputToContain('vouchers')
+            $this->artisan('legacy:import-control', ['file' => $path])
+                ->expectsOutputToContain('unresolved_material')
                 ->assertSuccessful();
 
             $this->assertDatabaseCount('vouchers', 0);
-            $this->assertDatabaseCount('legacy_import_rows', 0);
+            $this->assertDatabaseCount('voucher_items', 0);
+            $this->assertDatabaseCount('legacy_import_rows', 1);
         } finally {
-            if (is_string($path) && is_file($path)) {
+            if (is_file($path)) {
                 unlink($path);
             }
         }
     }
 
-    public function test_an_existing_warehouse_folio_aborts_before_any_import_row_is_written(): void
+    public function test_dry_run_analyzes_without_writing_and_existing_folios_fail_before_tracing(): void
     {
-        $path = tempnam(sys_get_temp_dir(), 'legacy-conflict-test-');
-        $this->assertNotFalse($path);
+        $this->catalog();
+        $path = $this->workbook([
+            $this->warehouseRow('DRY', 'SALIDA', '2026-08-24', 'Centro', 'Israel Jurado', 'Nelson Treto', 2, null),
+        ]);
 
         try {
-            $writer = new Writer;
-            $writer->openToFile($path);
-            $writer->getCurrentSheet()->setName('victor');
-            $writer->addRow($this->header());
-            $writer->addRow($this->sourceRow([1, 'EXISTING', 'Ana', '2026-01-02', 'Cable', 'Centro', 2, 2, 0]));
-            $writer->close();
+            $this->artisan('legacy:import-control', ['file' => $path, '--dry-run' => true])
+                ->expectsOutputToContain('Simulación completa')
+                ->assertSuccessful();
+            $this->assertDatabaseCount('vouchers', 0);
+            $this->assertDatabaseCount('legacy_import_rows', 0);
 
-            $warehouse = StorageLocation::factory()->create(['code' => 'warehouse']);
+            $warehouse = StorageLocation::query()->where('code', 'warehouse')->sole();
             Voucher::factory()->create([
                 'storage_location_id' => $warehouse->id,
-                'folio' => 'EXISTING',
-                'folio_key' => 'EXISTING',
+                'folio' => 'DRY',
+                'folio_key' => Normalizer::folio('DRY'),
             ]);
-
             $this->artisan('legacy:import-control', ['file' => $path])
                 ->expectsOutputToContain('entrarían en conflicto')
                 ->assertFailed();
-
             $this->assertDatabaseCount('vouchers', 1);
             $this->assertDatabaseCount('legacy_import_rows', 0);
         } finally {
-            if (is_string($path) && is_file($path)) {
+            if (is_file($path)) {
                 unlink($path);
             }
         }
     }
 
-    private function header(): Row
+    /** @return array{program: Program, action: Action, authorizer: Person} */
+    private function catalog(): array
     {
-        return Row::fromValues([
-            'N°', 'VALE', 'TÉCNICO', 'FECHA DEL VALE', 'DESCRIPCION', 'DESTINO', 'CANTIDAD', 'DIFERENCIA',
-            'REPORTE 1', 'REPORTE 2', 'REPORTE 3', 'REPORTE 4', 'REPORTE 5',
-            'REPORTE 6', 'REPORTE 7', 'REPORTE 8', 'REPORTE 9', 'REPORTE 10',
+        StorageLocation::factory()->create(['code' => 'warehouse', 'name' => 'Almacén']);
+        StorageLocation::factory()->create(['code' => 'yard', 'name' => 'Patio']);
+        $unit = Unit::factory()->create(['symbol' => 'pza']);
+        foreach (['Cable POT calibre 14', 'Cinta de aislar', 'Luminaria LED 50 W'] as $name) {
+            Material::factory()->create([
+                'name' => $name,
+                'normalized_name' => Normalizer::key($name),
+                'default_unit_id' => $unit->id,
+            ]);
+        }
+        Person::factory()->create([
+            'name' => 'Israel Jurado',
+            'normalized_name' => Normalizer::key('Israel Jurado'),
+            'can_receive_material' => true,
+            'can_deliver_material' => false,
         ]);
-    }
-
-    /** @param array<int, mixed> $values */
-    private function sourceRow(array $values, ?string $reportOneComment = null): Row
-    {
-        $values = array_pad($values, 18, null);
-        $cells = array_map(fn (mixed $value): Cell => Cell::fromValue($value), $values);
-        if ($reportOneComment !== null) {
-            $cells[8] = $cells[8]->withComment(new Comment(textRuns: [new TextRun($reportOneComment)]));
+        Person::factory()->create([
+            'name' => 'Nelson Treto',
+            'normalized_name' => Normalizer::key('Nelson Treto'),
+            'can_receive_material' => false,
+            'can_deliver_material' => true,
+        ]);
+        $authorizer = Person::factory()->create([
+            'name' => 'Cipriano Salas',
+            'normalized_name' => Normalizer::key('Cipriano Salas'),
+            'can_receive_material' => false,
+            'can_deliver_material' => false,
+            'can_authorize_material' => true,
+        ]);
+        $program = Program::factory()->create(['code' => 'SPM-06']);
+        $action = Action::factory()->create(['program_id' => $program->id, 'code' => 'SPM-06-01']);
+        foreach (['Centro', 'Circuito interior', 'Poblado 5 de Mayo', 'Blvd. Guadiana'] as $name) {
+            Destination::factory()->create([
+                'name' => $name,
+                'normalized_name' => Normalizer::key($name),
+            ]);
         }
 
-        return new Row($cells);
+        return compact('program', 'action', 'authorizer');
+    }
+
+    /** @param list<array<int, mixed>> $warehouseRows
+     * @param  list<array<int, mixed>>  $yardRows
+     */
+    private function workbook(array $warehouseRows, array $yardRows = [], string $firstMaterial = 'Cable POT calibre 14', bool $includeNumericRow = false): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'vouchers-import-');
+        $this->assertNotFalse($path);
+        $writer = new Writer;
+        $writer->openToFile($path);
+        $writer->getCurrentSheet()->setName('Vale de Almacen');
+        if ($includeNumericRow) {
+            $writer->addRow(Row::fromValues([null, null, null, null, null, null, null, null, null, null, 73.96, 22.79]));
+        }
+        $writer->addRow(Row::fromValues([
+            '#', 'FOLIO', 'TIPO DE VALE', 'ENTRADA O SALIDA', 'FECHA', 'PROGRAMA SPM-',
+            'ACCION SPM-06-', 'Destino', 'RECIBIO MATERIAL', 'ENTREGO MATERIAL', $firstMaterial, 'Cinta de aislar',
+        ]));
+        foreach ($warehouseRows as $row) {
+            $writer->addRow(Row::fromValues($row));
+        }
+        $writer->addNewSheetAndMakeItCurrent()->setName('Vale de Patio');
+        $writer->addRow(Row::fromValues([
+            '#', 'FOLIO', 'ENTRADA O SALIDA', 'FECHA', 'Destino', 'RECIBIO MATERIAL', 'ENTREGO MATERIAL', 'Luminaria LED 50 W',
+        ]));
+        foreach ($yardRows as $row) {
+            $writer->addRow(Row::fromValues($row));
+        }
+        $writer->close();
+
+        return $path;
+    }
+
+    /** @return array<int, mixed> */
+    private function warehouseRow(string $folio, string $status, string $date, string $destination, string $receiver, string $deliverer, ?float $first, ?float $second): array
+    {
+        return [null, $folio, 'salida', $status, $date, 6, 1, $destination, $receiver, $deliverer, $first, $second];
+    }
+
+    /** @return array<int, mixed> */
+    private function yardRow(string $folio, string $status, string $date, string $destination, string $receiver, string $deliverer, ?float $quantity): array
+    {
+        return [null, $folio, $status, $date, $destination, $receiver, $deliverer, $quantity];
     }
 }
