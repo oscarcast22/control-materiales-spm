@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Action;
 use App\Models\AuditEvent;
 use App\Models\Material;
 use App\Models\MaterialAlias;
@@ -35,7 +34,7 @@ class CatalogController extends Controller
             'materials' => Material::query()->with('defaultUnit')->withCount('aliases')->orderBy('name')->get(),
             'people' => Person::query()->withCount('aliases')->orderBy('name')->get(),
             'units' => Unit::query()->orderBy('name')->get(),
-            'programs' => Program::query()->with('actions')->orderBy('code')->get(),
+            'programs' => Program::query()->orderBy('code')->get(),
             'locations' => StorageLocation::query()->orderBy('name')->get(),
         ]);
     }
@@ -103,8 +102,9 @@ class CatalogController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'can_receive_material' => ['required', 'boolean'],
             'can_deliver_material' => ['required', 'boolean'],
+            'can_authorize_material' => ['required', 'boolean'],
         ]);
-        if (! $data['can_receive_material'] && ! $data['can_deliver_material']) {
+        if (! $data['can_receive_material'] && ! $data['can_deliver_material'] && ! $data['can_authorize_material']) {
             throw ValidationException::withMessages(['name' => 'Selecciona al menos una función para la persona.']);
         }
         $key = Normalizer::key($data['name']);
@@ -125,8 +125,9 @@ class CatalogController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'can_receive_material' => ['required', 'boolean'],
             'can_deliver_material' => ['required', 'boolean'],
+            'can_authorize_material' => ['required', 'boolean'],
         ]);
-        if (! $data['can_receive_material'] && ! $data['can_deliver_material']) {
+        if (! $data['can_receive_material'] && ! $data['can_deliver_material'] && ! $data['can_authorize_material']) {
             throw ValidationException::withMessages(['name' => 'Selecciona al menos una función para la persona.']);
         }
         $key = Normalizer::key($data['name']);
@@ -186,20 +187,6 @@ class CatalogController extends Controller
         return back()->with('success', 'Programa agregado.');
     }
 
-    public function storeAction(Request $request): RedirectResponse
-    {
-        Gate::authorize('manage-catalogs');
-        $data = $request->validate([
-            'program_id' => ['required', 'exists:programs,id'],
-            'code' => ['required', 'string', 'max:50', Rule::unique('actions', 'code')],
-            'name' => ['nullable', 'string', 'max:255'],
-        ]);
-        $model = Action::create($data);
-        AuditEvent::record($model, 'created', null, $model->toArray());
-
-        return back()->with('success', 'Acción agregada.');
-    }
-
     public function storeLocation(Request $request): RedirectResponse
     {
         Gate::authorize('manage-catalogs');
@@ -237,7 +224,6 @@ class CatalogController extends Controller
             'people' => Person::class,
             'units' => Unit::class,
             'programs' => Program::class,
-            'actions' => Action::class,
             'locations' => StorageLocation::class,
             default => abort(404),
         };
@@ -294,6 +280,7 @@ class CatalogController extends Controller
             $target = Person::query()->lockForUpdate()->findOrFail($targetId);
             Voucher::query()->where('received_by_id', $source->id)->update(['received_by_id' => $target->id]);
             Voucher::query()->where('delivered_by_id', $source->id)->update(['delivered_by_id' => $target->id]);
+            Voucher::query()->where('authorized_by_id', $source->id)->update(['authorized_by_id' => $target->id]);
             foreach ($source->aliases as $alias) {
                 $existing = PersonAlias::query()->where('normalized_alias', $alias->normalized_alias)->first();
                 $existing && $existing->id !== $alias->id ? $alias->delete() : $alias->update(['person_id' => $target->id]);
@@ -305,6 +292,7 @@ class CatalogController extends Controller
             $target->update([
                 'can_receive_material' => $target->can_receive_material || $source->can_receive_material,
                 'can_deliver_material' => $target->can_deliver_material || $source->can_deliver_material,
+                'can_authorize_material' => $target->can_authorize_material || $source->can_authorize_material,
             ]);
             AuditEvent::record($target, 'merged_person', $source->toArray(), $target->toArray());
             $source->delete();

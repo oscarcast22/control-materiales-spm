@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
-use App\Models\Action;
 use App\Models\AuditEvent;
 use App\Models\Material;
 use App\Models\Person;
-use App\Models\Program;
 use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Models\Voucher;
@@ -17,12 +15,14 @@ use App\Models\VoucherItem;
 use App\Support\Normalizer;
 use App\Support\VoucherData;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Inertia\Inertia;
@@ -33,7 +33,7 @@ class VoucherController extends Controller
     public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Voucher::class);
-        $query = Voucher::query()->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'items.material', 'items.unit', 'items.applications']);
+        $query = Voucher::query()->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'items.material', 'items.unit', 'items.applications']);
 
         if ($search = trim((string) $request->string('search'))) {
             $needle = '%'.mb_strtolower($search).'%';
@@ -129,14 +129,14 @@ class VoucherController extends Controller
         Gate::authorize('update', $voucher);
         abort_if($voucher->status === VoucherStatus::Cancelled, 422, 'Un vale cancelado no se puede editar.');
 
-        return Inertia::render('vouchers/form', ['voucher' => VoucherData::make($voucher, true), ...$this->catalogData()]);
+        return Inertia::render('vouchers/form', ['voucher' => VoucherData::make($voucher, true), ...$this->catalogData($voucher)]);
     }
 
     public function update(Request $request, Voucher $voucher): RedirectResponse
     {
         Gate::authorize('update', $voucher);
         abort_if($voucher->status === VoucherStatus::Cancelled, 422, 'Un vale cancelado no se puede editar.');
-        $data = $this->validateVoucher($request, true);
+        $data = $this->validateVoucher($request, $voucher);
         $this->ensureUniqueFolio($data['folio'], (int) $data['storage_location_id'], $voucher);
 
         $hasMovements = $voucher->items()->whereHas('applications', fn (Builder $query) => $query->whereNull('voided_at'))->exists();
@@ -213,34 +213,31 @@ class VoucherController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function catalogData(): array
+    private function catalogData(?Voucher $voucher = null): array
     {
         return [
             'materials' => Material::query()->with('defaultUnit')->where('is_active', true)->orderBy('name')->get(),
             'units' => Unit::query()->where('is_active', true)->orderBy('name')->get(),
             'locations' => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(),
-            'receivers' => Person::query()->where('is_active', true)->where('can_receive_material', true)->orderBy('name')->get(),
-            'deliverers' => Person::query()->where('is_active', true)->where('can_deliver_material', true)->orderBy('name')->get(),
-            'authorizers' => Person::query()->where('is_active', true)->orderBy('name')->get(),
-            'programs' => Program::query()->with(['actions' => fn ($query) => $query->where('is_active', true)->orderBy('code')])->where('is_active', true)->orderBy('code')->get(),
+            'receivers' => $this->peopleForRole('can_receive_material', $voucher?->received_by_id),
+            'deliverers' => $this->peopleForRole('can_deliver_material', $voucher?->delivered_by_id),
+            'authorizers' => $this->peopleForRole('can_authorize_material', $voucher?->authorized_by_id),
         ];
     }
 
     /** @return array<string, mixed> */
-    private function validateVoucher(Request $request, bool $updating = false): array
+    private function validateVoucher(Request $request, ?Voucher $voucher = null): array
     {
+        $updating = $voucher !== null;
         $data = $request->validate([
             'storage_location_id' => ['required', Rule::exists('storage_locations', 'id')->where('is_active', true)],
             'folio' => ['required', 'string', 'max:50'],
             'direction' => ['required', Rule::enum(VoucherDirection::class)],
-            'reference' => ['nullable', 'string', 'max:255'],
             'issued_on' => ['required', 'date'],
             'issued_time' => ['nullable', 'date_format:H:i'],
-            'received_by_id' => ['required', Rule::exists('people', 'id')->where('can_receive_material', true)->where('is_active', true)],
-            'delivered_by_id' => ['required', Rule::exists('people', 'id')->where('can_deliver_material', true)->where('is_active', true)],
-            'authorized_by_id' => ['nullable', Rule::exists('people', 'id')->where('is_active', true)],
-            'program_id' => ['nullable', Rule::exists('programs', 'id')->where('is_active', true)],
-            'action_id' => ['nullable', 'exists:actions,id'],
+            'received_by_id' => ['required', $this->personRoleRule('can_receive_material', $voucher?->received_by_id)],
+            'delivered_by_id' => ['required', $this->personRoleRule('can_deliver_material', $voucher?->delivered_by_id)],
+            'authorized_by_id' => ['nullable', $this->personRoleRule('can_authorize_material', $voucher?->authorized_by_id)],
             'destination' => ['required', 'string', 'max:3000'],
             'notes' => ['nullable', 'string', 'max:5000'],
             'items' => ['required', 'array', 'min:1'],
@@ -255,11 +252,35 @@ class VoucherController extends Controller
         $data['folio'] = trim($data['folio']);
         $data['destination'] = trim($data['destination']);
 
-        if (! empty($data['action_id']) && ! Action::query()->whereKey($data['action_id'])->where('program_id', $data['program_id'])->exists()) {
-            throw ValidationException::withMessages(['action_id' => 'La acción no pertenece al programa seleccionado.']);
-        }
-
         return $data;
+    }
+
+    /** @return Collection<int, Person> */
+    private function peopleForRole(string $role, ?int $currentId = null): Collection
+    {
+        return Person::query()
+            ->where(function (Builder $query) use ($role, $currentId): void {
+                $query->where(function (Builder $eligible) use ($role): void {
+                    $eligible->where('is_active', true)->where($role, true);
+                });
+                if ($currentId !== null) {
+                    $query->orWhere('id', $currentId);
+                }
+            })
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function personRoleRule(string $role, ?int $currentId = null): Exists
+    {
+        return Rule::exists('people', 'id')->where(function ($query) use ($role, $currentId): void {
+            $query->where(function ($eligible) use ($role): void {
+                $eligible->where('is_active', true)->where($role, true);
+            });
+            if ($currentId !== null) {
+                $query->orWhere('id', $currentId);
+            }
+        });
     }
 
     private function ensureUniqueFolio(string $folio, int $locationId, ?Voucher $except = null): void

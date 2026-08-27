@@ -123,7 +123,7 @@ class ReportController extends Controller
     private function trackingVoucherQuery(array $filters): Builder
     {
         $query = Voucher::query()->with([
-            'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action',
+            'location', 'receivedBy', 'deliveredBy', 'authorizedBy',
             'items.material', 'items.unit', 'items.applications.report.attachment',
         ])->where('status', VoucherStatus::Active->value)
             ->where('direction', VoucherDirection::Exit->value)

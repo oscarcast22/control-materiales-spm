@@ -39,9 +39,7 @@ erDiagram
     USERS ||--o{ VOUCHERS : creates_updates
     STORAGE_LOCATIONS ||--o{ VOUCHERS : contains
     PEOPLE ||--o{ VOUCHERS : receives_delivers_authorizes
-    PROGRAMS ||--o{ ACTIONS : has
     PROGRAMS ||--o{ VOUCHERS : classifies
-    ACTIONS ||--o{ VOUCHERS : classifies
     VOUCHERS ||--|{ VOUCHER_ITEMS : contains
     MATERIALS ||--o{ VOUCHER_ITEMS : identifies
     UNITS ||--o{ VOUCHER_ITEMS : measures
@@ -64,9 +62,9 @@ erDiagram
 | `units` | Unidad estructurada usada para cantidades. |
 | `materials` | Catálogo canónico; conserva unidad habitual y bandera de revisión. |
 | `material_aliases` | Variantes históricas que apuntan al material canónico. |
-| `people` | Técnicos y personal; sus banderas indican quién recibe o entrega. |
+| `people` | Técnicos y personal; sus banderas indican quién recibe, entrega o autoriza. |
 | `person_aliases` | Escrituras alternativas de una misma persona. |
-| `programs`, `actions` | Clasificación opcional del trabajo municipal. |
+| `programs` | Clasificación reservada para uso futuro; no aparece actualmente en los vales. |
 | `vouchers` | Cabecera del documento, estado, revisión y responsables. |
 | `voucher_items` | Material, unidad, descripción histórica y cantidad entregada. |
 | `material_application_reports` | Datos comunes y evidencia opcional de una aplicación capturada en bloque. |

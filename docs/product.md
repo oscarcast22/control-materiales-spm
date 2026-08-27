@@ -13,7 +13,7 @@ La usuaria principal captura y revisa información administrativa. No controla e
 
 ## Flujo principal
 
-1. Se captura un vale con folio, fecha, área, técnico, personal relacionado, destino y una o más partidas.
+1. Se captura un vale con folio, fecha, área, técnico, personal relacionado, destino y una o más partidas. Las personas disponibles para recibir, entregar o autorizar se administran desde Catálogos según su función.
 2. Cada partida conserva el nombre del material, unidad y cantidad entregada en ese momento.
 3. Posteriormente se registran una o varias **aplicaciones** con fecha, cantidad, referencia opcional y evidencia privada opcional.
 4. La aplicación recalcula el saldo. Un vale queda liquidado cuando todas sus partidas llegan exactamente a cero.

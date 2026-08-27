@@ -31,7 +31,7 @@ final class VoucherData
     public static function make(Voucher $voucher, bool $detailed = false): array
     {
         $voucher->loadMissing([
-            'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action',
+            'location', 'receivedBy', 'deliveredBy', 'authorizedBy',
             'items.material', 'items.unit', 'items.applications.report.attachment', 'attachments',
         ]);
 
@@ -56,14 +56,11 @@ final class VoucherData
             ],
             'folio' => $voucher->folio,
             'direction' => $voucher->direction->value,
-            'reference' => $voucher->reference,
             'issued_on' => $voucher->issued_on->format('Y-m-d'),
             'issued_time' => $voucher->issued_time,
             'received_by' => $voucher->receivedBy->only(['id', 'name']),
             'delivered_by' => $voucher->deliveredBy->only(['id', 'name']),
             'authorized_by' => $voucher->authorizedBy?->only(['id', 'name']),
-            'program' => $voucher->program?->only(['id', 'code', 'name']),
-            'action' => $voucher->action?->only(['id', 'code', 'name']),
             'destination' => $voucher->destination,
             'notes' => $voucher->notes,
             'status' => $voucher->status->value,

@@ -162,18 +162,6 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                             label="Autorizó"
                             value={voucher.authorized_by?.name ?? '—'}
                         />
-                        <Info
-                            label="Referencia"
-                            value={voucher.reference ?? '—'}
-                        />
-                        <Info
-                            label="Programa"
-                            value={voucher.program?.code ?? '—'}
-                        />
-                        <Info
-                            label="Acción"
-                            value={voucher.action?.code ?? '—'}
-                        />
                         <div className="sm:col-span-2 lg:col-span-4">
                             <Info label="Destino" value={voucher.destination} />
                         </div>

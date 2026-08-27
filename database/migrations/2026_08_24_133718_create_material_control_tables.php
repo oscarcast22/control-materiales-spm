@@ -53,6 +53,7 @@ return new class extends Migration
             $table->string('normalized_name')->unique();
             $table->boolean('can_receive_material')->default(false);
             $table->boolean('can_deliver_material')->default(false);
+            $table->boolean('can_authorize_material')->default(false);
             $table->boolean('is_active')->default(true);
             $table->boolean('needs_review')->default(false);
             $table->timestamps();
@@ -74,33 +75,23 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('actions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('program_id')->constrained()->cascadeOnDelete();
-            $table->string('code')->unique();
-            $table->string('name')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
-
         Schema::create('vouchers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('storage_location_id')->constrained()->restrictOnDelete();
             $table->string('folio');
             $table->string('folio_key');
             $table->string('direction', 20);
-            $table->string('reference')->nullable();
             $table->date('issued_on');
             $table->time('issued_time')->nullable();
             $table->foreignId('received_by_id')->constrained('people')->restrictOnDelete();
             $table->foreignId('delivered_by_id')->constrained('people')->restrictOnDelete();
             $table->foreignId('authorized_by_id')->nullable()->constrained('people')->nullOnDelete();
             $table->foreignId('program_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('action_id')->nullable()->constrained()->nullOnDelete();
             $table->text('destination');
             $table->text('notes')->nullable();
             $table->string('status', 20)->default('active');
             $table->boolean('needs_review')->default(false);
+            $table->json('review_reasons')->nullable();
             $table->timestamp('cancelled_at')->nullable();
             $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('cancellation_reason')->nullable();
@@ -240,7 +231,6 @@ return new class extends Migration
         Schema::dropIfExists('material_application_reports');
         Schema::dropIfExists('voucher_items');
         Schema::dropIfExists('vouchers');
-        Schema::dropIfExists('actions');
         Schema::dropIfExists('programs');
         Schema::dropIfExists('person_aliases');
         Schema::dropIfExists('people');

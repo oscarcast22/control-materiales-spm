@@ -3,6 +3,7 @@
         "name": "Antuna",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -10,6 +11,7 @@
         "name": "Arturo Andrada",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
@@ -17,13 +19,17 @@
         "name": "Cipriano Salas",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": true,
         "needs_review": false,
-        "aliases": []
+        "aliases": [
+            "Piano"
+        ]
     },
     {
         "name": "David",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -31,6 +37,7 @@
         "name": "David Pérez",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
@@ -38,6 +45,7 @@
         "name": "Dueñez",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -45,13 +53,15 @@
         "name": "Edgar",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
     {
         "name": "Erick Aguilar",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": [
             "ERK"
@@ -60,7 +70,8 @@
     {
         "name": "Fco. Fierro",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -68,6 +79,7 @@
         "name": "Fco. Ramírez",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -75,6 +87,7 @@
         "name": "Fernando Rodríguez",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": [
             "fernando rdgz.",
@@ -85,6 +98,7 @@
         "name": "Flores",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -92,6 +106,7 @@
         "name": "Francisco",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -99,20 +114,23 @@
         "name": "Hugo",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
     {
         "name": "Hugo Anguiano",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
     {
         "name": "Hugo Pérez",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
@@ -120,20 +138,23 @@
         "name": "Isidro García",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
     {
         "name": "Ismael Barbosa",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
     {
         "name": "Israel Jurado",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": [
             "Israel"
@@ -142,7 +163,8 @@
     {
         "name": "Jesús Flores",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
@@ -150,6 +172,7 @@
         "name": "Jesús Pérez",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
@@ -157,6 +180,7 @@
         "name": "Jonathan",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -164,13 +188,15 @@
         "name": "José Antonio",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
     {
         "name": "José Luis Tajonar",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
@@ -178,6 +204,7 @@
         "name": "Juan Mtz.",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -185,13 +212,15 @@
         "name": "Juan Villa",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
     {
         "name": "Leonel Domínguez",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": [
             "leonel dguez",
@@ -202,6 +231,7 @@
         "name": "Luis Enrique Ávalos",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": [
             "luis avalos"
@@ -211,6 +241,7 @@
         "name": "Luis Meza",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
@@ -218,6 +249,7 @@
         "name": "Manuel 732",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -225,20 +257,23 @@
         "name": "Martín Mtz.",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
     {
         "name": "Miguel",
         "can_receive_material": false,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
     {
         "name": "Miguel Rodríguez",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": [
             "miguel rdgz",
@@ -248,49 +283,48 @@
     {
         "name": "Nelson Treto",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
     {
         "name": "Pablo Lainez",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
     {
         "name": "Pedro Anguiano",
         "can_receive_material": false,
-        "can_deliver_material": true,
-        "needs_review": false,
-        "aliases": []
-    },
-    {
-        "name": "Piano",
-        "can_receive_material": true,
         "can_deliver_material": false,
-        "needs_review": true,
+        "can_authorize_material": false,
+        "needs_review": false,
         "aliases": []
     },
     {
         "name": "Raúl Vizcarra",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
     {
         "name": "Ricardo Pérez",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
     {
         "name": "Sergio Quezada",
         "can_receive_material": false,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
@@ -298,6 +332,7 @@
         "name": "Tony",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -305,13 +340,15 @@
         "name": "Uriel Nava",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": []
     },
     {
         "name": "Víctor López",
         "can_receive_material": true,
-        "can_deliver_material": true,
+        "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": false,
         "aliases": [
             "Victor"
@@ -321,6 +358,7 @@
         "name": "Óscar",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     },
@@ -328,6 +366,7 @@
         "name": "Óscar Soldador",
         "can_receive_material": true,
         "can_deliver_material": false,
+        "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
     }

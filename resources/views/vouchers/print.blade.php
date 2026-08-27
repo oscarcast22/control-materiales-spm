@@ -25,9 +25,6 @@
         <div><strong>Recibió:</strong> {{ $voucher['received_by']['name'] ?? '—' }}</div>
         <div><strong>Entregó:</strong> {{ $voucher['delivered_by']['name'] ?? '—' }}</div>
         <div><strong>Autorizó:</strong> {{ $voucher['authorized_by']['name'] ?? '—' }}</div>
-        <div><strong>Referencia:</strong> {{ $voucher['reference'] ?? '—' }}</div>
-        <div><strong>Programa:</strong> {{ $voucher['program']['code'] ?? '—' }}</div>
-        <div><strong>Acción:</strong> {{ $voucher['action']['code'] ?? '—' }}</div>
         <div style="grid-column: 1 / -1"><strong>Destino:</strong> {{ $voucher['destination'] }}</div>
     </div>
     <h2>Material {{ $voucher['direction'] === 'entry' ? 'recibido' : 'entregado y comprobación' }}</h2>

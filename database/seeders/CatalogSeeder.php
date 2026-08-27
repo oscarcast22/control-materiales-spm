@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Action;
 use App\Models\AuditEvent;
 use App\Models\Material;
 use App\Models\MaterialAlias;
@@ -99,12 +98,14 @@ class CatalogSeeder extends Seeder
                     'normalized_name' => $key,
                     'can_receive_material' => $data['can_receive_material'],
                     'can_deliver_material' => $data['can_deliver_material'],
+                    'can_authorize_material' => $data['can_authorize_material'],
                     'needs_review' => $data['needs_review'],
                 ]);
             } else {
                 $person->update([
                     'can_receive_material' => $person->can_receive_material || $data['can_receive_material'],
                     'can_deliver_material' => $person->can_deliver_material || $data['can_deliver_material'],
+                    'can_authorize_material' => $person->can_authorize_material || $data['can_authorize_material'],
                 ]);
             }
 
@@ -130,14 +131,10 @@ class CatalogSeeder extends Seeder
 
     private function seedPrograms(): void
     {
-        $program = Program::firstOrCreate(['code' => 'SPM-06'], ['name' => 'Alumbrado público']);
-        foreach ([1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 17] as $number) {
-            $code = sprintf('SPM-06-%02d', $number);
-            Action::firstOrCreate(['code' => $code], ['program_id' => $program->id]);
-        }
+        Program::firstOrCreate(['code' => 'SPM-06'], ['name' => 'Alumbrado público']);
     }
 
-    /** @return list<array{name: string, can_receive_material: bool, can_deliver_material: bool, needs_review: bool, aliases: list<string>}> */
+    /** @return list<array{name: string, can_receive_material: bool, can_deliver_material: bool, can_authorize_material: bool, needs_review: bool, aliases: list<string>}> */
     private function peopleData(): array
     {
         $rows = $this->json('people.json');
@@ -148,6 +145,7 @@ class CatalogSeeder extends Seeder
                 || ! is_string($row['name'] ?? null)
                 || ! is_bool($row['can_receive_material'] ?? null)
                 || ! is_bool($row['can_deliver_material'] ?? null)
+                || ! is_bool($row['can_authorize_material'] ?? null)
                 || ! is_bool($row['needs_review'] ?? null)
             ) {
                 throw new RuntimeException('El catálogo de personas contiene un registro inválido.');
@@ -156,6 +154,7 @@ class CatalogSeeder extends Seeder
                 'name' => $row['name'],
                 'can_receive_material' => $row['can_receive_material'],
                 'can_deliver_material' => $row['can_deliver_material'],
+                'can_authorize_material' => $row['can_authorize_material'],
                 'needs_review' => $row['needs_review'],
                 'aliases' => $this->strings($row['aliases'] ?? null, 'personas'),
             ];

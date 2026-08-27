@@ -280,6 +280,7 @@ function PeopleSection({ people }: { people: Person[] }) {
         name: '',
         can_receive_material: true,
         can_deliver_material: false,
+        can_authorize_material: false,
     });
     const submit = (e: FormEvent) => {
         e.preventDefault();
@@ -325,7 +326,7 @@ function PeopleSection({ people }: { people: Person[] }) {
                             <Plus />
                         </Button>
                     </div>
-                    <div className="flex gap-5 text-sm">
+                    <div className="flex flex-wrap gap-5 text-sm">
                         <Label className="flex items-center gap-2">
                             <Checkbox
                                 checked={form.data.can_receive_material}
@@ -349,6 +350,18 @@ function PeopleSection({ people }: { people: Person[] }) {
                                 }
                             />
                             Entrega material
+                        </Label>
+                        <Label className="flex items-center gap-2">
+                            <Checkbox
+                                checked={form.data.can_authorize_material}
+                                onCheckedChange={(v) =>
+                                    form.setData(
+                                        'can_authorize_material',
+                                        Boolean(v),
+                                    )
+                                }
+                            />
+                            Autoriza material
                         </Label>
                     </div>
                 </form>
@@ -389,6 +402,7 @@ function PeopleSection({ people }: { people: Person[] }) {
                         [
                             p.can_receive_material ? 'Técnico' : null,
                             p.can_deliver_material ? 'Entrega' : null,
+                            p.can_authorize_material ? 'Autoriza' : null,
                         ]
                             .filter(Boolean)
                             .join(', '),
@@ -504,6 +518,7 @@ function PersonReviewControl({ person }: { person: Person }) {
         name: person.name,
         can_receive_material: person.can_receive_material,
         can_deliver_material: person.can_deliver_material,
+        can_authorize_material: person.can_authorize_material,
     });
 
     return (
@@ -570,6 +585,18 @@ function PersonReviewControl({ person }: { person: Person }) {
                                 }
                             />
                             Entrega material
+                        </Label>
+                        <Label className="flex items-center gap-2">
+                            <Checkbox
+                                checked={form.data.can_authorize_material}
+                                onCheckedChange={(value) =>
+                                    form.setData(
+                                        'can_authorize_material',
+                                        Boolean(value),
+                                    )
+                                }
+                            />
+                            Autoriza material
                         </Label>
                     </div>
                     <DialogFooter>
@@ -638,12 +665,11 @@ function UnitSection({ units }: { units: Unit[] }) {
 
 function ProgramSection({ programs }: { programs: Program[] }) {
     const program = useForm({ code: '', name: '' });
-    const action = useForm({ program_id: '', code: '', name: '' });
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Programas y acciones</CardTitle>
+                <CardTitle>Programas</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
                 <form
@@ -674,43 +700,6 @@ function ProgramSection({ programs }: { programs: Program[] }) {
                         <Plus />
                     </Button>
                 </form>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        action.post('/catalogs/actions', {
-                            preserveScroll: true,
-                            onSuccess: () => action.reset(),
-                        });
-                    }}
-                    className="grid gap-2 lg:grid-cols-[140px_160px_1fr_auto]"
-                >
-                    <NativeSelect
-                        value={action.data.program_id}
-                        onChange={(e) =>
-                            action.setData('program_id', e.target.value)
-                        }
-                    >
-                        <option value="">Programa</option>
-                        {programs.map((p) => (
-                            <option key={p.id} value={p.id}>
-                                {p.code}
-                            </option>
-                        ))}
-                    </NativeSelect>
-                    <Input
-                        value={action.data.code}
-                        onChange={(e) => action.setData('code', e.target.value)}
-                        placeholder="SPM-00-00"
-                    />
-                    <Input
-                        value={action.data.name}
-                        onChange={(e) => action.setData('name', e.target.value)}
-                        placeholder="Nombre opcional"
-                    />
-                    <Button aria-label="Agregar acción">
-                        <Plus />
-                    </Button>
-                </form>
                 <div className="flex flex-col gap-2">
                     {programs.map((p) => (
                         <div key={p.id} className="rounded-lg border p-3">
@@ -723,13 +712,6 @@ function ProgramSection({ programs }: { programs: Program[] }) {
                                     id={p.id}
                                     active={Boolean(p.is_active)}
                                 />
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                                {p.actions.map((a) => (
-                                    <Badge key={a.id} variant="outline">
-                                        {a.code}
-                                    </Badge>
-                                ))}
                             </div>
                         </div>
                     ))}

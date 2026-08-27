@@ -13,9 +13,11 @@ Los catálogos depurados ya están versionados en `database/data/materials.json`
 ## Catálogo versionado
 
 - 377 materiales canónicos.
-- 45 personas, de las cuales 19 requieren revisión humana.
-- Siete unidades y 13 acciones observadas del programa SPM-06.
+- 44 personas, de las cuales 18 requieren revisión humana.
+- Siete unidades y el programa SPM-06, reservado para uso futuro.
 - Alias para conservar variantes ortográficas inequívocas.
+
+“Piano” se conserva como alias de Cipriano Salas. El catálogo inicial no habilita entregadores; deben confirmarse desde Catálogos antes de capturar vales nuevos. Cipriano Salas es el único autorizador inicial.
 
 Los calibres, medidas, potencias, modelos o identidades dudosas no se fusionan automáticamente. Los materiales comienzan con unidad `s/e` cuando el libro no permite determinarla con seguridad.
 
@@ -78,7 +80,7 @@ La sincronización sólo modifica unidades `s/e` de materiales versionados y par
 
 ## Estado local verificado
 
-Instantánea del 25 de agosto de 2026 después de la importación actual:
+Instantánea del 26 de agosto de 2026 después de reconstruir una instalación limpia, cargar los catálogos versionados e importar el libro desde `2026-01-01`:
 
 | Dato | Cantidad |
 | --- | ---: |
@@ -90,9 +92,9 @@ Instantánea del 25 de agosto de 2026 después de la importación actual:
 | Filas trazadas | 636 |
 | Filas no resueltas | 4 |
 | Vales pendientes de revisión | 127 |
-| Personas después de importar | 47 |
+| Personas después de importar | 46 |
 
-Estas cifras son una referencia de reconciliación del libro utilizado, no una constante del sistema. Las 47 personas locales incluyen dos registros creados durante la importación; el catálogo base continúa teniendo 45.
+Estas cifras son una referencia de reconciliación del libro utilizado, no una constante del sistema. El catálogo base contiene 44 personas y la importación crea dos registros técnicos adicionales; “Piano” permanece únicamente como alias de Cipriano Salas.
 
 El seguimiento derivado de la misma base contiene 203 vales entregados: 94 pendientes, 107 liquidados y 2 inconsistentes; hay 192 partidas y 16 técnicos con pendientes.
 

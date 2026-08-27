@@ -32,6 +32,8 @@ php artisan app:create-user
 
 El seeder carga las unidades habituales desde el catálogo versionado. Si el histórico se importa después de este paso, cada material reconocido conserva esa unidad. Para una base donde el histórico ya fue importado con `s/e`, usar primero la simulación y después la aplicación descritas en `docs/data-import.md`; no volver a importar el libro para corregir unidades.
 
+El catálogo inicial no habilita a ninguna persona para entregar material. Antes de capturar vales nuevos, confirmar desde Catálogos quiénes realizan esa función. Cipriano Salas queda configurado como único autorizador inicial.
+
 Configure previamente PostgreSQL en `.env`. El comando de usuarios crea una cuenta activa y verificada. No pase la contraseña mediante `--password` en una terminal compartida porque puede quedar en el historial o lista de procesos; utilice el prompt oculto.
 
 ## Primera carga de datos en producción

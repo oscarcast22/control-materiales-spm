@@ -25,6 +25,7 @@ class PersonFactory extends Factory
             'normalized_name' => Normalizer::key($name),
             'can_receive_material' => true,
             'can_deliver_material' => true,
+            'can_authorize_material' => false,
             'is_active' => true,
             'needs_review' => false,
         ];

@@ -33,7 +33,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('catalogs/people/{person}', [CatalogController::class, 'updatePerson'])->name('catalogs.people.update');
     Route::post('catalogs/units', [CatalogController::class, 'storeUnit'])->name('catalogs.units.store');
     Route::post('catalogs/programs', [CatalogController::class, 'storeProgram'])->name('catalogs.programs.store');
-    Route::post('catalogs/actions', [CatalogController::class, 'storeAction'])->name('catalogs.actions.store');
     Route::post('catalogs/locations', [CatalogController::class, 'storeLocation'])->name('catalogs.locations.store');
     Route::put('catalogs/locations/{location}', [CatalogController::class, 'updateLocation'])->name('catalogs.locations.update');
     Route::post('catalogs/{type}/{id}/toggle', [CatalogController::class, 'toggle'])->name('catalogs.toggle');

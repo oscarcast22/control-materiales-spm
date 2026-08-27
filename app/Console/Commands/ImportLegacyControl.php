@@ -449,7 +449,7 @@ class ImportLegacyControl extends Command
         }
 
         $unit = Unit::firstOrCreate(['symbol' => 's/e'], ['name' => 'Unidad sin especificar']);
-        $historicalIssuer = $this->person('Importación histórica', false, true);
+        $historicalIssuer = $this->person('Importación histórica', false, false);
         $notApplicable = $this->person('No aplica (cancelado)', false, false);
         $warehouse = StorageLocation::firstOrCreate(
             ['code' => 'warehouse'],

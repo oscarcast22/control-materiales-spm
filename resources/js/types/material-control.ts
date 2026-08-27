@@ -15,18 +15,17 @@ export type Material = Named & {
 export type Person = Named & {
     can_receive_material: boolean;
     can_deliver_material: boolean;
+    can_authorize_material: boolean;
     is_active?: boolean;
     needs_review?: boolean;
     aliases_count?: number;
 };
-export type Action = {
+export type Program = {
     id: number;
     code: string;
     name?: string | null;
-    program_id?: number;
     is_active?: boolean;
 };
-export type Program = Action & { actions: Action[] };
 
 export type MaterialApplication = {
     id: number;
@@ -64,14 +63,11 @@ export type Voucher = {
     location: StorageLocation;
     folio: string;
     direction: 'entry' | 'exit';
-    reference?: string | null;
     issued_on: string;
     issued_time?: string | null;
     received_by: Named;
     delivered_by: Named;
     authorized_by?: Named | null;
-    program?: Action | null;
-    action?: Action | null;
     destination: string;
     notes?: string | null;
     status: 'active' | 'cancelled';

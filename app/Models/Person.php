@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $normalized_name
  * @property bool $can_receive_material
  * @property bool $can_deliver_material
+ * @property bool $can_authorize_material
  * @property bool $is_active
  * @property bool $needs_review
  * @property-read Collection<int, PersonAlias> $aliases
@@ -24,7 +25,7 @@ class Person extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'normalized_name', 'can_receive_material', 'can_deliver_material', 'is_active', 'needs_review',
+        'name', 'normalized_name', 'can_receive_material', 'can_deliver_material', 'can_authorize_material', 'is_active', 'needs_review',
     ];
 
     protected function casts(): array
@@ -32,6 +33,7 @@ class Person extends Model
         return [
             'can_receive_material' => 'boolean',
             'can_deliver_material' => 'boolean',
+            'can_authorize_material' => 'boolean',
             'is_active' => 'boolean',
             'needs_review' => 'boolean',
         ];

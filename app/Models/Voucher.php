@@ -18,14 +18,12 @@ use Illuminate\Support\Carbon;
  * @property string $folio_key
  * @property int $storage_location_id
  * @property VoucherDirection $direction
- * @property string|null $reference
  * @property Carbon $issued_on
  * @property string|null $issued_time
  * @property int $received_by_id
  * @property int $delivered_by_id
  * @property int|null $authorized_by_id
  * @property int|null $program_id
- * @property int|null $action_id
  * @property string $destination
  * @property string|null $notes
  * @property VoucherStatus $status
@@ -40,7 +38,6 @@ use Illuminate\Support\Carbon;
  * @property-read Person|null $authorizedBy
  * @property-read StorageLocation $location
  * @property-read Program|null $program
- * @property-read Action|null $action
  * @property-read Collection<int, VoucherItem> $items
  * @property-read Collection<int, VoucherAttachment> $attachments
  * @property-read Collection<int, MaterialApplicationReport> $applicationReports
@@ -51,8 +48,8 @@ class Voucher extends Model
     use HasFactory;
 
     protected $fillable = [
-        'storage_location_id', 'folio', 'folio_key', 'direction', 'reference', 'issued_on', 'issued_time',
-        'received_by_id', 'delivered_by_id', 'authorized_by_id', 'program_id', 'action_id',
+        'storage_location_id', 'folio', 'folio_key', 'direction', 'issued_on', 'issued_time',
+        'received_by_id', 'delivered_by_id', 'authorized_by_id', 'program_id',
         'destination', 'notes', 'status', 'needs_review', 'review_reasons', 'cancelled_at', 'cancelled_by', 'cancellation_reason',
         'created_by', 'updated_by',
     ];
@@ -97,12 +94,6 @@ class Voucher extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
-    }
-
-    /** @return BelongsTo<Action, $this> */
-    public function action(): BelongsTo
-    {
-        return $this->belongsTo(Action::class);
     }
 
     /** @return HasMany<VoucherItem, $this> */

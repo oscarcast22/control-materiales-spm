@@ -18,14 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
-import type {
-    Material,
-    Named,
-    Program,
-    StorageLocation,
-    Unit,
-    Voucher,
-} from '@/types';
+import type { Material, Named, StorageLocation, Unit, Voucher } from '@/types';
 
 type Line = {
     id?: number;
@@ -37,14 +30,11 @@ type FormData = {
     storage_location_id: string;
     folio: string;
     direction: 'entry' | 'exit';
-    reference: string;
     issued_on: string;
     issued_time: string;
     received_by_id: string;
     delivered_by_id: string;
     authorized_by_id: string;
-    program_id: string;
-    action_id: string;
     destination: string;
     notes: string;
     items: Line[];
@@ -56,7 +46,6 @@ type Props = {
     units: Unit[];
     receivers: Named[];
     deliverers: Named[];
-    programs: Program[];
     locations: StorageLocation[];
     authorizers: Named[];
 };
@@ -73,7 +62,6 @@ export default function VoucherForm({
     units,
     receivers,
     deliverers,
-    programs,
     locations,
     authorizers,
 }: Props) {
@@ -86,16 +74,17 @@ export default function VoucherForm({
             : String(locations[0]?.id ?? ''),
         folio: voucher?.folio ?? '',
         direction: voucher?.direction ?? 'exit',
-        reference: voucher?.reference ?? '',
         issued_on: voucher?.issued_on ?? new Date().toISOString().slice(0, 10),
         issued_time: voucher?.issued_time?.slice(0, 5) ?? '',
         received_by_id: voucher ? String(voucher.received_by.id) : '',
         delivered_by_id: voucher ? String(voucher.delivered_by.id) : '',
-        authorized_by_id: voucher?.authorized_by
-            ? String(voucher.authorized_by.id)
-            : '',
-        program_id: voucher?.program ? String(voucher.program.id) : '',
-        action_id: voucher?.action ? String(voucher.action.id) : '',
+        authorized_by_id: voucher
+            ? voucher.authorized_by
+                ? String(voucher.authorized_by.id)
+                : ''
+            : authorizers.length === 1
+              ? String(authorizers[0].id)
+              : '',
         destination: voucher?.destination ?? '',
         notes: voucher?.notes ?? '',
         items: voucher?.items.map((item) => ({
@@ -106,9 +95,7 @@ export default function VoucherForm({
         })) ?? [blankLine()],
         attachments: [],
     });
-    const actions =
-        programs.find((program) => String(program.id) === form.data.program_id)
-            ?.actions ?? [];
+    const missingDeliverers = voucher === null && deliverers.length === 0;
     const duplicateMaterials = form.data.items
         .map((line) => line.material_id)
         .filter(Boolean)
@@ -183,7 +170,7 @@ export default function VoucherForm({
                                 </Link>
                             </Button>
                             <Button
-                                disabled={form.processing}
+                                disabled={form.processing || missingDeliverers}
                                 aria-busy={form.processing}
                             >
                                 <Save data-icon="inline-start" />
@@ -221,6 +208,25 @@ export default function VoucherForm({
                     <Alert variant="destructive" aria-live="polite">
                         <AlertDescription>
                             Revisa los campos marcados antes de guardar.
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {missingDeliverers && (
+                    <Alert variant="warning">
+                        <AlertDescription>
+                            <p className="font-medium text-foreground">
+                                Falta configurar quién entrega el material.
+                            </p>
+                            <p>
+                                Habilita al menos una persona con la función
+                                “Entrega material” antes de capturar un vale.{' '}
+                                <Link
+                                    className="font-medium text-primary underline-offset-4 hover:underline"
+                                    href="/catalogs"
+                                >
+                                    Ir a Catálogos
+                                </Link>
+                            </p>
                         </AlertDescription>
                     </Alert>
                 )}
@@ -268,18 +274,6 @@ export default function VoucherForm({
                                     { value: 'exit', label: 'Salida' },
                                     { value: 'entry', label: 'Entrada' },
                                 ]}
-                            />
-                        </Field>
-                        <Field
-                            label="Referencia / folio relacionado (opcional)"
-                            error={form.errors.reference}
-                        >
-                            <Input
-                                value={form.data.reference}
-                                onChange={(e) =>
-                                    form.setData('reference', e.target.value)
-                                }
-                                placeholder="Orden, reporte o autorización"
                             />
                         </Field>
                         <Field label="Fecha" error={form.errors.issued_on}>
@@ -348,39 +342,6 @@ export default function VoucherForm({
                                 options={deliverers.map((p) => ({
                                     value: String(p.id),
                                     label: p.name,
-                                }))}
-                            />
-                        </Field>
-                        <Field
-                            label="Programa (opcional)"
-                            error={form.errors.program_id}
-                        >
-                            <Select
-                                value={form.data.program_id}
-                                onChange={(v) => {
-                                    form.setData('program_id', v);
-                                    form.setData('action_id', '');
-                                }}
-                                placeholder="Sin programa"
-                                options={programs.map((p) => ({
-                                    value: String(p.id),
-                                    label:
-                                        p.code + (p.name ? ` · ${p.name}` : ''),
-                                }))}
-                            />
-                        </Field>
-                        <Field
-                            label="Acción (opcional)"
-                            error={form.errors.action_id}
-                        >
-                            <Select
-                                value={form.data.action_id}
-                                onChange={(v) => form.setData('action_id', v)}
-                                placeholder="Sin acción"
-                                options={actions.map((a) => ({
-                                    value: String(a.id),
-                                    label:
-                                        a.code + (a.name ? ` · ${a.name}` : ''),
                                 }))}
                             />
                         </Field>

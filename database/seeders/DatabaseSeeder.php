@@ -17,11 +17,11 @@ class DatabaseSeeder extends Seeder
     {
         StorageLocation::firstOrCreate(
             ['code' => 'warehouse'],
-            ['name' => 'Almacén', 'tracking_started_on' => now()->toDateString()],
+            ['name' => 'Almacén', 'tracking_started_on' => '2026-01-01'],
         );
         StorageLocation::firstOrCreate(
             ['code' => 'yard'],
-            ['name' => 'Patio', 'tracking_started_on' => now()->toDateString()],
+            ['name' => 'Patio', 'tracking_started_on' => '2026-01-01'],
         );
 
         $this->call(CatalogSeeder::class);
