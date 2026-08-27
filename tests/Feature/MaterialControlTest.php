@@ -408,6 +408,7 @@ class MaterialControlTest extends TestCase
             'name' => 'Miguel Rodríguez',
             'can_receive_material' => true,
             'can_deliver_material' => true,
+            'can_authorize_material' => false,
         ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('materials', [
@@ -431,6 +432,128 @@ class MaterialControlTest extends TestCase
             'normalized_alias' => 'miguelrdgz',
         ]);
         $this->assertDatabaseCount('audit_events', 2);
+    }
+
+    public function test_voucher_forms_only_offer_people_enabled_for_each_role_and_keep_historical_assignments(): void
+    {
+        $user = User::factory()->create();
+        $receiver = Person::factory()->create([
+            'can_receive_material' => true,
+            'can_deliver_material' => false,
+            'can_authorize_material' => false,
+        ]);
+        $deliverer = Person::factory()->create([
+            'can_receive_material' => false,
+            'can_deliver_material' => true,
+            'can_authorize_material' => false,
+        ]);
+        $authorizer = Person::factory()->create([
+            'can_receive_material' => false,
+            'can_deliver_material' => false,
+            'can_authorize_material' => true,
+        ]);
+        $unrelated = Person::factory()->create([
+            'can_receive_material' => false,
+            'can_deliver_material' => false,
+            'can_authorize_material' => false,
+        ]);
+        $location = StorageLocation::factory()->create();
+        $unit = Unit::factory()->create();
+        $material = Material::factory()->create(['default_unit_id' => $unit->id]);
+
+        $this->actingAs($user)->get(route('vouchers.create'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('receivers', 1)
+                ->where('receivers.0.id', $receiver->id)
+                ->has('deliverers', 1)
+                ->where('deliverers.0.id', $deliverer->id)
+                ->has('authorizers', 1)
+                ->where('authorizers.0.id', $authorizer->id));
+
+        $payload = [
+            'storage_location_id' => $location->id,
+            'folio' => 'ROLES-1',
+            'direction' => VoucherDirection::Exit->value,
+            'issued_on' => '2026-08-26',
+            'received_by_id' => $receiver->id,
+            'delivered_by_id' => $unrelated->id,
+            'authorized_by_id' => $unrelated->id,
+            'destination' => 'Prueba de funciones',
+            'items' => [['material_id' => $material->id, 'unit_id' => $unit->id, 'quantity' => 1]],
+        ];
+
+        $this->actingAs($user)->post(route('vouchers.store'), $payload)
+            ->assertSessionHasErrors(['delivered_by_id', 'authorized_by_id']);
+
+        $this->actingAs($user)->post(route('vouchers.store'), [
+            ...$payload,
+            'delivered_by_id' => $deliverer->id,
+            'authorized_by_id' => $authorizer->id,
+        ])->assertSessionHasNoErrors();
+
+        $voucher = Voucher::query()->sole();
+        $item = $voucher->items()->sole();
+        $deliverer->update(['can_deliver_material' => false, 'is_active' => false]);
+        $authorizer->update(['can_authorize_material' => false, 'is_active' => false]);
+
+        $this->actingAs($user)->get(route('vouchers.edit', $voucher))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('deliverers.0.id', $deliverer->id)
+                ->where('authorizers.0.id', $authorizer->id));
+
+        $this->actingAs($user)->put(route('vouchers.update', $voucher), [
+            ...$payload,
+            'delivered_by_id' => $deliverer->id,
+            'authorized_by_id' => $authorizer->id,
+            'items' => [[
+                'id' => $item->id,
+                'material_id' => $material->id,
+                'unit_id' => $unit->id,
+                'quantity' => 1,
+            ]],
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($user)->get(route('vouchers.create'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('deliverers', 0)
+                ->has('authorizers', 0));
+    }
+
+    public function test_merging_people_preserves_every_voucher_role_and_authorization_capability(): void
+    {
+        $user = User::factory()->create();
+        $source = Person::factory()->create(['can_authorize_material' => true]);
+        $target = Person::factory()->create([
+            'can_receive_material' => false,
+            'can_deliver_material' => false,
+            'can_authorize_material' => false,
+        ]);
+        $voucher = Voucher::factory()->create([
+            'received_by_id' => $source->id,
+            'delivered_by_id' => $source->id,
+            'authorized_by_id' => $source->id,
+        ]);
+
+        $this->actingAs($user)->post(route('catalogs.merge', [
+            'type' => 'people',
+            'source' => $source->id,
+        ]), ['target_id' => $target->id])->assertSessionHasNoErrors();
+
+        $voucher->refresh();
+        $target->refresh();
+        $this->assertSame($target->id, $voucher->received_by_id);
+        $this->assertSame($target->id, $voucher->delivered_by_id);
+        $this->assertSame($target->id, $voucher->authorized_by_id);
+        $this->assertTrue($target->can_receive_material);
+        $this->assertTrue($target->can_deliver_material);
+        $this->assertTrue($target->can_authorize_material);
+        $this->assertDatabaseHas('person_aliases', [
+            'person_id' => $target->id,
+            'normalized_alias' => $source->normalized_name,
+        ]);
     }
 
     public function test_an_import_review_can_be_marked_as_attended_and_is_audited(): void

@@ -45,6 +45,7 @@ class LegacyImportTest extends TestCase
             $this->assertSame('5.000', Voucher::query()->sole()->items()->firstOrFail()->pendingQuantity());
             $this->assertSame(VoucherDirection::Exit, Voucher::query()->sole()->direction);
             $this->assertSame('warehouse', Voucher::query()->sole()->location->code);
+            $this->assertFalse(Voucher::query()->sole()->deliveredBy->can_deliver_material);
             $this->assertSame([], InventorySummary::rows());
 
             $this->artisan('legacy:import-control', ['file' => $path])

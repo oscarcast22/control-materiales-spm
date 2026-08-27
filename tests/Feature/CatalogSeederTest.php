@@ -7,15 +7,34 @@ use App\Models\Material;
 use App\Models\MaterialAlias;
 use App\Models\Person;
 use App\Models\PersonAlias;
+use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Models\VoucherItem;
 use Database\Seeders\CatalogSeeder;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class CatalogSeederTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_clean_installation_starts_tracking_on_the_mandatory_date(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertSame([
+            'warehouse' => '2026-01-01',
+            'yard' => '2026-01-01',
+        ], StorageLocation::query()
+            ->orderBy('code')
+            ->get()
+            ->mapWithKeys(fn (StorageLocation $location): array => [
+                $location->code => $location->tracking_started_on->toDateString(),
+            ])
+            ->all());
+    }
 
     public function test_the_curated_catalog_is_seeded_without_excel_and_is_idempotent(): void
     {
@@ -23,19 +42,25 @@ class CatalogSeederTest extends TestCase
 
         $this->assertDatabaseCount('materials', 377);
         $this->assertDatabaseCount('material_aliases', 414);
-        $this->assertDatabaseCount('people', 45);
+        $this->assertDatabaseCount('people', 44);
         $this->assertDatabaseCount('person_aliases', 55);
         $this->assertDatabaseCount('units', 7);
         $this->assertDatabaseCount('programs', 1);
-        $this->assertDatabaseCount('actions', 13);
+        $this->assertFalse(Schema::hasTable('actions'));
         $this->assertDatabaseCount('vouchers', 0);
-        $this->assertSame(19, Person::query()->where('needs_review', true)->count());
+        $this->assertSame(18, Person::query()->where('needs_review', true)->count());
+        $this->assertSame(0, Person::query()->where('can_deliver_material', true)->count());
+        $this->assertSame(1, Person::query()->where('can_authorize_material', true)->count());
+        $this->assertDatabaseHas('person_aliases', [
+            'normalized_alias' => 'piano',
+            'person_id' => Person::query()->where('normalized_name', 'cipriano salas')->sole()->id,
+        ]);
 
         $this->seed(CatalogSeeder::class);
 
         $this->assertDatabaseCount('materials', 377);
         $this->assertDatabaseCount('material_aliases', 414);
-        $this->assertDatabaseCount('people', 45);
+        $this->assertDatabaseCount('people', 44);
         $this->assertDatabaseCount('person_aliases', 55);
 
         $this->assertSame([
