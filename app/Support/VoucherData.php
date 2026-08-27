@@ -31,39 +31,47 @@ final class VoucherData
     public static function make(Voucher $voucher, bool $detailed = false): array
     {
         $voucher->loadMissing([
-            'location', 'receivedBy', 'deliveredBy', 'authorizedBy',
-            'items.material', 'items.unit', 'items.applications.report.attachment', 'attachments',
+            'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action',
+            'destinations', 'items.material', 'items.unit', 'items.applications.report.attachment', 'attachments',
         ]);
 
         $isEntry = $voucher->direction === VoucherDirection::Entry;
         $items = $voucher->items->map(fn (VoucherItem $item): array => self::item($item, $detailed, $isEntry))->values();
         $balanceState = $voucher->status === VoucherStatus::Cancelled
             ? 'cancelled'
+            : ($voucher->direction === null || $items->isEmpty()
+            ? 'not_applicable'
             : ($isEntry ? 'received'
             : ($items->contains(fn (array $item): bool => (float) $item['pending_quantity'] < 0)
                 ? 'anomaly'
                 : ($items->isNotEmpty() && $items->every(fn (array $item): bool => (float) $item['pending_quantity'] === 0.0)
                     ? 'settled'
-                    : 'pending')));
+                    : 'pending'))));
 
         return [
             'id' => $voucher->id,
-            'location' => [
+            'voucher_type' => [
                 'id' => $voucher->location->id,
                 'name' => $voucher->location->name,
                 'code' => $voucher->location->code,
                 'tracking_started_on' => $voucher->location->tracking_started_on->format('Y-m-d'),
             ],
             'folio' => $voucher->folio,
-            'direction' => $voucher->direction->value,
+            'direction' => $voucher->direction?->value,
             'issued_on' => $voucher->issued_on->format('Y-m-d'),
-            'issued_time' => $voucher->issued_time,
-            'received_by' => $voucher->receivedBy->only(['id', 'name']),
-            'delivered_by' => $voucher->deliveredBy->only(['id', 'name']),
+            'received_by' => $voucher->receivedBy?->only(['id', 'name']),
+            'delivered_by' => $voucher->deliveredBy?->only(['id', 'name']),
             'authorized_by' => $voucher->authorizedBy?->only(['id', 'name']),
-            'destination' => $voucher->destination,
+            'program' => $voucher->program?->only(['id', 'code', 'name']),
+            'action' => $voucher->action?->only(['id', 'program_id', 'code', 'name']),
+            'destinations' => $voucher->destinations->map->only(['id', 'name'])->values(),
+            'usage_description' => $voucher->usage_description,
+            'destination_summary' => self::destinationSummary($voucher),
             'notes' => $voucher->notes,
             'status' => $voucher->status->value,
+            'loaned_to_name' => $voucher->loaned_to_name,
+            'loaned_on' => $voucher->loaned_on?->format('Y-m-d'),
+            'returned_on' => $voucher->returned_on?->format('Y-m-d'),
             'balance_state' => $balanceState,
             'needs_review' => $voucher->needs_review,
             'review_reasons' => $voucher->review_reasons ?? [],
@@ -100,7 +108,7 @@ final class VoucherData
                     'occurred_on' => $row->occurred_on->format('Y-m-d'),
                     'quantity' => $row->quantity,
                     'reference' => $row->reference,
-                    'destination' => $row->destination,
+                    'destination_snapshot' => $row->destination_snapshot,
                     'notes' => $row->notes,
                     'legacy_slot' => $row->legacy_slot,
                     'voided_at' => $row->voided_at?->toIso8601String(),
@@ -111,5 +119,19 @@ final class VoucherData
                 ],
             )->values() : [],
         ];
+    }
+
+    public static function destinationSummary(Voucher $voucher): ?string
+    {
+        $voucher->loadMissing('destinations:id,name');
+        $locations = $voucher->destinations->pluck('name')->implode(', ');
+        $description = trim((string) $voucher->usage_description);
+
+        return match (true) {
+            $locations !== '' && $description !== '' => $locations.' · '.$description,
+            $locations !== '' => $locations,
+            $description !== '' => $description,
+            default => null,
+        };
     }
 }

@@ -23,7 +23,7 @@ final class InventorySummary
 
         $vouchers = Voucher::query()
             ->with(['items.material', 'items.unit'])
-            ->where('status', VoucherStatus::Active->value)
+            ->whereIn('status', VoucherStatus::operationalValues())
             ->whereIn('storage_location_id', $locations->keys())
             ->whereDate('issued_on', '<=', $cutoff)
             ->get();

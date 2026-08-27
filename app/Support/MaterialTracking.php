@@ -31,9 +31,9 @@ final class MaterialTracking
                     'voucher_id' => $voucher->id,
                     'folio' => $voucher->folio,
                     'issued_on' => $data['issued_on'],
-                    'location' => $data['location'],
+                    'voucher_type' => $data['voucher_type'],
                     'received_by' => $data['received_by'],
-                    'destination' => $voucher->destination,
+                    'destination_summary' => $data['destination_summary'],
                     ...$item,
                 ];
             });
