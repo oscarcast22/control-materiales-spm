@@ -4,20 +4,20 @@ namespace App\Console\Commands;
 
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
+use App\Models\Action;
+use App\Models\Destination;
+use App\Models\DestinationAlias;
 use App\Models\LegacyImportRow;
 use App\Models\Material;
 use App\Models\MaterialAlias;
-use App\Models\MaterialApplication;
 use App\Models\Person;
 use App\Models\PersonAlias;
+use App\Models\Program;
 use App\Models\StorageLocation;
-use App\Models\Unit;
 use App\Models\Voucher;
-use App\Models\VoucherItem;
+use App\Support\CuratedDestinationCatalog;
 use App\Support\LegacyControlWorkbook;
-use App\Support\LegacyReportComment;
 use App\Support\Normalizer;
-use DateTimeImmutable;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -26,32 +26,22 @@ use RuntimeException;
 use Throwable;
 
 #[Signature('legacy:import-control
-    {file : Ruta de CONTROL DE ORDEN DE SERVICIO.xlsx}
-    {--from=2026-01-01 : Fecha mínima inclusiva}
+    {file : Ruta de Captura de vales 2025 (1).xlsx}
     {--dry-run}')]
-#[Description('Importa de forma trazable el historial de CONTROL desde 2026')]
+#[Description('Importa únicamente los vales de agosto de 2026 desde el control actualizado')]
 class ImportLegacyControl extends Command
 {
     /** @var array<string, int> */
     private array $stats = [
-        'source_rows' => 0,
-        'staged_rows' => 0,
-        'eligible_rows' => 0,
-        'skipped_before_cutoff' => 0,
-        'partial_cutoff_rows' => 0,
-        'inferred_date_rows' => 0,
-        'vouchers' => 0,
-        'cancelled' => 0,
-        'items' => 0,
-        'applications' => 0,
-        'unresolved' => 0,
-        'review' => 0,
-        'anomalies' => 0,
-        'new_materials' => 0,
-        'new_people' => 0,
+        'source_rows_august_2026' => 0,
+        'vouchers_ready' => 0,
+        'loaned_ready' => 0,
+        'cancelled_ready' => 0,
+        'invalid_skipped' => 0,
+        'items_ready' => 0,
     ];
 
-    public function handle(LegacyControlWorkbook $workbook): int
+    public function handle(LegacyControlWorkbook $workbook, CuratedDestinationCatalog $destinationCatalog): int
     {
         $path = realpath((string) $this->argument('file'));
         if ($path === false || ! is_file($path)) {
@@ -73,9 +63,8 @@ class ImportLegacyControl extends Command
 
         try {
             $rows = $workbook->read($path);
-            $this->stats['source_rows'] = count($rows);
-            $plan = $this->plan($rows, $this->cutoff());
-            $this->catalogGaps($plan);
+            $this->stats['source_rows_august_2026'] = count($rows);
+            $plan = $this->plan($rows, $destinationCatalog->legacyMappings());
             $this->ensureNoVoucherConflicts($plan);
 
             if ($this->option('dry-run')) {
@@ -95,532 +84,368 @@ class ImportLegacyControl extends Command
         }
     }
 
-    private function cutoff(): DateTimeImmutable
-    {
-        $value = trim((string) $this->option('from'));
-        $cutoff = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
-        $errors = DateTimeImmutable::getLastErrors();
-        if (! $cutoff || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
-            throw new RuntimeException('La opción --from debe usar el formato AAAA-MM-DD.');
-        }
-
-        return $cutoff;
-    }
-
     /**
-     * @param  array<int, array<string, mixed>>  $rows
-     * @return array{vouchers: list<array<string, mixed>>, staged: array<int, array{data: array<string, mixed>, issues: list<string>}>, unresolved: list<array{folio: string, row_number: int, issues: list<string>}>}
+     * @param  list<array<string, mixed>>  $rows
+     * @param  array<string, array{destinations: list<string>, usage_description: string|null, needs_review: bool}>  $destinationMappings
+     * @return list<array{source: array<string, mixed>, issues: list<string>, voucher: array<string, mixed>|null}>
      */
-    private function plan(array $rows, DateTimeImmutable $cutoff): array
+    private function plan(array $rows, array $destinationMappings): array
     {
-        $vouchers = [];
-        $staged = [];
-        $unresolved = [];
-        $groups = [];
-        foreach ($rows as $number => $row) {
-            $key = $row['folio'] !== '' ? Normalizer::folio($row['folio']) : "__row_{$number}";
-            $groups[$key][$number] = $row;
-        }
+        $authorizers = Person::query()
+            ->where('is_active', true)
+            ->where('can_authorize_material', true)
+            ->get();
+        $authorizerId = $authorizers->count() === 1 ? $authorizers->firstOrFail()->id : null;
+        $plan = [];
 
-        foreach ($groups as $group) {
-            $before = [];
-            $after = [];
-            $undated = [];
-            foreach ($group as $number => $row) {
-                if ($row['date'] === null) {
-                    $undated[$number] = $row;
-                } elseif (new DateTimeImmutable($row['date']) < $cutoff) {
-                    $before[$number] = $row;
-                } else {
-                    $after[$number] = $row;
-                }
-            }
-
-            if ($after === [] && $undated === []) {
-                $this->stats['skipped_before_cutoff'] += count($before);
-
-                continue;
-            }
-
-            $groupReasons = [];
-            $groupIssues = [];
-            if ($after !== [] && $before !== []) {
-                $this->stats['skipped_before_cutoff'] += count($before);
-                $this->stats['partial_cutoff_rows'] += count($before);
-                $groupReasons[] = 'El folio contiene filas anteriores al corte; sólo se importó la parte de 2026.';
-                $groupIssues[] = 'partial_cutoff';
-            } elseif ($after === [] && $before !== []) {
-                $this->stats['skipped_before_cutoff'] += count($before);
-
-                continue;
-            }
-
-            $selected = $after;
-            if ($undated !== []) {
-                $inferred = $this->inferredDate($undated);
-                if ($inferred === null && $after === []) {
-                    foreach ($undated as $number => $row) {
-                        $issues = ['unresolved_missing_date'];
-                        $staged[$number] = ['data' => $row, 'issues' => $issues];
-                        $unresolved[] = ['folio' => $row['folio'], 'row_number' => $number, 'issues' => $issues];
-                        $this->stats['unresolved']++;
-                    }
-
-                    continue;
-                }
-
-                $inferred ??= $this->mode(array_column($after, 'date'));
-                foreach ($undated as $number => $row) {
-                    $row['date'] = $inferred;
-                    $selected[$number] = $row;
-                }
-                $this->stats['inferred_date_rows'] += count($undated);
-                $groupReasons[] = "La fecha del vale se infirió como {$inferred} a partir de la información disponible.";
-                $groupIssues[] = 'inferred_voucher_date';
-            }
-
-            ksort($selected);
-            $prepared = $this->prepareVoucher($selected, $groupReasons, $groupIssues);
-            foreach ($prepared['staged'] as $number => $row) {
-                $staged[$number] = $row;
-            }
-            foreach ($prepared['unresolved'] as $row) {
-                $unresolved[] = $row;
-                $this->stats['unresolved']++;
-            }
-            if ($prepared['voucher'] !== null) {
-                $vouchers[] = $prepared['voucher'];
-            }
-        }
-
-        ksort($staged);
-        $this->stats['staged_rows'] = count($staged);
-        $this->stats['eligible_rows'] = count($staged) - count($unresolved);
-
-        return ['vouchers' => $vouchers, 'staged' => $staged, 'unresolved' => $unresolved];
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $rows
-     * @param  list<string>  $groupReasons
-     * @param  list<string>  $groupIssues
-     * @return array{voucher: array<string, mixed>|null, staged: array<int, array{data: array<string, mixed>, issues: list<string>}>, unresolved: list<array{folio: string, row_number: int, issues: list<string>}>}
-     */
-    private function prepareVoucher(array $rows, array $groupReasons, array $groupIssues): array
-    {
-        $staged = [];
-        $unresolved = [];
-        $folio = (string) ($this->mode(array_column($rows, 'folio')) ?? '');
-        $cancelled = collect($rows)->every(fn (array $row): bool => str_contains(Normalizer::key($row['material']), 'cancelado'));
-
-        if ($folio === '') {
-            foreach ($rows as $number => $row) {
-                $issues = [...$groupIssues, 'unresolved_missing_folio'];
-                $staged[$number] = ['data' => $row, 'issues' => $issues];
-                $unresolved[] = ['folio' => '', 'row_number' => $number, 'issues' => $issues];
-            }
-
-            return ['voucher' => null, 'staged' => $staged, 'unresolved' => $unresolved];
-        }
-
-        $dates = array_values(array_filter(array_column($rows, 'date')));
-        $date = (string) $this->mode($dates);
-        $technicians = array_column($rows, 'technician');
-        $destinations = array_column($rows, 'destination');
-        $reviewReasons = $groupReasons;
-        if ($this->distinct($dates) > 1) {
-            $reviewReasons[] = 'El folio contiene fechas distintas: '.implode(', ', array_unique($dates)).'. Se utilizó la más frecuente.';
-            $groupIssues[] = 'conflicting_date';
-        }
-        if ($this->distinctNormalized($technicians) > 1) {
-            $reviewReasons[] = 'El folio contiene nombres de técnico distintos; se utilizó el más frecuente.';
-            $groupIssues[] = 'conflicting_technician';
-        }
-        if ($this->distinctNormalized(array_filter($destinations)) > 1) {
-            $reviewReasons[] = 'El folio contiene destinos distintos; se utilizó el más frecuente.';
-            $groupIssues[] = 'conflicting_destination';
-        }
-
-        $technician = $this->modeNormalized($technicians);
-        if ($technician === '') {
-            $technician = 'Sin técnico registrado';
-            $reviewReasons[] = 'El vale no indica quién recibió el material.';
-            $groupIssues[] = 'missing_technician';
-        }
-        $destination = (string) ($this->mode(array_filter($destinations)) ?? 'Sin destino registrado');
-        if ($destination === 'Sin destino registrado') {
-            $reviewReasons[] = 'El vale no contiene destino.';
-            $groupIssues[] = 'missing_destination';
-        }
-
-        if ($cancelled) {
-            foreach ($rows as $number => $row) {
-                $issues = array_values(array_unique([...$groupIssues, 'cancelled']));
-                $staged[$number] = ['data' => $row, 'issues' => $issues];
-            }
-            $this->stats['vouchers']++;
-            $this->stats['cancelled']++;
-            if ($reviewReasons !== []) {
-                $this->stats['review']++;
-            }
-
-            return [
-                'voucher' => [
-                    'folio' => $folio,
-                    'date' => $date,
-                    'technician' => 'No aplica (cancelado)',
-                    'destination' => 'Cancelado en archivo histórico',
-                    'cancelled' => true,
-                    'review_reasons' => array_values(array_unique($reviewReasons)),
+        foreach ($rows as $row) {
+            $statusKey = Normalizer::key((string) $row['raw_status']);
+            if ($statusKey === 'cancelado') {
+                $issues = trim((string) $row['folio']) === '' ? ['missing_folio'] : [];
+                $voucher = $issues === [] ? [
+                    'storage_location_id' => $this->voucherTypeId($row),
+                    'folio' => trim((string) $row['folio']),
+                    'direction' => null,
+                    'issued_on' => $row['date'],
+                    'received_by_id' => null,
+                    'delivered_by_id' => null,
+                    'authorized_by_id' => null,
+                    'program_id' => null,
+                    'action_id' => null,
+                    'usage_description' => null,
+                    'destination_ids' => [],
+                    'status' => VoucherStatus::Cancelled,
+                    'cancelled_at' => now(),
+                    'cancellation_reason' => 'Cancelado en el archivo de origen para conservar la numeración.',
                     'items' => [],
-                    'row_numbers' => array_keys($rows),
-                ],
-                'staged' => $staged,
-                'unresolved' => [],
-            ];
-        }
-
-        $items = [];
-        foreach ($rows as $number => $row) {
-            $rowIssues = $groupIssues;
-            if ($row['material'] === '' || $row['quantity'] === null || $row['quantity'] <= 0) {
-                if ($row['material'] === '') {
-                    $rowIssues[] = 'unresolved_missing_material';
+                ] : null;
+                if ($voucher) {
+                    $this->stats['vouchers_ready']++;
+                    $this->stats['cancelled_ready']++;
+                } else {
+                    $this->stats['invalid_skipped']++;
                 }
-                if ($row['quantity'] === null || $row['quantity'] <= 0) {
-                    $rowIssues[] = 'unresolved_invalid_quantity';
-                }
-                $rowIssues = array_values(array_unique($rowIssues));
-                $staged[$number] = ['data' => $row, 'issues' => $rowIssues];
-                $unresolved[] = ['folio' => $folio, 'row_number' => $number, 'issues' => $rowIssues];
+                $plan[] = ['source' => $row, 'issues' => $issues, 'voucher' => $voucher];
 
                 continue;
             }
 
-            $applications = [];
-            $applied = 0.0;
-            foreach ($row['reports'] as $report) {
-                $quantity = $report['quantity'];
-                if ($quantity === null || abs($quantity) < 0.000001) {
+            if ($statusKey === 'prestado') {
+                $issues = [];
+                if (trim((string) $row['folio']) === '') {
+                    $issues[] = 'missing_folio';
+                }
+                if (trim((string) $row['receiver']) === '') {
+                    $issues[] = 'missing_loan_holder';
+                }
+                $voucher = $issues === [] ? [
+                    'storage_location_id' => $this->voucherTypeId($row),
+                    'folio' => trim((string) $row['folio']),
+                    'direction' => null,
+                    'issued_on' => $row['date'],
+                    'received_by_id' => null,
+                    'delivered_by_id' => null,
+                    'authorized_by_id' => $authorizerId,
+                    'program_id' => null,
+                    'action_id' => null,
+                    'usage_description' => null,
+                    'destination_ids' => [],
+                    'status' => VoucherStatus::Loaned,
+                    'loaned_to_name' => trim((string) $row['receiver']),
+                    'loaned_on' => $row['date'],
+                    'items' => [],
+                ] : null;
+                if ($voucher) {
+                    $this->stats['vouchers_ready']++;
+                    $this->stats['loaned_ready']++;
+                } else {
+                    $this->stats['invalid_skipped']++;
+                }
+                $plan[] = ['source' => $row, 'issues' => $issues, 'voucher' => $voucher];
+
+                continue;
+            }
+
+            $issues = [];
+            $direction = match ($statusKey) {
+                'salida' => VoucherDirection::Exit,
+                'entrada' => VoucherDirection::Entry,
+                default => null,
+            };
+            if ($direction === null) {
+                $issues[] = 'invalid_movement';
+            }
+            foreach (['folio', 'destination', 'receiver', 'deliverer'] as $field) {
+                if (trim((string) $row[$field]) === '') {
+                    $issues[] = "missing_{$field}";
+                }
+            }
+            if ($row['items'] === []) {
+                $issues[] = 'missing_materials';
+            }
+            if ($authorizerId === null) {
+                $issues[] = 'authorizer_not_unique';
+            }
+
+            $destinationData = $this->destination((string) $row['destination'], $destinationMappings);
+            $issues = [...$issues, ...$destinationData['issues']];
+
+            $receiver = $this->person((string) $row['receiver'], 'can_receive_material');
+            $deliverer = $this->person((string) $row['deliverer'], 'can_deliver_material');
+            if (trim((string) $row['receiver']) !== '' && ! $receiver) {
+                $issues[] = 'unresolved_receiver';
+            }
+            if (trim((string) $row['deliverer']) !== '' && ! $deliverer) {
+                $issues[] = 'unresolved_deliverer';
+            }
+
+            $program = null;
+            $action = null;
+            if ($row['voucher_type_code'] === 'warehouse') {
+                [$program, $programIssue] = $this->program((string) $row['program']);
+                if ($programIssue) {
+                    $issues[] = $programIssue;
+                }
+                [$action, $actionIssue] = $this->action((string) $row['action'], $program);
+                if ($actionIssue) {
+                    $issues[] = $actionIssue;
+                }
+            }
+
+            $items = [];
+            $voucherTypeId = $this->voucherTypeId($row);
+            foreach ($row['items'] as $sourceItem) {
+                $material = $this->material((string) $sourceItem['material']);
+                if (! $material) {
+                    $issues[] = 'unresolved_material:'.trim((string) $sourceItem['material']);
+
                     continue;
                 }
-                $parsed = LegacyReportComment::parse($report['comment'], $date, $report['slot']);
-                $applied += $quantity;
-                if ($parsed['issue'] !== null) {
-                    $rowIssues[] = $parsed['issue'];
-                    $reviewReasons[] = $parsed['issue'] === 'application_date_invalid'
-                        ? 'Una o más aplicaciones contienen una fecha inválida o distinta de 2026; se utilizó la fecha del vale.'
-                        : 'Una o más aplicaciones no tienen fecha identificable; se utilizó la fecha del vale.';
+                if (! $material->voucherTypes()->whereKey($voucherTypeId)->exists()) {
+                    $issues[] = 'material_not_available_for_voucher_type:'.trim((string) $sourceItem['material']);
+
+                    continue;
                 }
-                if ($parsed['occurred_on'] < $date) {
-                    $rowIssues[] = 'application_before_voucher';
-                    $reviewReasons[] = 'Una o más aplicaciones están fechadas antes que el vale.';
-                }
-                $applications[] = [...$parsed, 'slot' => $report['slot'], 'cell' => $report['cell'], 'quantity' => $quantity];
-                $this->stats['applications']++;
+                $items[] = [
+                    'material_id' => $material->id,
+                    'unit_id' => $material->default_unit_id,
+                    'description_snapshot' => $material->name,
+                    'quantity' => $sourceItem['quantity'],
+                ];
             }
 
-            $anomaly = $applied > (float) $row['quantity'] + 0.0001;
-            if ($anomaly) {
-                $rowIssues[] = 'balance_anomaly';
-                $reviewReasons[] = 'Una o más partidas tienen aplicaciones superiores a la cantidad entregada.';
-                $this->stats['anomalies']++;
+            $issues = array_values(array_unique($issues));
+            $voucher = $issues === [] ? [
+                'storage_location_id' => $voucherTypeId,
+                'folio' => trim((string) $row['folio']),
+                'direction' => $direction,
+                'issued_on' => $row['date'],
+                'received_by_id' => $receiver?->id,
+                'delivered_by_id' => $deliverer?->id,
+                'authorized_by_id' => $authorizerId,
+                'program_id' => $program?->id,
+                'action_id' => $action?->id,
+                'usage_description' => $destinationData['usage_description'],
+                'destination_ids' => $destinationData['destination_ids'],
+                'needs_review' => $destinationData['needs_review'],
+                'review_reasons' => $destinationData['needs_review'] ? ['destination_split_uncertain'] : null,
+                'status' => VoucherStatus::Active,
+                'items' => $items,
+            ] : null;
+            if ($voucher) {
+                $this->stats['vouchers_ready']++;
+                $this->stats['items_ready'] += count($items);
+            } else {
+                $this->stats['invalid_skipped']++;
             }
-            $rowIssues = array_values(array_unique($rowIssues));
-            $staged[$number] = ['data' => $row, 'issues' => $rowIssues];
-            $items[] = [
-                'row_number' => $number,
-                'material' => $row['material'],
-                'quantity' => $row['quantity'],
-                'applications' => $applications,
-                'anomaly' => $anomaly,
-                'issues' => $rowIssues,
-            ];
-            $this->stats['items']++;
+            $plan[] = ['source' => $row, 'issues' => $issues, 'voucher' => $voucher];
         }
 
-        if ($items === []) {
-            return ['voucher' => null, 'staged' => $staged, 'unresolved' => $unresolved];
+        return $plan;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function voucherTypeId(array $row): int
+    {
+        return StorageLocation::query()
+            ->where('code', $row['voucher_type_code'])
+            ->value('id')
+            ?? throw new RuntimeException("Falta configurar el tipo de vale {$row['voucher_type_name']}.");
+    }
+
+    private function person(string $name, string $role): ?Person
+    {
+        $key = Normalizer::key($name);
+        if ($key === '') {
+            return null;
+        }
+        $alias = PersonAlias::query()->where('normalized_alias', $key)->first();
+        $person = $alias
+            ? $alias->person
+            : Person::query()->where('normalized_name', $key)->first();
+
+        return $person?->is_active && $person->{$role} ? $person : null;
+    }
+
+    private function material(string $name): ?Material
+    {
+        $key = Normalizer::key($name);
+
+        $alias = MaterialAlias::query()->where('normalized_alias', $key)->first();
+
+        return $alias
+            ? $alias->material
+            : Material::query()->where('normalized_name', $key)->first();
+    }
+
+    /**
+     * @param  array<string, array{destinations: list<string>, usage_description: string|null, needs_review: bool}>  $mappings
+     * @return array{destination_ids: list<int>, usage_description: string|null, needs_review: bool, issues: list<string>}
+     */
+    private function destination(string $raw, array $mappings): array
+    {
+        $key = Normalizer::key($raw);
+        $mapping = $mappings[$key] ?? null;
+        if ($mapping === null) {
+            $destination = $this->destinationByName($raw);
+
+            return $destination
+                ? ['destination_ids' => [$destination->id], 'usage_description' => null, 'needs_review' => false, 'issues' => []]
+                : ['destination_ids' => [], 'usage_description' => trim($raw), 'needs_review' => true, 'issues' => []];
         }
 
-        $reviewReasons = array_values(array_unique($reviewReasons));
-        $this->stats['vouchers']++;
-        if ($reviewReasons !== []) {
-            $this->stats['review']++;
+        $ids = [];
+        $issues = [];
+        foreach ($mapping['destinations'] as $name) {
+            $destination = $this->destinationByName($name);
+            if (! $destination) {
+                $issues[] = 'unresolved_destination:'.$name;
+
+                continue;
+            }
+            $ids[] = $destination->id;
         }
 
         return [
-            'voucher' => [
-                'folio' => $folio,
-                'date' => $date,
-                'technician' => $technician,
-                'destination' => $destination,
-                'cancelled' => false,
-                'review_reasons' => $reviewReasons,
-                'items' => $items,
-                'row_numbers' => array_keys($rows),
-            ],
-            'staged' => $staged,
-            'unresolved' => $unresolved,
+            'destination_ids' => array_values(array_unique($ids)),
+            'usage_description' => filled($mapping['usage_description']) ? trim((string) $mapping['usage_description']) : null,
+            'needs_review' => $mapping['needs_review'],
+            'issues' => $issues,
         ];
     }
 
-    /** @param array<int, array<string, mixed>> $rows */
-    private function inferredDate(array $rows): ?string
+    private function destinationByName(string $name): ?Destination
     {
-        $dates = [];
-        foreach ($rows as $row) {
-            foreach ($row['reports'] as $report) {
-                if ($report['quantity'] === null || abs($report['quantity']) < 0.000001 || $report['comment'] === null) {
-                    continue;
-                }
-                $parsed = LegacyReportComment::parse($report['comment'], '2026-01-01', $report['slot']);
-                if ($parsed['issue'] === null) {
-                    $dates[] = $parsed['occurred_on'];
-                }
-            }
-        }
-        sort($dates);
+        $key = Normalizer::key($name);
+        $alias = DestinationAlias::query()->where('normalized_alias', $key)->first();
 
-        return $dates[0] ?? null;
+        return $alias
+            ? $alias->destination
+            : Destination::query()->where('normalized_name', $key)->first();
     }
 
-    /** @param array{vouchers: list<array<string, mixed>>} $plan */
-    private function catalogGaps(array $plan): void
+    /** @return array{Program|null, string|null} */
+    private function program(string $raw): array
     {
-        $materials = [];
-        $people = ['Importación histórica', 'No aplica (cancelado)'];
-        foreach ($plan['vouchers'] as $voucher) {
-            $people[] = $voucher['technician'];
-            foreach ($voucher['items'] as $item) {
-                $materials[] = $item['material'];
-            }
+        $raw = trim($raw);
+        if ($raw === '') {
+            return [null, null];
         }
-        foreach (array_unique($materials) as $name) {
-            $key = Normalizer::key($name);
-            if (! MaterialAlias::query()->where('normalized_alias', $key)->exists()
-                && ! Material::query()->where('normalized_name', $key)->exists()) {
-                $this->stats['new_materials']++;
-            }
-        }
-        foreach (array_unique($people) as $name) {
-            $key = Normalizer::key($name);
-            if (! PersonAlias::query()->where('normalized_alias', $key)->exists()
-                && ! Person::query()->where('normalized_name', $key)->exists()) {
-                $this->stats['new_people']++;
-            }
-        }
+        $code = preg_match('/^SPM-/i', $raw) ? strtoupper($raw) : 'SPM-'.str_pad($raw, 2, '0', STR_PAD_LEFT);
+        $program = Program::query()->where('code', $code)->where('is_active', true)->first();
+
+        return [$program, $program ? null : 'unresolved_program:'.$code];
     }
 
-    /** @param array{vouchers: list<array<string, mixed>>} $plan */
+    /** @return array{Action|null, string|null} */
+    private function action(string $raw, ?Program $program): array
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return [null, null];
+        }
+        if (! $program) {
+            return [null, 'action_without_program'];
+        }
+        $code = preg_match('/^SPM-/i', $raw)
+            ? strtoupper($raw)
+            : $program->code.'-'.str_pad($raw, 2, '0', STR_PAD_LEFT);
+        $action = Action::query()->where('code', $code)->where('program_id', $program->id)->where('is_active', true)->first();
+
+        return [$action, $action ? null : 'unresolved_action:'.$code];
+    }
+
+    /** @param list<array{source: array<string, mixed>, issues: list<string>, voucher: array<string, mixed>|null}> $plan */
     private function ensureNoVoucherConflicts(array $plan): void
     {
-        $warehouse = StorageLocation::query()->where('code', 'warehouse')->first();
-        if (! $warehouse) {
-            return;
+        $conflicts = [];
+        foreach ($plan as $row) {
+            if ($row['voucher'] === null) {
+                continue;
+            }
+            if (Voucher::query()
+                ->where('storage_location_id', $row['voucher']['storage_location_id'])
+                ->where('folio_key', Normalizer::folio($row['voucher']['folio']))
+                ->exists()) {
+                $conflicts[] = $row['source']['voucher_type_name'].' '.$row['voucher']['folio'];
+            }
         }
-        $keys = array_map(fn (array $voucher): string => Normalizer::folio($voucher['folio']), $plan['vouchers']);
-        $conflicts = Voucher::query()
-            ->where('storage_location_id', $warehouse->id)
-            ->whereIn('folio_key', array_unique($keys))
-            ->orderBy('folio')
-            ->pluck('folio')
-            ->all();
         if ($conflicts !== []) {
-            throw new RuntimeException('Ya existen folios de Almacén que entrarían en conflicto: '.implode(', ', $conflicts).'.');
+            throw new RuntimeException('Ya existen folios que entrarían en conflicto: '.implode(', ', $conflicts).'.');
         }
     }
 
-    /**
-     * @param  array{vouchers: list<array<string, mixed>>, staged: array<int, array{data: array<string, mixed>, issues: list<string>}>}  $plan
-     */
+    /** @param list<array{source: array<string, mixed>, issues: list<string>, voucher: array<string, mixed>|null}> $plan */
     private function persist(array $plan, string $hash, string $name): void
     {
-        $staged = [];
-        foreach ($plan['staged'] as $number => $row) {
-            $staged[$number] = LegacyImportRow::create([
+        foreach ($plan as $row) {
+            $trace = LegacyImportRow::create([
                 'source_hash' => $hash,
                 'source_name' => $name,
-                'sheet_name' => 'victor',
-                'row_number' => $number,
-                'raw_data' => $row['data'],
+                'sheet_name' => $row['source']['sheet_name'],
+                'row_number' => $row['source']['row_number'],
+                'raw_data' => $row['source']['raw_data'],
                 'issue_codes' => $row['issues'] ?: null,
             ]);
-        }
-
-        $unit = Unit::firstOrCreate(['symbol' => 's/e'], ['name' => 'Unidad sin especificar']);
-        $historicalIssuer = $this->person('Importación histórica', false, false);
-        $notApplicable = $this->person('No aplica (cancelado)', false, false);
-        $warehouse = StorageLocation::firstOrCreate(
-            ['code' => 'warehouse'],
-            ['name' => 'Almacén', 'tracking_started_on' => now()->toDateString()],
-        );
-
-        foreach ($plan['vouchers'] as $data) {
-            $receivedBy = $data['cancelled']
-                ? $notApplicable
-                : $this->person($data['technician'], true, false);
-            $voucher = Voucher::create([
-                'storage_location_id' => $warehouse->id,
-                'folio' => $data['folio'],
-                'folio_key' => Normalizer::folio($data['folio']),
-                'direction' => VoucherDirection::Exit,
-                'issued_on' => $data['date'],
-                'received_by_id' => $receivedBy->id,
-                'delivered_by_id' => $historicalIssuer->id,
-                'destination' => $data['destination'],
-                'status' => $data['cancelled'] ? VoucherStatus::Cancelled : VoucherStatus::Active,
-                'needs_review' => $data['review_reasons'] !== [],
-                'review_reasons' => $data['review_reasons'] ?: null,
-                'cancelled_at' => $data['cancelled'] ? now() : null,
-                'cancellation_reason' => $data['cancelled'] ? 'Cancelado en archivo histórico.' : null,
-            ]);
-
-            if ($data['cancelled']) {
-                foreach ($data['row_numbers'] as $number) {
-                    $staged[$number]->update(['imported_type' => Voucher::class, 'imported_id' => $voucher->id]);
-                }
-
+            if ($row['voucher'] === null) {
                 continue;
             }
 
-            foreach ($data['items'] as $dataItem) {
-                $material = $this->material($dataItem['material'], $unit);
-                $item = VoucherItem::create([
-                    'voucher_id' => $voucher->id,
-                    'material_id' => $material->id,
-                    'unit_id' => $material->default_unit_id,
-                    'description_snapshot' => $dataItem['material'],
-                    'quantity' => $dataItem['quantity'],
-                    'legacy_anomaly' => $dataItem['anomaly'],
-                ]);
-                foreach ($dataItem['applications'] as $application) {
-                    MaterialApplication::create([
-                        'voucher_item_id' => $item->id,
-                        'occurred_on' => $application['occurred_on'],
-                        'quantity' => $application['quantity'],
-                        'reference' => $application['reference'],
-                        'destination' => $application['destination'],
-                        'notes' => $application['notes'],
-                        'legacy_slot' => $application['slot'],
-                    ]);
-                }
-                $staged[$dataItem['row_number']]->update([
-                    'imported_type' => VoucherItem::class,
-                    'imported_id' => $item->id,
-                ]);
+            $data = $row['voucher'];
+            $items = $data['items'];
+            $destinationIds = $data['destination_ids'];
+            unset($data['items'], $data['destination_ids']);
+            $voucher = Voucher::create([
+                ...$data,
+                'folio_key' => Normalizer::folio($data['folio']),
+            ]);
+            foreach ($items as $item) {
+                $voucher->items()->create($item);
             }
+            $voucher->destinations()->sync($destinationIds);
+            $trace->update(['imported_type' => Voucher::class, 'imported_id' => $voucher->id]);
         }
     }
 
-    /** @param array{unresolved: list<array{folio: string, row_number: int, issues: list<string>}>} $plan */
+    /** @param list<array{source: array<string, mixed>, issues: list<string>, voucher: array<string, mixed>|null}> $plan */
     private function summary(array $plan): void
     {
         $this->table(
             ['Métrica', 'Valor'],
-            collect($this->stats)->map(fn ($value, $key) => [$key, $value])->values()->all(),
+            collect($this->stats)->map(fn (int $value, string $key): array => [$key, $value])->values()->all(),
         );
-        if ($plan['unresolved'] !== []) {
-            $this->warn('Filas conservadas sin crear un vale:');
+        $skipped = array_values(array_filter($plan, fn (array $row): bool => $row['voucher'] === null));
+        if ($skipped !== []) {
+            $this->warn('Renglones trazados sin crear un vale operativo:');
             $this->table(
-                ['Folio', 'Fila', 'Incidencias'],
+                ['Hoja', 'Fila', 'Folio', 'Incidencias'],
                 array_map(fn (array $row): array => [
-                    $row['folio'] ?: '—',
-                    $row['row_number'],
+                    $row['source']['sheet_name'],
+                    $row['source']['row_number'],
+                    $row['source']['folio'] ?: '—',
                     implode(', ', $row['issues']),
-                ], $plan['unresolved']),
+                ], $skipped),
             );
         }
-    }
-
-    private function person(string $name, bool $receiver, bool $issuer): Person
-    {
-        $key = Normalizer::key($name);
-        $alias = PersonAlias::query()->where('normalized_alias', $key)->first();
-        if ($alias) {
-            $person = $alias->person;
-        } else {
-            $person = Person::firstOrCreate(['normalized_name' => $key], [
-                'name' => $name,
-                'can_receive_material' => $receiver,
-                'can_deliver_material' => $issuer,
-                'needs_review' => true,
-            ]);
-            PersonAlias::firstOrCreate(['normalized_alias' => $key], ['person_id' => $person->id, 'alias' => $name]);
-        }
-        $person->update([
-            'can_receive_material' => $person->can_receive_material || $receiver,
-            'can_deliver_material' => $person->can_deliver_material || $issuer,
-        ]);
-
-        return $person;
-    }
-
-    private function material(string $name, Unit $unit): Material
-    {
-        $key = Normalizer::key($name);
-        $alias = MaterialAlias::query()->where('normalized_alias', $key)->first();
-        if ($alias) {
-            return $alias->material;
-        }
-        $material = Material::firstOrCreate(['normalized_name' => $key], [
-            'name' => $name,
-            'default_unit_id' => $unit->id,
-            'needs_review' => true,
-        ]);
-        MaterialAlias::firstOrCreate(['normalized_alias' => $key], ['material_id' => $material->id, 'alias' => $name]);
-
-        return $material;
-    }
-
-    /** @param array<int, mixed> $values */
-    private function mode(array $values): mixed
-    {
-        $values = array_values(array_filter($values, fn ($value) => $value !== null && $value !== ''));
-        if ($values === []) {
-            return null;
-        }
-        $counts = array_count_values(array_map('strval', $values));
-        $maximum = max($counts);
-        $winners = array_keys(array_filter($counts, fn (int $count): bool => $count === $maximum));
-        sort($winners, SORT_NATURAL);
-        $winner = $winners[0];
-        foreach ($values as $value) {
-            if ((string) $value === $winner) {
-                return $value;
-            }
-        }
-
-        return $values[0];
-    }
-
-    /** @param array<int, string> $values */
-    private function modeNormalized(array $values): string
-    {
-        $groups = [];
-        foreach ($values as $value) {
-            if ($value !== '') {
-                $groups[Normalizer::key($value)][] = $value;
-            }
-        }
-        uasort($groups, function (array $left, array $right): int {
-            $count = count($right) <=> count($left);
-
-            return $count !== 0 ? $count : strnatcasecmp($left[0], $right[0]);
-        });
-
-        return (string) (reset($groups)[0] ?? '');
-    }
-
-    /** @param array<int, mixed> $values */
-    private function distinct(array $values): int
-    {
-        return count(array_unique(array_filter($values, fn ($value) => $value !== null && $value !== '')));
-    }
-
-    /** @param array<int, string> $values */
-    private function distinctNormalized(array $values): int
-    {
-        return count(array_unique(array_map([Normalizer::class, 'key'], $values)));
     }
 }

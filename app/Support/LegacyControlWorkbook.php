@@ -2,191 +2,144 @@
 
 namespace App\Support;
 
+use DateTimeImmutable;
 use DateTimeInterface;
 use OpenSpout\Reader\XLSX\Options;
 use OpenSpout\Reader\XLSX\Reader;
 use RuntimeException;
-use SimpleXMLElement;
-use ZipArchive;
 
 final class LegacyControlWorkbook
 {
+    private const SHEETS = [
+        'vale de almacen' => ['code' => 'warehouse', 'name' => 'Almacén'],
+        'vale de patio' => ['code' => 'yard', 'name' => 'Patio'],
+    ];
+
     /**
-     * @return array<int, array{
-     *     row_number: int,
-     *     folio: string,
-     *     technician: string,
-     *     date: string|null,
-     *     material: string,
-     *     destination: string,
-     *     quantity: float|null,
-     *     difference: float|null,
-     *     reports: array<int, array{slot: int, cell: string, quantity: float|null, comment: string|null}>,
-     *     comments: array<string, string>
+     * @return list<array{
+     *   sheet_name: string, row_number: int, voucher_type_code: string,
+     *   voucher_type_name: string, folio: string, raw_status: string,
+     *   date: string|null, program: string, action: string, destination: string,
+     *   receiver: string, deliverer: string,
+     *   items: list<array{material: string, quantity: float}>, raw_data: array<string, mixed>
      * }>
      */
     public function read(string $path): array
     {
-        $comments = $this->comments($path);
         $reader = new Reader(new Options(SHOULD_PRESERVE_EMPTY_ROWS: true));
         $reader->open($path);
-        $result = [];
-        $foundSheet = false;
-        $foundHeader = false;
+        $rows = [];
+        $found = [];
 
         try {
             foreach ($reader->getSheetIterator() as $sheet) {
-                if (Normalizer::key($sheet->getName()) !== 'victor') {
+                $sheetKey = Normalizer::key($sheet->getName());
+                if (! isset(self::SHEETS[$sheetKey])) {
                     continue;
                 }
-                $foundSheet = true;
+
+                $found[$sheetKey] = true;
+                $header = null;
+                $indexes = [];
                 foreach ($sheet->getRowIterator() as $rowNumber => $row) {
                     $values = $row->toArray();
-                    if (Normalizer::key($this->scalar($values[1] ?? null)) === 'vale') {
-                        $this->assertHeader($values);
-                        $foundHeader = true;
+                    if ($header === null) {
+                        $candidate = array_values(array_map(fn (mixed $value): string => Normalizer::key($this->scalar($value)), $values));
+                        if (array_search('folio', $candidate, true) === false) {
+                            continue;
+                        }
+                        $header = array_map(fn (mixed $value): string => $this->scalar($value), $values);
+                        $indexes = $this->indexes($candidate, $sheetKey);
 
                         continue;
                     }
 
-                    $folio = $this->scalar($values[1] ?? null);
-                    $material = $this->scalar($values[4] ?? null);
-                    if ($folio === '' && $material === '') {
+                    $date = $this->dateValue($values[$indexes['date']] ?? null);
+                    if ($date === null || ! str_starts_with($date, '2026-08-')) {
                         continue;
                     }
 
-                    $reports = [];
-                    for ($index = 8; $index <= 17; $index++) {
-                        $slot = $index - 7;
-                        $cell = $this->column($index).$rowNumber;
-                        $reports[$slot] = [
-                            'slot' => $slot,
-                            'cell' => $cell,
-                            'quantity' => $this->number($values[$index] ?? null),
-                            'comment' => $comments[$cell] ?? null,
-                        ];
+                    $items = [];
+                    for ($column = $indexes['materials']; $column < count($header); $column++) {
+                        $material = trim($header[$column] ?? '');
+                        $quantity = $this->number($values[$column] ?? null);
+                        if ($material !== '' && $quantity !== null && $quantity > 0) {
+                            $items[] = ['material' => $material, 'quantity' => $quantity];
+                        }
                     }
 
-                    $result[$rowNumber] = [
+                    $metadata = self::SHEETS[$sheetKey];
+                    $rawData = [];
+                    foreach ($indexes as $key => $index) {
+                        if ($key !== 'materials') {
+                            $rawData[$key] = $this->scalar($values[$index] ?? null);
+                        }
+                    }
+                    $rawData['items'] = $items;
+
+                    $rows[] = [
+                        'sheet_name' => $sheet->getName(),
                         'row_number' => $rowNumber,
-                        'folio' => $folio,
-                        'technician' => $this->scalar($values[2] ?? null),
-                        'date' => $this->dateValue($values[3] ?? null),
-                        'material' => $material,
-                        'destination' => $this->scalar($values[5] ?? null),
-                        'quantity' => $this->number($values[6] ?? null),
-                        'difference' => $this->number($values[7] ?? null),
-                        'reports' => $reports,
-                        'comments' => $this->rowComments($comments, $rowNumber),
+                        'voucher_type_code' => $metadata['code'],
+                        'voucher_type_name' => $metadata['name'],
+                        'folio' => $this->scalar($values[$indexes['folio']] ?? null),
+                        'raw_status' => $this->scalar($values[$indexes['status']] ?? null),
+                        'date' => $date,
+                        'program' => isset($indexes['program']) ? $this->scalar($values[$indexes['program']] ?? null) : '',
+                        'action' => isset($indexes['action']) ? $this->scalar($values[$indexes['action']] ?? null) : '',
+                        'destination' => $this->scalar($values[$indexes['destination']] ?? null),
+                        'receiver' => $this->scalar($values[$indexes['receiver']] ?? null),
+                        'deliverer' => $this->scalar($values[$indexes['deliverer']] ?? null),
+                        'items' => $items,
+                        'raw_data' => $rawData,
                     ];
                 }
-
-                break;
             }
         } finally {
             $reader->close();
         }
 
-        if (! $foundSheet) {
-            throw new RuntimeException('No se encontró la hoja victor.');
+        foreach (array_keys(self::SHEETS) as $requiredSheet) {
+            if (! isset($found[$requiredSheet])) {
+                throw new RuntimeException("No se encontró la hoja requerida: {$requiredSheet}.");
+            }
         }
-        if (! $foundHeader) {
-            throw new RuntimeException('No se encontró el encabezado esperado en la hoja victor.');
-        }
-        if ($result === []) {
-            throw new RuntimeException('No se encontró información en la hoja victor.');
+        if ($rows === []) {
+            throw new RuntimeException('No se encontraron vales de agosto de 2026 en las hojas esperadas.');
         }
 
-        return $result;
+        return $rows;
     }
 
-    /** @param array<int, mixed> $values */
-    private function assertHeader(array $values): void
-    {
-        $expected = [
-            1 => 'vale',
-            2 => 'tecnico',
-            3 => 'fecha del vale',
-            4 => 'descripcion',
-            5 => 'destino',
-            6 => 'cantidad',
-            7 => 'diferencia',
-        ];
-        foreach ($expected as $index => $label) {
-            if (Normalizer::key($this->scalar($values[$index] ?? null)) !== $label) {
-                throw new RuntimeException('La estructura de la hoja victor no coincide con el formato esperado.');
-            }
-        }
-        for ($index = 8; $index <= 17; $index++) {
-            $slot = $index - 7;
-            if (Normalizer::key($this->scalar($values[$index] ?? null)) !== "reporte {$slot}") {
-                throw new RuntimeException('La estructura de columnas REPORTE no coincide con el formato esperado.');
-            }
-        }
-    }
-
-    /** @return array<string, string> */
-    private function comments(string $path): array
-    {
-        $zip = new ZipArchive;
-        if ($zip->open($path) !== true) {
-            throw new RuntimeException('No se pudo abrir el archivo XLSX para leer sus comentarios.');
-        }
-
-        try {
-            $files = [];
-            for ($index = 0; $index < $zip->numFiles; $index++) {
-                $name = $zip->getNameIndex($index);
-                if (is_string($name) && preg_match('#^xl/comments\d+\.xml$#', $name)) {
-                    $files[] = $name;
-                }
-            }
-            if (count($files) > 1) {
-                throw new RuntimeException('El libro contiene varias colecciones de comentarios y no se puede identificar la hoja victor con seguridad.');
-            }
-            if ($files === []) {
-                return [];
-            }
-
-            $contents = $zip->getFromName($files[0]);
-            if (! is_string($contents) || ($xml = simplexml_load_string($contents)) === false) {
-                throw new RuntimeException('No se pudieron leer los comentarios del libro.');
-            }
-
-            return $this->commentMap($xml);
-        } finally {
-            $zip->close();
-        }
-    }
-
-    /** @return array<string, string> */
-    private function commentMap(SimpleXMLElement $xml): array
-    {
-        $comments = [];
-        foreach ($xml->commentList->comment as $comment) {
-            $parts = [];
-            foreach ($comment->text->r as $run) {
-                $parts[] = (string) $run->t;
-            }
-            if ($parts === []) {
-                $parts[] = (string) $comment->text->t;
-            }
-            $comments[strtoupper((string) $comment['ref'])] = trim(implode('', $parts));
-        }
-
-        return $comments;
-    }
-
-    /** @param array<string, string> $comments
-     * @return array<string, string>
+    /** @param list<string> $header
+     * @return array<string, int>
      */
-    private function rowComments(array $comments, int $rowNumber): array
+    private function indexes(array $header, string $sheet): array
     {
-        return array_filter(
-            $comments,
-            fn (string $comment, string $cell): bool => preg_match('/^[A-Z]+'.$rowNumber.'$/', $cell) === 1,
-            ARRAY_FILTER_USE_BOTH,
-        );
+        $labels = [
+            'folio' => 'folio',
+            'status' => 'entrada o salida',
+            'date' => 'fecha',
+            'destination' => 'destino',
+            'receiver' => 'recibio material',
+            'deliverer' => 'entrego material',
+        ];
+        if ($sheet === 'vale de almacen') {
+            $labels['program'] = 'programa spm';
+            $labels['action'] = 'accion spm 06';
+        }
+
+        $indexes = [];
+        foreach ($labels as $key => $label) {
+            $index = array_search($label, $header, true);
+            if ($index === false) {
+                throw new RuntimeException("La hoja {$sheet} no contiene la columna {$label}.");
+            }
+            $indexes[$key] = $index;
+        }
+        $indexes['materials'] = $indexes['deliverer'] + 1;
+
+        return $indexes;
     }
 
     private function scalar(mixed $value): string
@@ -205,27 +158,18 @@ final class LegacyControlWorkbook
             return $value->format('Y-m-d');
         }
         if (is_numeric($value)) {
-            return (new \DateTimeImmutable('1899-12-30'))->modify('+'.(int) $value.' days')->format('Y-m-d');
+            return (new DateTimeImmutable('1899-12-30'))->modify('+'.(int) $value.' days')->format('Y-m-d');
         }
+
         $text = trim((string) ($value ?? ''));
         foreach (['!Y-m-d', '!d/m/Y', '!d/m/y', '!d-m-Y', '!d-m-y'] as $format) {
-            $date = \DateTimeImmutable::createFromFormat($format, $text);
-            $errors = \DateTimeImmutable::getLastErrors();
+            $date = DateTimeImmutable::createFromFormat($format, $text);
+            $errors = DateTimeImmutable::getLastErrors();
             if ($date && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))) {
                 return $date->format('Y-m-d');
             }
         }
 
         return null;
-    }
-
-    private function column(int $zeroBased): string
-    {
-        $column = '';
-        for ($value = $zeroBased + 1; $value > 0; $value = intdiv($value - 1, 26)) {
-            $column = chr(65 + (($value - 1) % 26)).$column;
-        }
-
-        return $column;
     }
 }
