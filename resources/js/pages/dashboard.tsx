@@ -4,6 +4,7 @@ import {
     ArrowRight,
     CheckCircle2,
     ClipboardCheck,
+    ChevronDown,
     PackageOpen,
     Plus,
     SearchCheck,
@@ -13,7 +14,14 @@ import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
 import { Page, PageHeader, SectionHeader } from '@/components/page';
 import { StatusBadge } from '@/components/status-badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
     Table,
     TableBody,
@@ -23,14 +31,14 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { formatDate, formatQuantity } from '@/lib/format';
-import type { StorageLocation, Voucher, VoucherItem } from '@/types';
+import type { Voucher, VoucherItem, VoucherType } from '@/types';
 
 type PendingRow = Omit<VoucherItem, 'applications'> & {
     voucher_id: number;
     folio: string;
     issued_on: string;
     received_by: { id: number; name: string };
-    location: StorageLocation;
+    voucher_type: VoucherType;
 };
 
 type Props = {
@@ -44,9 +52,24 @@ type Props = {
     };
     recent: Voucher[];
     oldest_pending: PendingRow[];
+    voucher_sequence: {
+        total_missing: number;
+        types: {
+            voucher_type: Pick<VoucherType, 'id' | 'name' | 'code'>;
+            start: number;
+            last: number | null;
+            missing_count: number;
+            missing: number[];
+        }[];
+    };
 };
 
-export default function Dashboard({ metrics, recent, oldest_pending }: Props) {
+export default function Dashboard({
+    metrics,
+    recent,
+    oldest_pending,
+    voucher_sequence,
+}: Props) {
     return (
         <>
             <Head title="Resumen" />
@@ -65,6 +88,60 @@ export default function Dashboard({ metrics, recent, oldest_pending }: Props) {
                         </Button>
                     }
                 />
+
+                {voucher_sequence.total_missing > 0 && (
+                    <Alert variant="warning">
+                        <AlertTriangle aria-hidden="true" />
+                        <AlertTitle>
+                            Hay {voucher_sequence.total_missing}{' '}
+                            {voucher_sequence.total_missing === 1
+                                ? 'folio faltante'
+                                : 'folios faltantes'}
+                        </AlertTitle>
+                        <AlertDescription>
+                            <p>
+                                Revisa la numeración antes de archivar los vales
+                                físicos. Los cancelados también cuentan como
+                                folios presentes.
+                            </p>
+                            <Collapsible className="mt-2">
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                        Ver detalle por tipo
+                                        <ChevronDown data-icon="inline-end" />
+                                    </Button>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="mt-3 space-y-3">
+                                    {voucher_sequence.types
+                                        .filter((row) => row.missing_count > 0)
+                                        .map((row) => (
+                                            <div key={row.voucher_type.id}>
+                                                <p className="text-sm font-medium text-foreground">
+                                                    {row.voucher_type.name}{' '}
+                                                    <span className="font-normal text-muted-foreground">
+                                                        · desde {row.start}
+                                                    </span>
+                                                </p>
+                                                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                                    {row.missing.map(
+                                                        (folio) => (
+                                                            <Badge
+                                                                key={folio}
+                                                                variant="outline"
+                                                                className="bg-background font-mono"
+                                                            >
+                                                                {folio}
+                                                            </Badge>
+                                                        ),
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                </CollapsibleContent>
+                            </Collapsible>
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 <section aria-labelledby="prioridades-title">
                     <h2 id="prioridades-title" className="sr-only">
@@ -155,7 +232,8 @@ export default function Dashboard({ metrics, recent, oldest_pending }: Props) {
                                                         Vale {row.folio}
                                                     </Link>
                                                     <p className="mt-0.5 text-xs text-muted-foreground">
-                                                        {row.location.name} ·{' '}
+                                                        {row.voucher_type.name}{' '}
+                                                        ·{' '}
                                                         {formatDate(
                                                             row.issued_on,
                                                         )}
@@ -207,12 +285,14 @@ export default function Dashboard({ metrics, recent, oldest_pending }: Props) {
                                             Vale {voucher.folio}
                                         </p>
                                         <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                            {voucher.location.name} ·{' '}
+                                            {voucher.voucher_type.name} ·{' '}
                                             {voucher.direction === 'entry'
                                                 ? 'Entrada'
-                                                : 'Salida'}{' '}
-                                            · {voucher.received_by.name} ·{' '}
-                                            {formatDate(voucher.issued_on)}
+                                                : voucher.direction === 'exit'
+                                                  ? 'Salida'
+                                                  : 'Sin movimiento'}{' '}
+                                            · {voucher.received_by?.name ?? '—'}{' '}
+                                            · {formatDate(voucher.issued_on)}
                                         </p>
                                     </div>
                                     <StatusBadge

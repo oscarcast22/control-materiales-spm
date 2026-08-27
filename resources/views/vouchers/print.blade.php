@@ -19,13 +19,19 @@
     <button class="no-print" onclick="window.print()">Imprimir</button>
     <header>
         <div><h1>Control de Materiales SPM</h1><div class="muted">Dirección Municipal de Servicios Públicos</div></div>
-        <div><strong>{{ $voucher['location']['name'] }} · {{ $voucher['direction'] === 'entry' ? 'Entrada' : 'Salida' }} · Vale {{ $voucher['folio'] }}</strong><br><span class="muted">{{ $voucher['issued_on'] }}</span></div>
+        <div><strong>{{ $voucher['voucher_type']['name'] }} · {{ $voucher['direction'] === 'entry' ? 'Entrada' : ($voucher['direction'] === 'exit' ? 'Salida' : 'Sin movimiento') }} · Vale {{ $voucher['folio'] }}</strong><br><span class="muted">{{ $voucher['issued_on'] }}</span></div>
     </header>
     <div class="grid">
         <div><strong>Recibió:</strong> {{ $voucher['received_by']['name'] ?? '—' }}</div>
         <div><strong>Entregó:</strong> {{ $voucher['delivered_by']['name'] ?? '—' }}</div>
         <div><strong>Autorizó:</strong> {{ $voucher['authorized_by']['name'] ?? '—' }}</div>
-        <div style="grid-column: 1 / -1"><strong>Destino:</strong> {{ $voucher['destination'] }}</div>
+        @if ($voucher['voucher_type']['code'] === 'warehouse')
+            <div><strong>Programa:</strong> {{ $voucher['program']['code'] ?? '—' }}</div>
+            <div><strong>Acción:</strong> {{ $voucher['action']['code'] ?? '—' }}</div>
+        @endif
+        @if ($voucher['status'] === 'loaned')<div style="grid-column: 1 / -1"><strong>Prestado a:</strong> {{ $voucher['loaned_to_name'] }} desde {{ $voucher['loaned_on'] }}</div>@endif
+        <div style="grid-column: 1 / -1"><strong>Ubicación:</strong> {{ collect($voucher['destinations'])->pluck('name')->implode(', ') ?: '—' }}</div>
+        @if ($voucher['usage_description'])<div style="grid-column: 1 / -1"><strong>Uso o actividad:</strong> {{ $voucher['usage_description'] }}</div>@endif
     </div>
     <h2>Material {{ $voucher['direction'] === 'entry' ? 'recibido' : 'entregado y comprobación' }}</h2>
     <table>

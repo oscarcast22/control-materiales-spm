@@ -15,21 +15,23 @@ import { useId, useState } from 'react';
 import { FilterBar } from '@/components/filter-bar';
 import { MetricCard } from '@/components/metric-card';
 import { Page, PageHeader } from '@/components/page';
+import { SearchableSelect } from '@/components/searchable-select';
+import { SimpleSelect } from '@/components/simple-select';
 import { StatusBadge } from '@/components/status-badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FormField, FormLabel } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
-import { NativeSelect } from '@/components/ui/native-select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate, formatQuantity } from '@/lib/format';
 import type {
+    ChoiceOption,
     Material,
     Named,
-    StorageLocation,
     Unit,
     VoucherItem,
+    VoucherType,
 } from '@/types';
 
 type TrackingRow = Omit<VoucherItem, 'applications'> & {
@@ -37,8 +39,8 @@ type TrackingRow = Omit<VoucherItem, 'applications'> & {
     folio: string;
     issued_on: string;
     received_by: Named;
-    location: StorageLocation;
-    destination: string;
+    voucher_type: VoucherType;
+    destination_summary: string | null;
 };
 
 type MaterialSummary = {
@@ -78,7 +80,7 @@ type Props = {
     cutoff: string;
     receivers: Named[];
     materials: Material[];
-    locations: StorageLocation[];
+    voucherTypes: VoucherType[];
 };
 
 export default function MaterialTracking({
@@ -90,14 +92,14 @@ export default function MaterialTracking({
     cutoff,
     receivers,
     materials,
-    locations,
+    voucherTypes,
 }: Props) {
     const [form, setForm] = useState({
         from: String(filters.from ?? cutoff),
         to: String(filters.to ?? ''),
         received_by_id: String(filters.received_by_id ?? ''),
         material_id: String(filters.material_id ?? ''),
-        storage_location_id: String(filters.storage_location_id ?? ''),
+        voucher_type_id: String(filters.voucher_type_id ?? ''),
         state: String(filters.state ?? ''),
         tab: filters.tab ?? 'material',
     });
@@ -118,7 +120,7 @@ export default function MaterialTracking({
             to: '',
             received_by_id: '',
             material_id: '',
-            storage_location_id: '',
+            voucher_type_id: '',
             state: '',
             tab: form.tab,
         };
@@ -255,8 +257,11 @@ export default function MaterialTracking({
                                 setForm({ ...form, received_by_id: value })
                             }
                             empty="Todos los técnicos"
+                            searchable
+                            searchPlaceholder="Buscar técnico…"
+                            emptyMessage="No se encontró ningún técnico."
                             options={receivers.map((person) => ({
-                                value: person.id,
+                                value: String(person.id),
                                 label: person.name,
                             }))}
                         />
@@ -267,24 +272,34 @@ export default function MaterialTracking({
                                 setForm({ ...form, material_id: value })
                             }
                             empty="Todos los materiales"
+                            searchable
+                            searchPlaceholder="Buscar material…"
+                            emptyMessage="No se encontró ningún material."
                             options={materials.map((material) => ({
-                                value: material.id,
+                                value: String(material.id),
                                 label: material.name,
+                                meta: material.default_unit?.symbol ?? 's/e',
+                                searchTerms: material.default_unit
+                                    ? [
+                                          material.default_unit.name,
+                                          material.default_unit.symbol,
+                                      ]
+                                    : [],
                             }))}
                         />
                         <FilterSelect
-                            label="Área"
-                            value={form.storage_location_id}
+                            label="Tipo de vale"
+                            value={form.voucher_type_id}
                             onChange={(value) =>
                                 setForm({
                                     ...form,
-                                    storage_location_id: value,
+                                    voucher_type_id: value,
                                 })
                             }
-                            empty="Todas las áreas"
-                            options={locations.map((location) => ({
-                                value: location.id,
-                                label: location.name,
+                            empty="Todos los tipos"
+                            options={voucherTypes.map((type) => ({
+                                value: String(type.id),
+                                label: type.name,
                             }))}
                         />
                         <FilterSelect
@@ -495,7 +510,7 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                                 #{row.folio}
                             </Link>
                             <p className="text-xs text-muted-foreground">
-                                {row.location.name} ·{' '}
+                                {row.voucher_type.name} ·{' '}
                                 {formatDate(row.issued_on)}
                             </p>
                         </td>
@@ -503,7 +518,7 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                         <td className="px-4 py-4">
                             {row.description}
                             <p className="max-w-64 truncate text-xs text-muted-foreground">
-                                {row.destination}
+                                {row.destination_summary ?? '—'}
                             </p>
                         </td>
                         <Quantity value={row.quantity} unit={row.unit.symbol} />
@@ -582,30 +597,50 @@ function FilterSelect({
     onChange,
     empty,
     options,
+    searchable = false,
+    searchPlaceholder,
+    emptyMessage,
 }: {
     label: string;
     value: string;
     onChange: (value: string) => void;
     empty: string;
-    options: { value: string | number; label: string }[];
+    options: ChoiceOption[];
+    searchable?: boolean;
+    searchPlaceholder?: string;
+    emptyMessage?: string;
 }) {
     const id = useId();
 
     return (
         <FormField>
             <FormLabel htmlFor={id}>{label}</FormLabel>
-            <NativeSelect
-                id={id}
-                value={value}
-                onChange={(event) => onChange(event.target.value)}
-            >
-                <option value="">{empty}</option>
-                {options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                        {option.label}
-                    </option>
-                ))}
-            </NativeSelect>
+            {searchable ? (
+                <SearchableSelect
+                    id={id}
+                    value={value}
+                    onValueChange={onChange}
+                    options={options}
+                    placeholder={empty}
+                    searchPlaceholder={
+                        searchPlaceholder ??
+                        `Buscar ${label.toLocaleLowerCase('es-MX')}…`
+                    }
+                    emptyMessage={
+                        emptyMessage ?? 'No se encontraron resultados.'
+                    }
+                    emptyLabel={empty}
+                />
+            ) : (
+                <SimpleSelect
+                    id={id}
+                    value={value}
+                    onValueChange={onChange}
+                    options={options}
+                    placeholder={empty}
+                    emptyLabel={empty}
+                />
+            )}
         </FormField>
     );
 }

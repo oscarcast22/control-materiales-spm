@@ -1,6 +1,6 @@
 export type Named = { id: number; name: string };
 export type Unit = Named & { symbol: string; is_active?: boolean };
-export type StorageLocation = Named & {
+export type VoucherType = Named & {
     code: string;
     tracking_started_on: string;
     is_active?: boolean;
@@ -11,6 +11,7 @@ export type Material = Named & {
     is_active?: boolean;
     needs_review?: boolean;
     aliases_count?: number;
+    voucher_types?: Pick<VoucherType, 'id' | 'name' | 'code'>[];
 };
 export type Person = Named & {
     can_receive_material: boolean;
@@ -20,11 +21,25 @@ export type Person = Named & {
     needs_review?: boolean;
     aliases_count?: number;
 };
+export type Destination = Named & {
+    is_active?: boolean;
+    needs_review?: boolean;
+    aliases_count?: number;
+    aliases?: { id: number; alias: string }[];
+};
 export type Program = {
     id: number;
     code: string;
     name?: string | null;
     is_active?: boolean;
+};
+export type Action = {
+    id: number;
+    program_id: number;
+    code: string;
+    name?: string | null;
+    is_active?: boolean;
+    program?: Pick<Program, 'id' | 'code'>;
 };
 
 export type MaterialApplication = {
@@ -32,7 +47,7 @@ export type MaterialApplication = {
     occurred_on: string;
     quantity: string;
     reference?: string | null;
-    destination?: string | null;
+    destination_snapshot?: string | null;
     notes?: string | null;
     legacy_slot?: number | null;
     voided_at?: string | null;
@@ -60,18 +75,30 @@ export type VoucherItem = {
 
 export type Voucher = {
     id: number;
-    location: StorageLocation;
+    voucher_type: VoucherType;
     folio: string;
-    direction: 'entry' | 'exit';
+    direction?: 'entry' | 'exit' | null;
     issued_on: string;
-    issued_time?: string | null;
-    received_by: Named;
-    delivered_by: Named;
+    received_by?: Named | null;
+    delivered_by?: Named | null;
     authorized_by?: Named | null;
-    destination: string;
+    program?: Program | null;
+    action?: Action | null;
+    destinations: Destination[];
+    usage_description?: string | null;
+    destination_summary?: string | null;
     notes?: string | null;
-    status: 'active' | 'cancelled';
-    balance_state: 'pending' | 'settled' | 'anomaly' | 'received' | 'cancelled';
+    status: 'active' | 'loaned' | 'cancelled';
+    loaned_to_name?: string | null;
+    loaned_on?: string | null;
+    returned_on?: string | null;
+    balance_state:
+        | 'pending'
+        | 'settled'
+        | 'anomaly'
+        | 'received'
+        | 'cancelled'
+        | 'not_applicable';
     needs_review: boolean;
     review_reasons: string[];
     cancellation_reason?: string | null;
@@ -87,7 +114,7 @@ export type Voucher = {
 };
 
 export type InventoryRow = {
-    location: StorageLocation;
+    location: VoucherType;
     material: Named;
     unit: Unit;
     entries: string;
@@ -98,7 +125,7 @@ export type InventoryRow = {
 
 export type InventoryAdjustment = {
     id: number;
-    location: StorageLocation;
+    location: VoucherType;
     material: Named;
     unit: Unit;
     occurred_on: string;

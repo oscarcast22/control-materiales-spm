@@ -3,22 +3,51 @@ import {
     ArrowLeft,
     ClipboardCheck,
     FileText,
+    PackageSearch,
     Plus,
     Save,
     Trash2,
 } from 'lucide-react';
-import type { FormEvent } from 'react';
-import { cloneElement, isValidElement, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import InputError from '@/components/input-error';
 import { PageHeader } from '@/components/page';
+import { SearchableSelect } from '@/components/searchable-select';
+import { SimpleSelect } from '@/components/simple-select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Field,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
-import type { Material, Named, StorageLocation, Unit, Voucher } from '@/types';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { VoucherDestinationPicker } from '@/components/voucher-destination-picker';
+import type {
+    Action,
+    ChoiceOption,
+    Destination,
+    Material,
+    Named,
+    Program,
+    Unit,
+    Voucher,
+    VoucherType,
+} from '@/types';
 
 type Line = {
     id?: number;
@@ -27,15 +56,18 @@ type Line = {
     quantity: string;
 };
 type FormData = {
-    storage_location_id: string;
+    voucher_type_id: string;
     folio: string;
     direction: 'entry' | 'exit';
     issued_on: string;
-    issued_time: string;
     received_by_id: string;
     delivered_by_id: string;
     authorized_by_id: string;
-    destination: string;
+    program_id: string;
+    action_id: string;
+    destination_ids: string[];
+    new_destinations: string[];
+    usage_description: string;
     notes: string;
     items: Line[];
     attachments: File[];
@@ -46,8 +78,11 @@ type Props = {
     units: Unit[];
     receivers: Named[];
     deliverers: Named[];
-    locations: StorageLocation[];
+    voucherTypes: VoucherType[];
     authorizers: Named[];
+    programs: Program[];
+    actions: Action[];
+    destinations: Destination[];
 };
 
 const blankLine = (): Line => ({
@@ -62,22 +97,80 @@ export default function VoucherForm({
     units,
     receivers,
     deliverers,
-    locations,
+    voucherTypes,
     authorizers,
+    programs,
+    actions,
+    destinations,
 }: Props) {
+    const formElement = useRef<HTMLFormElement>(null);
     const [unitOverrides, setUnitOverrides] = useState<boolean[]>(
         () => voucher?.items.map(() => false) ?? [false],
     );
+    const [showUsageDescription, setShowUsageDescription] = useState(
+        Boolean(voucher?.usage_description),
+    );
+    const voucherTypeOptions = useMemo<ChoiceOption[]>(
+        () =>
+            voucherTypes.map((voucherType) => ({
+                value: String(voucherType.id),
+                label: voucherType.name,
+            })),
+        [voucherTypes],
+    );
+    const unitById = useMemo(
+        () => new Map(units.map((unit) => [unit.id, unit])),
+        [units],
+    );
+    const unitOptions = useMemo<ChoiceOption[]>(
+        () =>
+            units.map((unit) => ({
+                value: String(unit.id),
+                label: `${unit.name} (${unit.symbol})`,
+                searchTerms: [unit.symbol],
+            })),
+        [units],
+    );
+    const receiverOptions = useMemo(
+        () => peopleOptions(receivers),
+        [receivers],
+    );
+    const delivererOptions = useMemo(
+        () => peopleOptions(deliverers),
+        [deliverers],
+    );
+    const authorizerOptions = useMemo(
+        () => peopleOptions(authorizers),
+        [authorizers],
+    );
+    const initialVoucherTypeId = voucher
+        ? String(voucher.voucher_type.id)
+        : String(voucherTypes[0]?.id ?? '');
+    const initialUsesProgramAndAction =
+        voucherTypes.find(
+            (voucherType) => String(voucherType.id) === initialVoucherTypeId,
+        )?.code === 'warehouse';
+    const defaultProgramId = initialUsesProgramAndAction
+        ? voucher?.program
+            ? String(voucher.program.id)
+            : programs.length === 1
+              ? String(programs[0].id)
+              : ''
+        : '';
+    const eligibleDefaultActions = actions.filter(
+        (action) => String(action.program_id) === defaultProgramId,
+    );
     const form = useForm<FormData>({
-        storage_location_id: voucher
-            ? String(voucher.location.id)
-            : String(locations[0]?.id ?? ''),
+        voucher_type_id: initialVoucherTypeId,
         folio: voucher?.folio ?? '',
         direction: voucher?.direction ?? 'exit',
         issued_on: voucher?.issued_on ?? new Date().toISOString().slice(0, 10),
-        issued_time: voucher?.issued_time?.slice(0, 5) ?? '',
-        received_by_id: voucher ? String(voucher.received_by.id) : '',
-        delivered_by_id: voucher ? String(voucher.delivered_by.id) : '',
+        received_by_id: voucher?.received_by
+            ? String(voucher.received_by.id)
+            : '',
+        delivered_by_id: voucher?.delivered_by
+            ? String(voucher.delivered_by.id)
+            : '',
         authorized_by_id: voucher
             ? voucher.authorized_by
                 ? String(voucher.authorized_by.id)
@@ -85,7 +178,20 @@ export default function VoucherForm({
             : authorizers.length === 1
               ? String(authorizers[0].id)
               : '',
-        destination: voucher?.destination ?? '',
+        program_id: defaultProgramId,
+        action_id: initialUsesProgramAndAction
+            ? voucher?.action
+                ? String(voucher.action.id)
+                : eligibleDefaultActions.length === 1
+                  ? String(eligibleDefaultActions[0].id)
+                  : ''
+            : '',
+        destination_ids:
+            voucher?.destinations.map((destination) =>
+                String(destination.id),
+            ) ?? [],
+        new_destinations: [],
+        usage_description: voucher?.usage_description ?? '',
         notes: voucher?.notes ?? '',
         items: voucher?.items.map((item) => ({
             id: item.id,
@@ -95,7 +201,81 @@ export default function VoucherForm({
         })) ?? [blankLine()],
         attachments: [],
     });
-    const missingDeliverers = voucher === null && deliverers.length === 0;
+    const materialOptions = useMemo<ChoiceOption[]>(
+        () =>
+            materials
+                .filter((material) =>
+                    material.voucher_types?.some(
+                        (voucherType) =>
+                            String(voucherType.id) ===
+                            form.data.voucher_type_id,
+                    ),
+                )
+                .map((material) => {
+                    const unit = unitById.get(material.default_unit_id);
+
+                    return {
+                        value: String(material.id),
+                        label: material.name,
+                        meta: unit?.symbol ?? 's/e',
+                        searchTerms: unit ? [unit.name, unit.symbol] : [],
+                    };
+                }),
+        [form.data.voucher_type_id, materials, unitById],
+    );
+    const programOptions = useMemo<ChoiceOption[]>(
+        () =>
+            programs.map((program) => ({
+                value: String(program.id),
+                label: program.code,
+                meta: program.name ?? undefined,
+                searchTerms: program.name ? [program.name] : [],
+            })),
+        [programs],
+    );
+    const actionOptions = useMemo<ChoiceOption[]>(
+        () =>
+            actions
+                .filter(
+                    (action) =>
+                        String(action.program_id) === form.data.program_id,
+                )
+                .map((action) => ({
+                    value: String(action.id),
+                    label: action.code,
+                    meta: action.name ?? undefined,
+                    searchTerms: action.name ? [action.name] : [],
+                })),
+        [actions, form.data.program_id],
+    );
+    const usesProgramAndAction =
+        voucherTypes.find(
+            (voucherType) =>
+                String(voucherType.id) === form.data.voucher_type_id,
+        )?.code === 'warehouse';
+    const errorSignature = Object.keys(form.errors).sort().join('|');
+
+    useEffect(() => {
+        if (!errorSignature) {
+            return;
+        }
+
+        const frame = window.requestAnimationFrame(() => {
+            const target =
+                formElement.current?.querySelector<HTMLElement>(
+                    '[aria-invalid="true"]',
+                ) ??
+                formElement.current?.querySelector<HTMLElement>(
+                    '[data-error-summary]',
+                );
+
+            target?.focus();
+        });
+
+        return () => window.cancelAnimationFrame(frame);
+    }, [errorSignature]);
+    const missingDeliverers = deliverers.length === 0;
+    const missingAuthorizers = authorizers.length === 0;
     const duplicateMaterials = form.data.items
         .map((line) => line.material_id)
         .filter(Boolean)
@@ -116,10 +296,73 @@ export default function VoucherForm({
         setUnitOverrides((current) =>
             current.map((enabled, i) => (i === index ? false : enabled)),
         );
+        window.setTimeout(
+            () => document.getElementById(`item-${index}-quantity`)?.focus(),
+            0,
+        );
+    };
+    const changeVoucherType = (voucherTypeId: string) => {
+        const usesClassification =
+            voucherTypes.find(
+                (voucherType) => String(voucherType.id) === voucherTypeId,
+            )?.code === 'warehouse';
+        const programId = usesClassification
+            ? programs.length === 1
+                ? String(programs[0].id)
+                : ''
+            : '';
+        const eligibleActions = actions.filter(
+            (action) => String(action.program_id) === programId,
+        );
+        const allowed = new Set(
+            materials
+                .filter((material) =>
+                    material.voucher_types?.some(
+                        (voucherType) =>
+                            String(voucherType.id) === voucherTypeId,
+                    ),
+                )
+                .map((material) => String(material.id)),
+        );
+        let removed = 0;
+        const items = form.data.items.map((line) => {
+            if (line.material_id && !allowed.has(line.material_id)) {
+                removed++;
+
+                return { ...line, material_id: '', unit_id: '', quantity: '' };
+            }
+
+            return line;
+        });
+        form.setData((current) => ({
+            ...current,
+            voucher_type_id: voucherTypeId,
+            program_id: programId,
+            action_id:
+                usesClassification && eligibleActions.length === 1
+                    ? String(eligibleActions[0].id)
+                    : '',
+            items,
+        }));
+
+        if (removed > 0) {
+            setUnitOverrides((current) => current.map(() => false));
+            toast.info(
+                removed === 1
+                    ? 'Se limpió un material que no pertenece al nuevo tipo de vale.'
+                    : `Se limpiaron ${removed} materiales que no pertenecen al nuevo tipo de vale.`,
+            );
+        }
     };
     const addLine = () => {
+        const nextIndex = form.data.items.length;
         form.setData('items', [...form.data.items, blankLine()]);
         setUnitOverrides((current) => [...current, false]);
+        window.setTimeout(
+            () =>
+                document.getElementById(`item-${nextIndex}-material`)?.focus(),
+            0,
+        );
     };
     const removeLine = (index: number) => {
         form.setData(
@@ -145,6 +388,7 @@ export default function VoucherForm({
                 title={voucher ? `Editar vale ${voucher.folio}` : 'Nuevo vale'}
             />
             <form
+                ref={formElement}
                 onSubmit={submit}
                 className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-6 px-4 py-6 min-[1200px]:px-8 md:px-6"
             >
@@ -170,7 +414,11 @@ export default function VoucherForm({
                                 </Link>
                             </Button>
                             <Button
-                                disabled={form.processing || missingDeliverers}
+                                disabled={
+                                    form.processing ||
+                                    missingDeliverers ||
+                                    missingAuthorizers
+                                }
                                 aria-busy={form.processing}
                             >
                                 <Save data-icon="inline-start" />
@@ -205,7 +453,12 @@ export default function VoucherForm({
                     </Alert>
                 )}
                 {Object.keys(form.errors).length > 0 && (
-                    <Alert variant="destructive" aria-live="polite">
+                    <Alert
+                        variant="destructive"
+                        aria-live="polite"
+                        tabIndex={-1}
+                        data-error-summary
+                    >
                         <AlertDescription>
                             Revisa los campos marcados antes de guardar.
                         </AlertDescription>
@@ -230,157 +483,428 @@ export default function VoucherForm({
                         </AlertDescription>
                     </Alert>
                 )}
+                {missingAuthorizers && (
+                    <Alert variant="warning">
+                        <AlertDescription>
+                            <p className="font-medium text-foreground">
+                                Falta configurar quién autoriza el material.
+                            </p>
+                            <p>
+                                Habilita al menos una persona con la función
+                                “Autoriza material” antes de guardar el vale.{' '}
+                                <Link
+                                    className="font-medium text-primary underline-offset-4 hover:underline"
+                                    href="/catalogs"
+                                >
+                                    Ir a Catálogos
+                                </Link>
+                            </p>
+                        </AlertDescription>
+                    </Alert>
+                )}
                 <Card>
                     <CardHeader>
                         <CardTitle>Datos del vale</CardTitle>
+                        <CardDescription>
+                            Transcribe los datos tal como aparecen en el
+                            documento físico.
+                        </CardDescription>
                     </CardHeader>
-                    <CardContent className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                        <Field label="Folio" error={form.errors.folio}>
-                            <Input
-                                value={form.data.folio}
-                                onChange={(e) =>
-                                    form.setData('folio', e.target.value)
-                                }
-                                placeholder="Ej. 16576"
-                            />
-                        </Field>
-                        <Field
-                            label="Área de resguardo"
-                            error={form.errors.storage_location_id}
-                        >
-                            <Select
-                                value={form.data.storage_location_id}
-                                onChange={(v) =>
-                                    form.setData('storage_location_id', v)
-                                }
-                                placeholder="Seleccionar área"
-                                options={locations.map((location) => ({
-                                    value: String(location.id),
-                                    label: location.name,
-                                }))}
-                            />
-                        </Field>
-                        <Field label="Movimiento" error={form.errors.direction}>
-                            <Select
-                                value={form.data.direction}
-                                onChange={(v) =>
-                                    form.setData(
-                                        'direction',
-                                        v as 'entry' | 'exit',
-                                    )
-                                }
-                                placeholder="Seleccionar movimiento"
-                                options={[
-                                    { value: 'exit', label: 'Salida' },
-                                    { value: 'entry', label: 'Entrada' },
-                                ]}
-                            />
-                        </Field>
-                        <Field label="Fecha" error={form.errors.issued_on}>
-                            <Input
-                                type="date"
-                                value={form.data.issued_on}
-                                onChange={(e) =>
-                                    form.setData('issued_on', e.target.value)
-                                }
-                            />
-                        </Field>
-                        <Field
-                            label="Hora (opcional)"
-                            error={form.errors.issued_time}
-                        >
-                            <Input
-                                type="time"
-                                value={form.data.issued_time}
-                                onChange={(e) =>
-                                    form.setData('issued_time', e.target.value)
-                                }
-                            />
-                        </Field>
-                        <Field
-                            label="Recibió"
-                            error={form.errors.received_by_id}
-                        >
-                            <Select
-                                value={form.data.received_by_id}
-                                onChange={(v) =>
-                                    form.setData('received_by_id', v)
-                                }
-                                placeholder="Seleccionar persona"
-                                options={receivers.map((p) => ({
-                                    value: String(p.id),
-                                    label: p.name,
-                                }))}
-                            />
-                        </Field>
-                        <Field
-                            label="Autorizó (opcional)"
-                            error={form.errors.authorized_by_id}
-                        >
-                            <Select
-                                value={form.data.authorized_by_id}
-                                onChange={(v) =>
-                                    form.setData('authorized_by_id', v)
-                                }
-                                placeholder="Sin autorizar registrado"
-                                options={authorizers.map((p) => ({
-                                    value: String(p.id),
-                                    label: p.name,
-                                }))}
-                            />
-                        </Field>
-                        <Field
-                            label="Entregó material"
-                            error={form.errors.delivered_by_id}
-                        >
-                            <Select
-                                value={form.data.delivered_by_id}
-                                onChange={(v) =>
-                                    form.setData('delivered_by_id', v)
-                                }
-                                placeholder="Seleccionar persona"
-                                options={deliverers.map((p) => ({
-                                    value: String(p.id),
-                                    label: p.name,
-                                }))}
-                            />
-                        </Field>
-                        <div className="md:col-span-2 xl:col-span-4">
-                            <Field
-                                label={
-                                    form.data.direction === 'entry'
-                                        ? 'Origen o concepto de la entrada'
-                                        : 'Destino del vale'
-                                }
-                                error={form.errors.destination}
+                    <CardContent>
+                        <FieldGroup className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                            <VoucherField
+                                id="voucher-type"
+                                label="Tipo de vale"
+                                error={form.errors.voucher_type_id}
                             >
-                                <Textarea
-                                    value={form.data.destination}
+                                <SimpleSelect
+                                    id="voucher-type"
+                                    value={form.data.voucher_type_id}
+                                    onValueChange={changeVoucherType}
+                                    placeholder="Seleccionar tipo"
+                                    options={voucherTypeOptions}
+                                    invalid={Boolean(
+                                        form.errors.voucher_type_id,
+                                    )}
+                                    describedBy={errorDescriptionId(
+                                        'voucher-type',
+                                        form.errors.voucher_type_id,
+                                    )}
+                                />
+                            </VoucherField>
+                            <Field invalid={Boolean(form.errors.direction)}>
+                                <FieldLabel id="voucher-direction-label">
+                                    Movimiento
+                                </FieldLabel>
+                                <ToggleGroup
+                                    type="single"
+                                    variant="outline"
+                                    value={form.data.direction}
+                                    onValueChange={(value) => {
+                                        if (
+                                            value === 'entry' ||
+                                            value === 'exit'
+                                        ) {
+                                            form.setData('direction', value);
+                                        }
+                                    }}
+                                    className="grid w-full grid-cols-2"
+                                    aria-labelledby="voucher-direction-label"
+                                    aria-describedby={errorDescriptionId(
+                                        'voucher-direction',
+                                        form.errors.direction,
+                                    )}
+                                    aria-invalid={
+                                        Boolean(form.errors.direction) ||
+                                        undefined
+                                    }
+                                >
+                                    <ToggleGroupItem
+                                        value="exit"
+                                        aria-invalid={
+                                            Boolean(form.errors.direction) ||
+                                            undefined
+                                        }
+                                        aria-describedby={errorDescriptionId(
+                                            'voucher-direction',
+                                            form.errors.direction,
+                                        )}
+                                    >
+                                        Salida
+                                    </ToggleGroupItem>
+                                    <ToggleGroupItem
+                                        value="entry"
+                                        aria-invalid={
+                                            Boolean(form.errors.direction) ||
+                                            undefined
+                                        }
+                                        aria-describedby={errorDescriptionId(
+                                            'voucher-direction',
+                                            form.errors.direction,
+                                        )}
+                                    >
+                                        Entrada
+                                    </ToggleGroupItem>
+                                </ToggleGroup>
+                                <FieldError id="voucher-direction-error">
+                                    {form.errors.direction}
+                                </FieldError>
+                            </Field>
+                            <VoucherField
+                                id="voucher-folio"
+                                label="Folio"
+                                error={form.errors.folio}
+                            >
+                                <Input
+                                    id="voucher-folio"
+                                    value={form.data.folio}
+                                    onChange={(e) =>
+                                        form.setData('folio', e.target.value)
+                                    }
+                                    placeholder="Ej. 16576"
+                                    aria-invalid={
+                                        Boolean(form.errors.folio) || undefined
+                                    }
+                                    aria-describedby={errorDescriptionId(
+                                        'voucher-folio',
+                                        form.errors.folio,
+                                    )}
+                                />
+                            </VoucherField>
+                            <VoucherField
+                                id="voucher-date"
+                                label="Fecha"
+                                error={form.errors.issued_on}
+                            >
+                                <Input
+                                    id="voucher-date"
+                                    type="date"
+                                    value={form.data.issued_on}
                                     onChange={(e) =>
                                         form.setData(
-                                            'destination',
+                                            'issued_on',
                                             e.target.value,
                                         )
                                     }
-                                    placeholder="Lugar, poblado o trabajo al que se destina el material"
+                                    aria-invalid={
+                                        Boolean(form.errors.issued_on) ||
+                                        undefined
+                                    }
+                                    aria-describedby={errorDescriptionId(
+                                        'voucher-date',
+                                        form.errors.issued_on,
+                                    )}
                                 />
-                            </Field>
-                        </div>
+                            </VoucherField>
+                            {usesProgramAndAction && (
+                                <>
+                                    <VoucherField
+                                        id="voucher-program"
+                                        label="Programa (opcional)"
+                                        error={form.errors.program_id}
+                                    >
+                                        <SearchableSelect
+                                            id="voucher-program"
+                                            value={form.data.program_id}
+                                            onValueChange={(value) => {
+                                                form.setData((current) => ({
+                                                    ...current,
+                                                    program_id: value,
+                                                    action_id: '',
+                                                }));
+                                            }}
+                                            options={programOptions}
+                                            placeholder="Sin programa"
+                                            emptyLabel="Sin programa"
+                                            searchPlaceholder="Buscar programa…"
+                                            emptyMessage="No se encontró el programa."
+                                            invalid={Boolean(
+                                                form.errors.program_id,
+                                            )}
+                                            describedBy={errorDescriptionId(
+                                                'voucher-program',
+                                                form.errors.program_id,
+                                            )}
+                                        />
+                                    </VoucherField>
+                                    <VoucherField
+                                        id="voucher-action"
+                                        label="Acción (opcional)"
+                                        error={form.errors.action_id}
+                                    >
+                                        <SearchableSelect
+                                            id="voucher-action"
+                                            value={form.data.action_id}
+                                            onValueChange={(value) =>
+                                                form.setData('action_id', value)
+                                            }
+                                            options={actionOptions}
+                                            placeholder={
+                                                form.data.program_id
+                                                    ? 'Sin acción'
+                                                    : 'Selecciona un programa'
+                                            }
+                                            emptyLabel="Sin acción"
+                                            searchPlaceholder="Buscar acción…"
+                                            emptyMessage="No se encontró la acción."
+                                            disabled={!form.data.program_id}
+                                            invalid={Boolean(
+                                                form.errors.action_id,
+                                            )}
+                                            describedBy={errorDescriptionId(
+                                                'voucher-action',
+                                                form.errors.action_id,
+                                            )}
+                                        />
+                                    </VoucherField>
+                                </>
+                            )}
+                            <VoucherField
+                                id="voucher-receiver"
+                                label="Recibió"
+                                error={form.errors.received_by_id}
+                            >
+                                <SearchableSelect
+                                    id="voucher-receiver"
+                                    value={form.data.received_by_id}
+                                    onValueChange={(v) =>
+                                        form.setData('received_by_id', v)
+                                    }
+                                    placeholder="Seleccionar persona"
+                                    searchPlaceholder="Buscar por nombre…"
+                                    emptyMessage="No encontramos a esa persona."
+                                    options={receiverOptions}
+                                    invalid={Boolean(
+                                        form.errors.received_by_id,
+                                    )}
+                                    describedBy={errorDescriptionId(
+                                        'voucher-receiver',
+                                        form.errors.received_by_id,
+                                    )}
+                                />
+                            </VoucherField>
+                            <VoucherField
+                                id="voucher-deliverer"
+                                label="Entregó material"
+                                error={form.errors.delivered_by_id}
+                            >
+                                <SearchableSelect
+                                    id="voucher-deliverer"
+                                    value={form.data.delivered_by_id}
+                                    onValueChange={(v) =>
+                                        form.setData('delivered_by_id', v)
+                                    }
+                                    placeholder="Seleccionar persona"
+                                    searchPlaceholder="Buscar por nombre…"
+                                    emptyMessage="No encontramos a esa persona."
+                                    options={delivererOptions}
+                                    disabled={missingDeliverers}
+                                    invalid={Boolean(
+                                        form.errors.delivered_by_id,
+                                    )}
+                                    describedBy={errorDescriptionId(
+                                        'voucher-deliverer',
+                                        form.errors.delivered_by_id,
+                                    )}
+                                />
+                            </VoucherField>
+                            {authorizers.length > 1 && (
+                                <VoucherField
+                                    id="voucher-authorizer"
+                                    label="Autorizó"
+                                    error={form.errors.authorized_by_id}
+                                >
+                                    <SearchableSelect
+                                        id="voucher-authorizer"
+                                        value={form.data.authorized_by_id}
+                                        onValueChange={(v) =>
+                                            form.setData('authorized_by_id', v)
+                                        }
+                                        placeholder="Seleccionar persona"
+                                        searchPlaceholder="Buscar por nombre…"
+                                        emptyMessage="No encontramos a esa persona."
+                                        options={authorizerOptions}
+                                        invalid={Boolean(
+                                            form.errors.authorized_by_id,
+                                        )}
+                                        describedBy={errorDescriptionId(
+                                            'voucher-authorizer',
+                                            form.errors.authorized_by_id,
+                                        )}
+                                    />
+                                </VoucherField>
+                            )}
+                            <div className="md:col-span-2 xl:col-span-4">
+                                <VoucherField
+                                    id="voucher-destination"
+                                    label={
+                                        form.data.direction === 'entry'
+                                            ? 'Origen o ubicación'
+                                            : 'Ubicación del destino'
+                                    }
+                                    error={
+                                        form.errors.destination_ids ??
+                                        form.errors.new_destinations
+                                    }
+                                >
+                                    <VoucherDestinationPicker
+                                        id="voucher-destination"
+                                        destinations={destinations}
+                                        selectedIds={form.data.destination_ids}
+                                        newDestinations={
+                                            form.data.new_destinations
+                                        }
+                                        onSelectedIdsChange={(ids) =>
+                                            form.setData('destination_ids', ids)
+                                        }
+                                        onNewDestinationsChange={(names) =>
+                                            form.setData(
+                                                'new_destinations',
+                                                names,
+                                            )
+                                        }
+                                        invalid={Boolean(
+                                            form.errors.destination_ids ??
+                                            form.errors.new_destinations,
+                                        )}
+                                        describedBy={errorDescriptionId(
+                                            'voucher-destination',
+                                            form.errors.destination_ids ??
+                                                form.errors.new_destinations,
+                                        )}
+                                    />
+                                </VoucherField>
+                                <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-dashed px-4 py-3 transition-colors hover:bg-muted/30">
+                                    <Checkbox
+                                        checked={showUsageDescription}
+                                        onCheckedChange={(checked) => {
+                                            const enabled = checked === true;
+                                            setShowUsageDescription(enabled);
+
+                                            if (!enabled) {
+                                                form.setData(
+                                                    'usage_description',
+                                                    '',
+                                                );
+                                            }
+                                        }}
+                                        className="mt-0.5"
+                                    />
+                                    <span>
+                                        <span className="block text-sm font-medium">
+                                            Agregar descripción de uso o
+                                            actividad
+                                        </span>
+                                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                                            Úsala para trabajos, actualizaciones
+                                            o destinos que no sean una
+                                            ubicación.
+                                        </span>
+                                    </span>
+                                </label>
+                                {showUsageDescription && (
+                                    <div className="mt-3">
+                                        <VoucherField
+                                            id="voucher-usage-description"
+                                            label={
+                                                form.data.direction === 'entry'
+                                                    ? 'Concepto de la entrada'
+                                                    : 'Uso o actividad'
+                                            }
+                                            error={
+                                                form.errors.usage_description
+                                            }
+                                        >
+                                            <Textarea
+                                                id="voucher-usage-description"
+                                                value={
+                                                    form.data.usage_description
+                                                }
+                                                onChange={(event) =>
+                                                    form.setData(
+                                                        'usage_description',
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                placeholder="Describe el trabajo, actualización o uso del material"
+                                                aria-invalid={
+                                                    Boolean(
+                                                        form.errors
+                                                            .usage_description,
+                                                    ) || undefined
+                                                }
+                                                aria-describedby={errorDescriptionId(
+                                                    'voucher-usage-description',
+                                                    form.errors
+                                                        .usage_description,
+                                                )}
+                                            />
+                                        </VoucherField>
+                                    </div>
+                                )}
+                            </div>
+                        </FieldGroup>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="flex-row items-center justify-between">
-                        <div>
+                    <CardHeader className="flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
                             <CardTitle>
                                 Material{' '}
                                 {form.data.direction === 'entry'
                                     ? 'recibido'
                                     : 'entregado'}
+                                <Badge variant="secondary" className="ml-2">
+                                    {form.data.items.length}{' '}
+                                    {form.data.items.length === 1
+                                        ? 'partida'
+                                        : 'partidas'}
+                                </Badge>
                             </CardTitle>
-                            <p className="mt-1 text-sm text-muted-foreground">
+                            <CardDescription>
                                 La unidad se asigna desde el catálogo y queda
                                 guardada con el renglón.
-                            </p>
+                            </CardDescription>
                         </div>
                         <Button
                             type="button"
@@ -391,166 +915,235 @@ export default function VoucherForm({
                             Agregar material
                         </Button>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-3">
-                        {duplicateMaterials.length > 0 && (
-                            <Alert variant="warning">
-                                <AlertDescription>
-                                    Hay materiales repetidos. Puedes conservar
-                                    renglones separados o sumar sus cantidades.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                        {form.data.items.map((line, index) => (
-                            <div
-                                key={line.id ?? `new-${index}`}
-                                className="grid items-end gap-3 border-t pt-4 first:border-t-0 first:pt-0 md:grid-cols-[minmax(240px,1fr)_210px_180px_auto]"
-                            >
-                                <Field
-                                    label={`Material ${index + 1}`}
-                                    error={
-                                        form.errors[
-                                            `items.${index}.material_id` as keyof typeof form.errors
-                                        ]
-                                    }
-                                >
-                                    <NativeSelect
-                                        value={line.material_id}
-                                        onChange={(e) =>
-                                            selectMaterial(
-                                                index,
-                                                e.target.value,
-                                            )
-                                        }
+                    <CardContent>
+                        <FieldGroup className="gap-4">
+                            {duplicateMaterials.length > 0 && (
+                                <Alert variant="warning">
+                                    <AlertDescription>
+                                        Hay materiales repetidos. Puedes
+                                        conservar renglones separados o sumar
+                                        sus cantidades.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                            {form.data.items.map((line, index) => {
+                                const materialError =
+                                    form.errors[
+                                        `items.${index}.material_id` as keyof typeof form.errors
+                                    ];
+                                const unitError =
+                                    form.errors[
+                                        `items.${index}.unit_id` as keyof typeof form.errors
+                                    ];
+                                const quantityError =
+                                    form.errors[
+                                        `items.${index}.quantity` as keyof typeof form.errors
+                                    ];
+                                const materialId = `item-${index}-material`;
+                                const quantityId = `item-${index}-quantity`;
+
+                                return (
+                                    <fieldset
+                                        key={line.id ?? `new-${index}`}
+                                        className="grid min-w-0 items-end gap-4 rounded-lg border bg-surface-subtle/55 p-4 lg:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_210px_170px_auto]"
                                     >
-                                        <option value="">
-                                            Seleccionar material
-                                        </option>
-                                        {materials.map((m) => (
-                                            <option key={m.id} value={m.id}>
-                                                {m.name}
-                                            </option>
-                                        ))}
-                                    </NativeSelect>
-                                </Field>
-                                <UnitField
-                                    index={index}
-                                    line={line}
-                                    materials={materials}
-                                    units={units}
-                                    override={unitOverrides[index] ?? false}
-                                    error={
-                                        form.errors[
-                                            `items.${index}.unit_id` as keyof typeof form.errors
-                                        ]
-                                    }
-                                    onChange={(unitId) =>
-                                        changeLine(index, { unit_id: unitId })
-                                    }
-                                    onOverrideChange={(enabled) =>
-                                        setUnitOverrides((current) =>
-                                            current.map((value, i) =>
-                                                i === index ? enabled : value,
-                                            ),
-                                        )
-                                    }
+                                        <legend className="sr-only">
+                                            Material {index + 1}
+                                        </legend>
+                                        <VoucherField
+                                            id={materialId}
+                                            label={`Material ${index + 1}`}
+                                            error={materialError}
+                                            className="lg:col-span-2 xl:col-span-1"
+                                        >
+                                            <SearchableSelect
+                                                id={materialId}
+                                                value={line.material_id}
+                                                onValueChange={(materialId) =>
+                                                    selectMaterial(
+                                                        index,
+                                                        materialId,
+                                                    )
+                                                }
+                                                placeholder="Seleccionar material"
+                                                searchPlaceholder="Buscar material…"
+                                                emptyMessage="No encontramos ese material."
+                                                options={materialOptions}
+                                                invalid={Boolean(materialError)}
+                                                describedBy={errorDescriptionId(
+                                                    materialId,
+                                                    materialError,
+                                                )}
+                                            />
+                                        </VoucherField>
+                                        <UnitField
+                                            index={index}
+                                            line={line}
+                                            materials={materials}
+                                            units={units}
+                                            unitOptions={unitOptions}
+                                            override={
+                                                unitOverrides[index] ?? false
+                                            }
+                                            error={unitError}
+                                            onChange={(unitId) =>
+                                                changeLine(index, {
+                                                    unit_id: unitId,
+                                                })
+                                            }
+                                            onOverrideChange={(enabled) =>
+                                                setUnitOverrides((current) =>
+                                                    current.map((value, i) =>
+                                                        i === index
+                                                            ? enabled
+                                                            : value,
+                                                    ),
+                                                )
+                                            }
+                                        />
+                                        <VoucherField
+                                            id={quantityId}
+                                            label="Cantidad"
+                                            error={quantityError}
+                                        >
+                                            <Input
+                                                id={quantityId}
+                                                inputMode="decimal"
+                                                value={line.quantity}
+                                                onChange={(e) =>
+                                                    changeLine(index, {
+                                                        quantity:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                                placeholder="0"
+                                                aria-invalid={
+                                                    Boolean(quantityError) ||
+                                                    undefined
+                                                }
+                                                aria-describedby={errorDescriptionId(
+                                                    quantityId,
+                                                    quantityError,
+                                                )}
+                                            />
+                                        </VoucherField>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            disabled={
+                                                form.data.items.length === 1
+                                            }
+                                            onClick={() => removeLine(index)}
+                                            className="justify-self-end lg:col-span-2 xl:col-span-1 xl:justify-self-auto"
+                                        >
+                                            <Trash2 className="text-destructive" />
+                                            <span className="sr-only">
+                                                Eliminar material {index + 1}
+                                            </span>
+                                        </Button>
+                                    </fieldset>
+                                );
+                            })}
+                            <InputError message={form.errors.items} />
+                            <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                                <PackageSearch
+                                    className="mt-0.5 size-4 shrink-0"
+                                    aria-hidden="true"
                                 />
-                                <Field
-                                    label="Cantidad"
-                                    error={
-                                        form.errors[
-                                            `items.${index}.quantity` as keyof typeof form.errors
-                                        ]
-                                    }
-                                >
-                                    <Input
-                                        inputMode="decimal"
-                                        value={line.quantity}
-                                        onChange={(e) =>
-                                            changeLine(index, {
-                                                quantity: e.target.value,
-                                            })
-                                        }
-                                        placeholder="0"
-                                    />
-                                </Field>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    disabled={form.data.items.length === 1}
-                                    onClick={() => removeLine(index)}
-                                >
-                                    <Trash2 className="text-destructive" />
-                                    <span className="sr-only">
-                                        Eliminar material {index + 1}
-                                    </span>
-                                </Button>
+                                <p>
+                                    ¿No aparece un material?{' '}
+                                    <Link
+                                        className="font-medium text-primary underline-offset-4 hover:underline"
+                                        href="/catalogs"
+                                    >
+                                        Agrégalo primero al catálogo.
+                                    </Link>
+                                </p>
                             </div>
-                        ))}
-                        <InputError message={form.errors.items} />
-                        <p className="text-sm text-muted-foreground">
-                            ¿No aparece un material?{' '}
-                            <Link
-                                className="font-medium text-primary underline-offset-4 hover:underline"
-                                href="/catalogs"
-                            >
-                                Agrégalo primero al catálogo.
-                            </Link>
-                        </p>
+                        </FieldGroup>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle>Respaldo y observaciones</CardTitle>
+                        <CardDescription>
+                            Adjunta evidencia del documento y conserva cualquier
+                            aclaración útil para su consulta.
+                        </CardDescription>
                     </CardHeader>
-                    <CardContent className="grid gap-5 md:grid-cols-2">
-                        <Field
-                            label="Foto o PDF del vale (opcional)"
-                            error={form.errors.attachments}
-                        >
-                            <Input
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp,application/pdf"
-                                multiple
-                                onChange={(e) =>
-                                    form.setData(
-                                        'attachments',
-                                        Array.from(e.target.files ?? []),
-                                    )
-                                }
-                            />
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                Hasta 5 archivos de 10 MB cada uno.
-                            </p>
-                        </Field>
-                        <Field label="Observaciones" error={form.errors.notes}>
-                            <Textarea
-                                value={form.data.notes}
-                                onChange={(e) =>
-                                    form.setData('notes', e.target.value)
-                                }
-                            />
-                        </Field>
-                        {voucher && voucher.attachments.length > 0 && (
-                            <div className="md:col-span-2">
-                                <p className="mb-2 text-sm font-medium">
-                                    Archivos existentes
-                                </p>
-                                {voucher.attachments.map((file) => (
-                                    <a
-                                        key={file.id}
-                                        className="mr-3 inline-flex items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
-                                        href={`/attachments/${file.id}`}
-                                    >
-                                        <FileText
-                                            className="mr-1 size-4"
-                                            aria-hidden="true"
-                                        />
-                                        {file.original_name}
-                                    </a>
-                                ))}
-                            </div>
-                        )}
+                    <CardContent>
+                        <FieldGroup className="grid gap-5 md:grid-cols-2">
+                            <VoucherField
+                                id="voucher-attachments"
+                                label="Foto o PDF del vale (opcional)"
+                                error={form.errors.attachments}
+                                description="Hasta 5 archivos de 10 MB cada uno."
+                            >
+                                <Input
+                                    id="voucher-attachments"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                                    multiple
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'attachments',
+                                            Array.from(e.target.files ?? []),
+                                        )
+                                    }
+                                    aria-invalid={
+                                        Boolean(form.errors.attachments) ||
+                                        undefined
+                                    }
+                                    aria-describedby={fieldDescriptionIds(
+                                        'voucher-attachments',
+                                        form.errors.attachments,
+                                        true,
+                                    )}
+                                />
+                            </VoucherField>
+                            <VoucherField
+                                id="voucher-notes"
+                                label="Observaciones"
+                                error={form.errors.notes}
+                            >
+                                <Textarea
+                                    id="voucher-notes"
+                                    value={form.data.notes}
+                                    onChange={(e) =>
+                                        form.setData('notes', e.target.value)
+                                    }
+                                    placeholder="Aclaraciones del vale, correcciones visibles o contexto adicional"
+                                    aria-invalid={
+                                        Boolean(form.errors.notes) || undefined
+                                    }
+                                    aria-describedby={errorDescriptionId(
+                                        'voucher-notes',
+                                        form.errors.notes,
+                                    )}
+                                />
+                            </VoucherField>
+                            {voucher && voucher.attachments.length > 0 && (
+                                <div className="md:col-span-2">
+                                    <p className="mb-2 text-sm font-medium">
+                                        Archivos existentes
+                                    </p>
+                                    {voucher.attachments.map((file) => (
+                                        <a
+                                            key={file.id}
+                                            className="mr-3 inline-flex items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+                                            href={`/attachments/${file.id}`}
+                                        >
+                                            <FileText
+                                                className="mr-1 size-4"
+                                                aria-hidden="true"
+                                            />
+                                            {file.original_name}
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
+                        </FieldGroup>
                     </CardContent>
                 </Card>
             </form>
@@ -563,6 +1156,7 @@ function UnitField({
     line,
     materials,
     units,
+    unitOptions,
     override,
     error,
     onChange,
@@ -572,6 +1166,7 @@ function UnitField({
     line: Line;
     materials: Material[];
     units: Unit[];
+    unitOptions: ChoiceOption[];
     override: boolean;
     error?: string;
     onChange: (unitId: string) => void;
@@ -588,19 +1183,33 @@ function UnitField({
         Boolean(material) &&
         (override || !currentUnit || currentUnit.symbol === 's/e');
     const fieldId = `item-${index}-unit`;
+    const labelId = `${fieldId}-label`;
+    let description: string | undefined;
+
+    if (showSelector && defaultUnit?.symbol === 's/e') {
+        description =
+            'Este material no tiene una unidad habitual. Selecciona la indicada en el vale.';
+    } else if (
+        showSelector &&
+        !override &&
+        currentUnit?.symbol === 's/e' &&
+        defaultUnit?.symbol !== 's/e'
+    ) {
+        description =
+            'La unidad guardada está sin especificar. Selecciona la indicada en el vale.';
+    } else if (showSelector && override && defaultUnit?.symbol !== 's/e') {
+        description = 'La excepción sólo se guardará en este vale.';
+    }
 
     return (
-        <div
-            className="flex min-w-0 flex-col gap-2"
-            data-invalid={!!error || undefined}
-        >
+        <Field invalid={Boolean(error)} data-disabled={!material || undefined}>
             <div className="flex min-h-4 items-center justify-between gap-2">
-                <Label
+                <FieldLabel
+                    id={labelId}
                     htmlFor={showSelector ? fieldId : undefined}
-                    className="text-[13px] font-medium text-text-secondary"
                 >
                     Unidad
-                </Label>
+                </FieldLabel>
                 {material && !showSelector && currentUnit && (
                     <Button
                         type="button"
@@ -628,104 +1237,90 @@ function UnitField({
                 )}
             </div>
             {showSelector ? (
-                <NativeSelect
+                <SimpleSelect
                     id={fieldId}
                     value={line.unit_id}
-                    aria-invalid={!!error || undefined}
-                    onChange={(event) => onChange(event.target.value)}
-                >
-                    <option value="">Seleccionar unidad</option>
-                    {units.map((unit) => (
-                        <option key={unit.id} value={unit.id}>
-                            {unit.name} ({unit.symbol})
-                        </option>
-                    ))}
-                </NativeSelect>
+                    onValueChange={onChange}
+                    options={unitOptions}
+                    placeholder="Seleccionar unidad"
+                    invalid={Boolean(error)}
+                    describedBy={fieldDescriptionIds(
+                        fieldId,
+                        error,
+                        Boolean(description),
+                    )}
+                />
             ) : (
-                <div className="flex h-10 items-center rounded-md border border-border bg-muted/40 px-3 text-sm font-medium text-foreground">
+                <div
+                    className="flex h-10 items-center rounded-md border border-border bg-muted/40 px-3 text-sm font-medium text-foreground"
+                    aria-labelledby={labelId}
+                >
                     {currentUnit
                         ? `${currentUnit.name} (${currentUnit.symbol})`
                         : 'Se asignará al elegir material'}
                 </div>
             )}
-            {showSelector && defaultUnit?.symbol === 's/e' && (
-                <p className="text-xs leading-4 text-muted-foreground">
-                    Este material no tiene una unidad habitual. Selecciona la
-                    indicada en el vale.
-                </p>
+            {description && (
+                <FieldDescription id={`${fieldId}-description`}>
+                    {description}
+                </FieldDescription>
             )}
-            {showSelector &&
-                !override &&
-                currentUnit?.symbol === 's/e' &&
-                defaultUnit?.symbol !== 's/e' && (
-                    <p className="text-xs leading-4 text-muted-foreground">
-                        La unidad guardada está sin especificar. Selecciona la
-                        indicada en el vale.
-                    </p>
-                )}
-            {showSelector && override && defaultUnit?.symbol !== 's/e' && (
-                <p className="text-xs leading-4 text-muted-foreground">
-                    La excepción sólo se guardará en este vale.
-                </p>
-            )}
-            <InputError message={error} />
-        </div>
+            <FieldError id={`${fieldId}-error`}>{error}</FieldError>
+        </Field>
     );
 }
 
-function Field({
+function VoucherField({
+    id,
     label,
     error,
+    description,
+    className,
     children,
 }: {
+    id: string;
     label: string;
     error?: string;
-    children: React.ReactNode;
+    description?: string;
+    className?: string;
+    children: ReactNode;
 }) {
     return (
-        <div
-            className="flex min-w-0 flex-col gap-2"
-            data-invalid={!!error || undefined}
-        >
-            <Label className="flex flex-col gap-2 text-[13px] font-medium text-text-secondary">
-                <span>{label}</span>
-                {isValidElement(children)
-                    ? cloneElement(
-                          children as React.ReactElement<{
-                              'aria-invalid'?: boolean;
-                          }>,
-                          { 'aria-invalid': !!error || undefined },
-                      )
-                    : children}
-            </Label>
-            <InputError message={error} />
-        </div>
+        <Field invalid={Boolean(error)} className={className}>
+            <FieldLabel htmlFor={id}>{label}</FieldLabel>
+            {children}
+            {description && (
+                <FieldDescription id={`${id}-description`}>
+                    {description}
+                </FieldDescription>
+            )}
+            <FieldError id={`${id}-error`}>{error}</FieldError>
+        </Field>
     );
 }
-function Select({
-    value,
-    onChange,
-    placeholder,
-    options,
-    ...props
-}: {
-    value: string;
-    onChange: (value: string) => void;
-    placeholder: string;
-    options: { value: string; label: string }[];
-} & Pick<React.ComponentProps<'select'>, 'aria-invalid'>) {
+
+function peopleOptions(people: Named[]): ChoiceOption[] {
+    return people.map((person) => ({
+        value: String(person.id),
+        label: person.name,
+    }));
+}
+
+function errorDescriptionId(id: string, error?: string) {
+    return error ? `${id}-error` : undefined;
+}
+
+function fieldDescriptionIds(
+    id: string,
+    error: string | undefined,
+    hasDescription: boolean,
+) {
     return (
-        <NativeSelect
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            {...props}
-        >
-            <option value="">{placeholder}</option>
-            {options.map((option) => (
-                <option key={option.value} value={option.value}>
-                    {option.label}
-                </option>
-            ))}
-        </NativeSelect>
+        [
+            hasDescription ? `${id}-description` : undefined,
+            error ? `${id}-error` : undefined,
+        ]
+            .filter(Boolean)
+            .join(' ') || undefined
     );
 }

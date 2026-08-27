@@ -2,17 +2,19 @@ import { Head, Link, router } from '@inertiajs/react';
 import { FilePlus2, Filter, Search, Wrench, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import { CancelledVoucherDialog } from '@/components/cancelled-voucher-dialog';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
 import { Page, PageHeader } from '@/components/page';
 import { Pagination } from '@/components/pagination';
 import { QuickApplicationDialog } from '@/components/quick-application-dialog';
+import { SearchableSelect } from '@/components/searchable-select';
+import { SimpleSelect } from '@/components/simple-select';
 import { StatusBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FormField, FormLabel } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
-import { NativeSelect } from '@/components/ui/native-select';
 import {
     Table,
     TableBody,
@@ -22,12 +24,12 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { formatDate } from '@/lib/format';
-import type { Named, Paginated, StorageLocation, Voucher } from '@/types';
+import type { Named, Paginated, Voucher, VoucherType } from '@/types';
 
 type Props = {
     vouchers: Paginated<Voucher>;
     receivers: Named[];
-    locations: StorageLocation[];
+    voucherTypes: VoucherType[];
     filters: Record<string, string | number | undefined>;
 };
 
@@ -36,7 +38,7 @@ const emptyFilters = {
     from: '',
     to: '',
     received_by_id: '',
-    storage_location_id: '',
+    voucher_type_id: '',
     direction: '',
     status: '',
 };
@@ -44,7 +46,7 @@ const emptyFilters = {
 export default function VoucherIndex({
     vouchers,
     receivers,
-    locations,
+    voucherTypes,
     filters,
 }: Props) {
     const [form, setForm] = useState({
@@ -52,7 +54,7 @@ export default function VoucherIndex({
         from: String(filters.from ?? ''),
         to: String(filters.to ?? ''),
         received_by_id: String(filters.received_by_id ?? ''),
-        storage_location_id: String(filters.storage_location_id ?? ''),
+        voucher_type_id: String(filters.voucher_type_id ?? ''),
         direction: String(filters.direction ?? ''),
         status: String(filters.status ?? ''),
     });
@@ -74,6 +76,9 @@ export default function VoucherIndex({
                     description={`${vouchers.total} registros localizados. Consulta salidas, entradas y su estado de comprobación.`}
                     actions={
                         <>
+                            <CancelledVoucherDialog
+                                voucherTypes={voucherTypes}
+                            />
                             <QuickApplicationDialog
                                 trigger={
                                     <Button>
@@ -154,52 +159,45 @@ export default function VoucherIndex({
                                 <FormLabel htmlFor="voucher-technician">
                                     Técnico
                                 </FormLabel>
-                                <NativeSelect
+                                <SearchableSelect
                                     id="voucher-technician"
                                     value={form.received_by_id}
-                                    onChange={(event) =>
+                                    onValueChange={(value) =>
                                         setForm({
                                             ...form,
-                                            received_by_id: event.target.value,
+                                            received_by_id: value,
                                         })
                                     }
-                                >
-                                    <option value="">Todos</option>
-                                    {receivers.map((person) => (
-                                        <option
-                                            key={person.id}
-                                            value={person.id}
-                                        >
-                                            {person.name}
-                                        </option>
-                                    ))}
-                                </NativeSelect>
+                                    options={receivers.map((person) => ({
+                                        value: String(person.id),
+                                        label: person.name,
+                                    }))}
+                                    placeholder="Seleccionar técnico"
+                                    searchPlaceholder="Buscar técnico…"
+                                    emptyMessage="No se encontró ningún técnico."
+                                    emptyLabel="Todos los técnicos"
+                                />
                             </FormField>
                             <FormField className="xl:col-span-2">
-                                <FormLabel htmlFor="voucher-location">
-                                    Área
+                                <FormLabel htmlFor="voucher-type">
+                                    Tipo de vale
                                 </FormLabel>
-                                <NativeSelect
-                                    id="voucher-location"
-                                    value={form.storage_location_id}
-                                    onChange={(event) =>
+                                <SimpleSelect
+                                    id="voucher-type"
+                                    value={form.voucher_type_id}
+                                    onValueChange={(value) =>
                                         setForm({
                                             ...form,
-                                            storage_location_id:
-                                                event.target.value,
+                                            voucher_type_id: value,
                                         })
                                     }
-                                >
-                                    <option value="">Todas</option>
-                                    {locations.map((location) => (
-                                        <option
-                                            key={location.id}
-                                            value={location.id}
-                                        >
-                                            {location.name}
-                                        </option>
-                                    ))}
-                                </NativeSelect>
+                                    options={voucherTypes.map((type) => ({
+                                        value: String(type.id),
+                                        label: type.name,
+                                    }))}
+                                    placeholder="Seleccionar tipo"
+                                    emptyLabel="Todos los tipos"
+                                />
                             </FormField>
                         </div>
                         <div className="flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-end">
@@ -207,46 +205,65 @@ export default function VoucherIndex({
                                 <FormLabel htmlFor="voucher-direction">
                                     Movimiento
                                 </FormLabel>
-                                <NativeSelect
+                                <SimpleSelect
                                     id="voucher-direction"
                                     value={form.direction}
-                                    onChange={(event) =>
+                                    onValueChange={(value) =>
                                         setForm({
                                             ...form,
-                                            direction: event.target.value,
+                                            direction: value,
                                         })
                                     }
-                                >
-                                    <option value="">Entradas y salidas</option>
-                                    <option value="entry">Entradas</option>
-                                    <option value="exit">Salidas</option>
-                                </NativeSelect>
+                                    options={[
+                                        { value: 'entry', label: 'Entradas' },
+                                        { value: 'exit', label: 'Salidas' },
+                                    ]}
+                                    placeholder="Seleccionar movimiento"
+                                    emptyLabel="Entradas y salidas"
+                                />
                             </FormField>
                             <FormField className="sm:w-52">
                                 <FormLabel htmlFor="voucher-status">
                                     Estado
                                 </FormLabel>
-                                <NativeSelect
+                                <SimpleSelect
                                     id="voucher-status"
                                     value={form.status}
-                                    onChange={(event) =>
+                                    onValueChange={(value) =>
                                         setForm({
                                             ...form,
-                                            status: event.target.value,
+                                            status: value,
                                         })
                                     }
-                                >
-                                    <option value="">Todos los estados</option>
-                                    <option value="pending">Pendientes</option>
-                                    <option value="settled">Liquidados</option>
-                                    <option value="anomaly">
-                                        Inconsistencias
-                                    </option>
-                                    <option value="cancelled">
-                                        Cancelados
-                                    </option>
-                                    <option value="review">Por revisar</option>
-                                </NativeSelect>
+                                    options={[
+                                        {
+                                            value: 'pending',
+                                            label: 'Pendientes',
+                                        },
+                                        {
+                                            value: 'settled',
+                                            label: 'Liquidados',
+                                        },
+                                        {
+                                            value: 'anomaly',
+                                            label: 'Inconsistencias',
+                                        },
+                                        {
+                                            value: 'cancelled',
+                                            label: 'Cancelados',
+                                        },
+                                        {
+                                            value: 'loaned',
+                                            label: 'Prestados',
+                                        },
+                                        {
+                                            value: 'review',
+                                            label: 'Por revisar',
+                                        },
+                                    ]}
+                                    placeholder="Seleccionar estado"
+                                    emptyLabel="Todos los estados"
+                                />
                             </FormField>
                             <div className="flex gap-2 sm:ml-auto">
                                 <Button
@@ -290,18 +307,20 @@ export default function VoucherIndex({
                                             Vale {voucher.folio}
                                         </p>
                                         <p className="mt-0.5 text-xs text-muted-foreground">
-                                            {voucher.location.name} ·{' '}
+                                            {voucher.voucher_type.name} ·{' '}
                                             {voucher.direction === 'entry'
                                                 ? 'Entrada'
-                                                : 'Salida'}{' '}
+                                                : voucher.direction === 'exit'
+                                                  ? 'Salida'
+                                                  : 'Sin movimiento'}{' '}
                                             · {formatDate(voucher.issued_on)}
                                         </p>
                                     </TableCell>
                                     <TableCell>
-                                        {voucher.received_by.name}
+                                        {voucher.received_by?.name ?? '—'}
                                     </TableCell>
                                     <TableCell className="max-w-md truncate">
-                                        {voucher.destination}
+                                        {voucher.destination_summary ?? '—'}
                                     </TableCell>
                                     <TableCell className="text-right tabular-nums">
                                         {voucher.items_count}
@@ -311,6 +330,11 @@ export default function VoucherIndex({
                                             <StatusBadge
                                                 state={voucher.balance_state}
                                             />
+                                            {voucher.status === 'loaned' && (
+                                                <Badge variant="secondary">
+                                                    Prestado
+                                                </Badge>
+                                            )}
                                             {voucher.needs_review && (
                                                 <Badge variant="warning">
                                                     Requiere revisión

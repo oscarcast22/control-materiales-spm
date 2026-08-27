@@ -24,9 +24,9 @@ type VoucherOption = {
     id: number;
     folio: string;
     issued_on: string;
-    location: { id: number; name: string; code: string };
+    voucher_type: { id: number; name: string; code: string };
     received_by: { id: number; name: string };
-    destination: string;
+    destination_summary: string | null;
     items: VoucherItem[];
 };
 
@@ -49,9 +49,9 @@ const asOption = (voucher: Voucher): VoucherOption => ({
     id: voucher.id,
     folio: voucher.folio,
     issued_on: voucher.issued_on,
-    location: voucher.location,
-    received_by: voucher.received_by,
-    destination: voucher.destination,
+    voucher_type: voucher.voucher_type,
+    received_by: voucher.received_by!,
+    destination_summary: voucher.destination_summary ?? null,
     items: voucher.items.filter((item) => Number(item.pending_quantity) > 0),
 });
 
@@ -246,8 +246,8 @@ export function QuickApplicationDialog({
                                 />
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                Sólo aparecen vales de salida activos con
-                                material pendiente.
+                                Sólo aparecen vales de salida activos o
+                                prestados con material pendiente.
                             </p>
                         </div>
 
@@ -287,7 +287,7 @@ export function QuickApplicationDialog({
                                                 Vale {option.folio}
                                             </span>
                                             <span className="mt-0.5 block truncate text-sm text-muted-foreground">
-                                                {option.location.name} ·{' '}
+                                                {option.voucher_type.name} ·{' '}
                                                 {option.received_by.name} ·{' '}
                                                 {formatDate(option.issued_on)}
                                             </span>
@@ -316,12 +316,13 @@ export function QuickApplicationDialog({
                                             Vale {selected.folio}
                                         </p>
                                         <p className="mt-0.5 text-sm text-muted-foreground">
-                                            {selected.location.name} ·{' '}
+                                            {selected.voucher_type.name} ·{' '}
                                             {selected.received_by.name} ·{' '}
                                             {formatDate(selected.issued_on)}
                                         </p>
                                         <p className="mt-2 text-sm">
-                                            {selected.destination}
+                                            {selected.destination_summary ??
+                                                'Sin ubicación o actividad registrada'}
                                         </p>
                                     </div>
                                     {!voucher && (

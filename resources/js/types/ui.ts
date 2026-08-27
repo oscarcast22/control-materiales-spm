@@ -13,6 +13,15 @@ export type FlashToast = {
     message: string;
 };
 
+export type ChoiceOption = {
+    value: string;
+    label: string;
+    meta?: string;
+    description?: string;
+    searchTerms?: string[];
+    disabled?: boolean;
+};
+
 export type AuthLayoutProps = {
     children?: ReactNode;
     name?: string;

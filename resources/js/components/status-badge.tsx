@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, Clock3, Inbox, X } from 'lucide-react';
+import { AlertTriangle, Check, Clock3, Inbox, Minus, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const states = {
@@ -11,6 +11,11 @@ const states = {
     },
     cancelled: { label: 'Cancelado', variant: 'secondary', icon: X },
     received: { label: 'Entrada recibida', variant: 'info', icon: Inbox },
+    not_applicable: {
+        label: 'Sin saldo operativo',
+        variant: 'secondary',
+        icon: Minus,
+    },
 } as const;
 
 export function StatusBadge({ state }: { state: keyof typeof states }) {

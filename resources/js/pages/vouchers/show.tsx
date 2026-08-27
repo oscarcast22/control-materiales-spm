@@ -6,23 +6,67 @@ import {
     FileText,
     Pencil,
     Printer,
+    RotateCcw,
+    Send,
     Wrench,
 } from 'lucide-react';
+import { useState } from 'react';
 import { QuickApplicationDialog } from '@/components/quick-application-dialog';
 import { StatusBadge } from '@/components/status-badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { IconButton } from '@/components/ui/icon-button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { formatBytes, formatDate, formatQuantity } from '@/lib/format';
 import type { MaterialApplication, Voucher, VoucherItem } from '@/types';
 
 export default function VoucherShow({ voucher }: { voucher: Voucher }) {
+    const [loanDialogOpen, setLoanDialogOpen] = useState(false);
+    const [loanedToName, setLoanedToName] = useState('');
     const canApply =
         voucher.direction === 'exit' &&
-        voucher.status === 'active' &&
+        voucher.status !== 'cancelled' &&
         voucher.items.some((item) => Number(item.pending_quantity) > 0);
+    const loan = () => {
+        const name = loanedToName.trim();
+
+        if (!name) {
+            return;
+        }
+
+        router.post(
+            `/vouchers/${voucher.id}/loan`,
+            { loaned_to_name: name },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setLoanDialogOpen(false);
+                    setLoanedToName('');
+                },
+            },
+        );
+    };
+    const returnLoan = () => {
+        if (window.confirm('¿Confirmas que el vale físico fue devuelto?')) {
+            router.post(
+                `/vouchers/${voucher.id}/return`,
+                {},
+                { preserveScroll: true },
+            );
+        }
+    };
     const cancel = () => {
         const reason = window.prompt(
             'Motivo de cancelación (mínimo 5 caracteres):',
@@ -72,6 +116,9 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                     Vale {voucher.folio}
                                 </h1>
                                 <StatusBadge state={voucher.balance_state} />
+                                {voucher.status === 'loaned' && (
+                                    <Badge variant="secondary">Prestado</Badge>
+                                )}
                                 {voucher.needs_review && (
                                     <Badge variant="warning">
                                         Requiere revisión
@@ -79,10 +126,12 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                 )}
                             </div>
                             <p className="mt-1 text-muted-foreground">
-                                {voucher.location.name} ·{' '}
+                                {voucher.voucher_type.name} ·{' '}
                                 {voucher.direction === 'entry'
                                     ? 'Entrada'
-                                    : 'Salida'}{' '}
+                                    : voucher.direction === 'exit'
+                                      ? 'Salida'
+                                      : 'Sin movimiento'}{' '}
                                 del {formatDate(voucher.issued_on)}
                             </p>
                         </div>
@@ -105,10 +154,73 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                         Editar
                                     </Link>
                                 </Button>
+                                <Dialog
+                                    open={loanDialogOpen}
+                                    onOpenChange={setLoanDialogOpen}
+                                >
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline">
+                                            <Send data-icon="inline-start" />
+                                            Marcar prestado
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>
+                                                Marcar vale como prestado
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                Registra quién se lleva el vale
+                                                físico. El material y su saldo
+                                                no cambian.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="grid gap-2 py-2">
+                                            <Label htmlFor="loaned-to-name">
+                                                Prestado a
+                                            </Label>
+                                            <Input
+                                                id="loaned-to-name"
+                                                value={loanedToName}
+                                                onChange={(event) =>
+                                                    setLoanedToName(
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                placeholder="Nombre de la persona"
+                                                autoComplete="off"
+                                            />
+                                        </div>
+                                        <DialogFooter>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setLoanDialogOpen(false)
+                                                }
+                                            >
+                                                Cancelar
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                onClick={loan}
+                                                disabled={!loanedToName.trim()}
+                                            >
+                                                Confirmar préstamo
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                                 <Button variant="destructive" onClick={cancel}>
                                     Cancelar
                                 </Button>
                             </>
+                        )}
+                        {voucher.status === 'loaned' && (
+                            <Button variant="outline" onClick={returnLoan}>
+                                <RotateCcw data-icon="inline-start" />
+                                Registrar devolución
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -116,6 +228,23 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                     <Alert variant="destructive">
                         <AlertDescription>
                             Vale cancelado: {voucher.cancellation_reason}
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {voucher.status === 'loaned' && (
+                    <Alert variant="info">
+                        <AlertDescription>
+                            <p className="font-medium text-foreground">
+                                Vale físico prestado a {voucher.loaned_to_name}
+                            </p>
+                            <p>
+                                Registrado el{' '}
+                                {voucher.loaned_on
+                                    ? formatDate(voucher.loaned_on)
+                                    : '—'}
+                                . El seguimiento del material continúa sin
+                                cambios.
+                            </p>
                         </AlertDescription>
                     </Alert>
                 )}
@@ -152,19 +281,46 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                     <CardContent className="grid gap-5 pt-6 sm:grid-cols-2 lg:grid-cols-4">
                         <Info
                             label="Recibió"
-                            value={voucher.received_by.name}
+                            value={voucher.received_by?.name ?? '—'}
                         />
                         <Info
                             label="Entregó"
-                            value={voucher.delivered_by.name}
+                            value={voucher.delivered_by?.name ?? '—'}
                         />
                         <Info
                             label="Autorizó"
                             value={voucher.authorized_by?.name ?? '—'}
                         />
+                        {voucher.voucher_type.code === 'warehouse' && (
+                            <>
+                                <Info
+                                    label="Programa"
+                                    value={voucher.program?.code ?? '—'}
+                                />
+                                <Info
+                                    label="Acción"
+                                    value={voucher.action?.code ?? '—'}
+                                />
+                            </>
+                        )}
                         <div className="sm:col-span-2 lg:col-span-4">
-                            <Info label="Destino" value={voucher.destination} />
+                            <Info
+                                label="Ubicación"
+                                value={
+                                    voucher.destinations
+                                        .map((destination) => destination.name)
+                                        .join(', ') || '—'
+                                }
+                            />
                         </div>
+                        {voucher.usage_description && (
+                            <div className="sm:col-span-2 lg:col-span-4">
+                                <Info
+                                    label="Uso o actividad"
+                                    value={voucher.usage_description}
+                                />
+                            </div>
+                        )}
                         {voucher.notes && (
                             <div className="sm:col-span-2 lg:col-span-4">
                                 <Info
@@ -217,7 +373,7 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                         <MaterialCard
                             key={item.id}
                             item={item}
-                            active={voucher.status === 'active'}
+                            active={voucher.status !== 'cancelled'}
                             direction={voucher.direction}
                         />
                     ))}
@@ -279,7 +435,7 @@ function MaterialCard({
 }: {
     item: VoucherItem;
     active: boolean;
-    direction: 'entry' | 'exit';
+    direction?: 'entry' | 'exit' | null;
 }) {
     return (
         <Card
@@ -428,9 +584,9 @@ function ApplicationRow({
             <td className="px-3 py-3">{formatDate(row.occurred_on)}</td>
             <td className="px-3 py-3">
                 <p>{row.reference || 'Sin orden registrada'}</p>
-                {row.destination && (
+                {row.destination_snapshot && (
                     <p className="text-xs text-muted-foreground">
-                        {row.destination}
+                        {row.destination_snapshot}
                     </p>
                 )}
                 {row.legacy_slot && (
