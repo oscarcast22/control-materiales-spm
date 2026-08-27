@@ -22,7 +22,9 @@ Antes de modificar reglas de negocio lea:
 - No sumar cantidades de materiales o unidades diferentes en un total común.
 - Las entradas, los vales cancelados y las aplicaciones anuladas no generan responsabilidad pendiente para un técnico.
 - Las correcciones contables se anulan con motivo y auditoría; no se borran silenciosamente.
-- El folio se normaliza y es único dentro de cada área de resguardo.
+- El folio se normaliza y es único dentro de cada tipo de vale.
+- La continuidad se revisa por tipo y sólo con folios numéricos: Almacén inicia en `16576` y Patio en `3753`. Activos, prestados y cancelados cuentan como presentes; una traza inválida no.
+- Un folio cancelado puede existir sin personas, destino ni materiales porque reserva la numeración del formato físico.
 - “Liquidado” significa que el técnico documentó como aplicado todo el material entregado. No significa que se conozca la existencia del almacén.
 - La infraestructura de inventario físico permanece reservada, sin rutas ni interfaz. No reactivarla sin existencia inicial y movimientos completos del almacén.
 - El único rol actual es una cuenta activa con todos los permisos del MVP.
@@ -37,7 +39,7 @@ Antes de modificar reglas de negocio lea:
 - Importación histórica: `app/Console/Commands/ImportLegacyControl.php` y sus clases de soporte.
 - Contratos del frontend: `resources/js/types/`.
 
-Los Excel originales no son archivos de ejecución de la aplicación ni deben copiarse al repositorio. Sólo se usa `CONTROL DE ORDEN DE SERVICIO.xlsx` durante una importación histórica controlada.
+Los Excel originales no son archivos de ejecución de la aplicación ni deben copiarse al repositorio. Sólo se usa `Captura de vales 2025 (1).xlsx` durante la importación controlada de agosto de 2026.
 
 ## Trabajo seguro
 

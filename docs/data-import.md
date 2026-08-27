@@ -1,107 +1,72 @@
-# Catálogos e importación histórica
+# Catálogos e importación de agosto de 2026
 
-## Fuentes recibidas
+## Fuente autorizada
 
-| Archivo | Uso decidido |
-| --- | --- |
-| `Captura de vales 2025.xlsx` | Contexto para depurar catálogos. Sus transacciones no se importan. |
-| `CONTROL DE ORDEN DE SERVICIO.xlsx` | Única fuente de transacciones históricas aceptadas desde 2026. |
-| `Control de vales simplificado - VALIDACIÓN v2.xlsx` | Prototipo sustituido por la aplicación; no se usa para cargar producción. |
+La única fuente transaccional es `Captura de vales 2025 (1).xlsx`, conservada fuera del repositorio. Aunque el nombre menciona 2025, el importador sólo considera fechas de agosto de 2026 en las hojas `Vale de Almacen` y `Vale de Patio`. Ignora `Vale papeleria)` y cualquier otro mes o año.
 
-Los catálogos depurados ya están versionados en `database/data/materials.json` y `database/data/people.json`. Una instalación nueva no necesita los tres libros para cargar catálogos.
+No se importan transacciones de 2025, aplicaciones de material, existencias ni datos de subdirección o departamento.
 
-## Catálogo versionado
+## Catálogos previos
 
-- 377 materiales canónicos.
-- 44 personas, de las cuales 18 requieren revisión humana.
-- Siete unidades y el programa SPM-06, reservado para uso futuro.
-- Alias para conservar variantes ortográficas inequívocas.
+Antes de simular la carga deben existir:
 
-“Piano” se conserva como alias de Cipriano Salas. El catálogo inicial no habilita entregadores; deben confirmarse desde Catálogos antes de capturar vales nuevos. Cipriano Salas es el único autorizador inicial.
+- los tipos de vale Almacén (`warehouse`) y Patio (`yard`);
+- materiales, unidades, alias y su disponibilidad por tipo de vale, todos versionados;
+- personas y alias, con funciones separadas para recibir, entregar y autorizar;
+- ubicaciones, alias y el mapeo versionado de textos históricos de destino;
+- el programa SPM-06 y la acción SPM-06-01.
 
-Los calibres, medidas, potencias, modelos o identidades dudosas no se fusionan automáticamente. Los materiales comienzan con unidad `s/e` cuando el libro no permite determinarla con seguridad.
+Nelson Treto y Fco. Fierro están habilitados únicamente para entregar. Cipriano Salas es el único autorizador inicial. El importador no crea personas, materiales, programas o acciones a partir de texto desconocido.
 
-Las unidades habituales también forman parte del catálogo versionado. La curación conservadora actual contiene 303 materiales en pieza, 28 en metro, 4 en kilogramo, 2 en metro cúbico, 7 en rollo y 4 en juego; 29 materiales conservan `s/e` porque el nombre no distingue con seguridad entre litro, envase, paquete, bulto u otra presentación. El seeder sólo reemplaza una unidad `s/e`: nunca sobrescribe una corrección manual ya especificada.
+Los nombres de materiales proceden de los textos de la fila que contiene `FOLIO` y `ENTREGO MATERIAL`. Los valores numéricos de la fila superior de `Vale de Almacen` no son nombres, códigos ni unidades y se ignoran por completo. El seeder usa exclusivamente el JSON versionado resultante; nunca abre el Excel.
 
-## Comando
+Los 527 textos normalizados encontrados en la columna Destino de ambas hojas, incluidos los de años que no se importan, se clasificaron una sola vez. Produjeron 309 ubicaciones canónicas y un mapeo que separa lugares de descripciones de uso; 70 frases ambiguas permanecen marcadas para revisión. Esta extracción no importa transacciones de 2025.
 
-Siempre conservar una copia intacta del libro fuera del repositorio. Primero ejecutar:
+Los prefijos `Mto.`, `Mnto.` y `Mtno.` se interpretan como mantenimiento, no como parte del lugar. Lo mismo ocurre con actividades inequívocas como fortalecimiento, fabricación, reportes o alumbrado. Las abreviaturas geográficas (`Col.`, `Fracc.`, `Av.`, `Blvd.` y `Pob.`) y las abreviaturas de nombres propios (`Fco.`, `Gral.` y `Priv.`) sí se conservan. Una frase ambigua permanece como descripción y se marca para revisión en vez de crear una ubicación dudosa.
 
-```bash
-php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --from=2026-01-01 --dry-run
-```
+Los textos completos que mezclan actividad y lugar se reconocen exclusivamente mediante el mapeo histórico; no se agregan como alias de la ubicación. Los alias quedan reservados para abreviaturas, nombres alternativos, errores históricos reconocidos y nombres anteriores. Tampoco se crea un alias idéntico al nombre canónico.
 
-Sólo después de revisar el resumen, ejecutar sin `--dry-run`:
+## Procedimiento
+
+Conservar una copia intacta del libro fuera del repositorio y ejecutar primero:
 
 ```bash
-php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --from=2026-01-01
+php artisan legacy:import-control "/ruta/Captura de vales 2025 (1).xlsx" --dry-run
 ```
 
-No ejecutar el importador desde un seeder. En producción, migrar y cargar catálogos antes de importar el histórico.
-
-Después de una primera carga ordenada, verificar con:
+La simulación analiza el libro y consulta los catálogos sin escribir. Si el resumen no presenta vales activos omitidos inesperadamente, ejecutar:
 
 ```bash
-php artisan catalog:sync-material-units
+php artisan legacy:import-control "/ruta/Captura de vales 2025 (1).xlsx"
 ```
 
-El resultado esperado es cero materiales y cero partidas por actualizar. Los materiales nuevos que no pertenecen al catálogo pueden permanecer en `s/e` y marcados para revisión.
-
-Al resolver un material conocido, el importador copia su unidad habitual a la partida. Un nombre nuevo o no resuelto conserva `s/e` y queda marcado para revisión.
-
-## Sincronización de una base ya importada
-
-Para revisar cuántos materiales y partidas históricas siguen en `s/e`, ejecutar sin opciones:
-
-```bash
-php artisan catalog:sync-material-units
-```
-
-La simulación no escribe. Después de revisar el resumen y disponer de respaldo, aplicar con:
-
-```bash
-php artisan catalog:sync-material-units --apply
-```
-
-La sincronización sólo modifica unidades `s/e` de materiales versionados y partidas vinculadas mediante `legacy_import_rows`. No cambia cantidades, aplicaciones ni saldos; conserva unidades previamente corregidas y registra auditoría por cada actualización.
+No ejecutar el importador desde un seeder. La escritura real es transaccional y la huella del archivo evita cargar dos veces el mismo contenido.
 
 ## Reglas de transformación
 
-- El corte es inclusivo y se evalúa por renglón.
-- Si un folio combina fechas anteriores y posteriores, sólo se acepta la parte desde 2026 y el vale queda marcado para revisión.
-- Una fila sin fecha sólo se importa si un comentario permite inferir inequívocamente una fecha de 2026.
-- Los comentarios internos de `REPORTE 1` a `REPORTE 10` pueden aportar fechas y contexto.
-- Una fecha ambigua no se inventa: se conserva el comentario, se usa la fecha documentada del vale cuando corresponde y se registra el motivo de revisión.
-- Los nombres se resuelven primero contra catálogos y alias canónicos.
-- Un folio conflictivo con datos ya capturados aborta la carga antes de escribir.
-- La escritura completa es transaccional.
-- `source_hash`, hoja y número de fila impiden importar dos veces el mismo contenido.
-- Cada fila considerada queda en `legacy_import_rows`, incluso cuando no pudo producir un registro operativo.
+- Cada renglón de agosto representa un vale y se importa de forma atómica.
+- Una salida o entrada requiere folio, fecha, movimiento reconocido, al menos una ubicación o descripción de uso, receptor, entregador y al menos un material resuelto.
+- Si falta un dato o una referencia de catálogo, no se crea ninguna parte del vale. El renglón queda en `legacy_import_rows` con sus incidencias.
+- Los renglones `CANCELADO` crean un vale mínimo sin personas, destino ni materiales. Reservan el folio y no crean responsabilidad operativa.
+- Un renglón `Prestado` puede crear un vale histórico mínimo con folio, fecha y nombre libre de quien lo tiene. No inventa movimiento, personas ni materiales ausentes.
+- Sólo los vales de Almacén interpretan programa y acción. Sus valores numéricos se normalizan como códigos completos; por ejemplo, `6` y `1` se resuelven como SPM-06 y SPM-06-01. Los vales de Patio ignoran esas columnas y guardan ambos campos en `null`.
+- Una frase puede asociar varias ubicaciones y una actividad. Los ocho destinos de agosto están mapeados explícitamente; un texto no clasificado se conserva completo como descripción y marca el vale para revisión.
+- Almacén y Patio mantienen series de folio independientes. Un conflicto existente aborta antes de escribir trazas o vales.
+- No se crean aplicaciones: todo material válido comienza con pendiente igual a entregado.
 
-## Estado local verificado
+## Preparación de la carga definitiva
 
-Instantánea del 26 de agosto de 2026 después de reconstruir una instalación limpia, cargar los catálogos versionados e importar el libro desde `2026-01-01`:
+Corregir en el Excel fuente los vales activos omitidos y volver a ejecutar `--dry-run`. Los nombres no resueltos deben asociarse de forma explícita en Catálogos o corregirse en el archivo; no se aceptan registros provisionales.
 
-| Dato | Cantidad |
-| --- | ---: |
-| Vales | 216 |
-| Vales activos | 203 |
-| Vales cancelados | 13 |
-| Partidas | 619 |
-| Aplicaciones | 775 |
-| Filas trazadas | 636 |
-| Filas no resueltas | 4 |
-| Vales pendientes de revisión | 127 |
-| Personas después de importar | 46 |
+Al finalizar, revisar:
 
-Estas cifras son una referencia de reconciliación del libro utilizado, no una constante del sistema. El catálogo base contiene 44 personas y la importación crea dos registros técnicos adicionales; “Piano” permanece únicamente como alias de Cipriano Salas.
+- cantidad de renglones de agosto detectados;
+- vales listos, prestados, cancelados listos e inválidos omitidos;
+- que cada fila inválida muestre una causa comprensible;
+- que no existan conflictos de folio;
 
-El seguimiento derivado de la misma base contiene 203 vales entregados: 94 pendientes, 107 liquidados y 2 inconsistentes; hay 192 partidas y 16 técnicos con pendientes.
+Con el libro recibido el resultado de referencia es: 15 renglones de agosto, 14 vales listos (2 cancelados y 1 prestado), 1 activo inválido omitido y 25 partidas listas. El único pendiente es el folio `16576`, que no indica quién recibió el material.
 
-## Revisión posterior
+- que la base siga sin aplicaciones importadas.
 
-- Corregir nombres ambiguos desde Catálogos; el nombre anterior queda como alias.
-- Fusionar sólo duplicados confirmados.
-- Revisar en cada vale las razones conservadas por el importador.
-- Marcar una revisión como atendida únicamente después de comprobar el documento fuente.
-- No corregir inconsistencias eliminando trazabilidad o reduciendo cantidades sin evidencia.
+La importación real se hará únicamente cuando el folio `16576` tenga un receptor válido y el archivo corregido produzca 15 vales listos, cero inválidos y 28 partidas.

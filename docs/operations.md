@@ -32,7 +32,9 @@ php artisan app:create-user
 
 El seeder carga las unidades habituales desde el catálogo versionado. Si el histórico se importa después de este paso, cada material reconocido conserva esa unidad. Para una base donde el histórico ya fue importado con `s/e`, usar primero la simulación y después la aplicación descritas en `docs/data-import.md`; no volver a importar el libro para corregir unidades.
 
-El catálogo inicial no habilita a ninguna persona para entregar material. Antes de capturar vales nuevos, confirmar desde Catálogos quiénes realizan esa función. Cipriano Salas queda configurado como único autorizador inicial.
+El mismo seeder carga 309 ubicaciones y 7 nombres alternativos útiles para búsqueda y deduplicación. El formulario permite buscar una o varias, crear una nueva sin salir del vale y describir por separado el uso o actividad.
+
+Nelson Treto y Fco. Fierro quedan habilitados inicialmente sólo para entregar material; no aparecen como técnicos que reciben. Cipriano Salas queda como único autorizador y el formulario lo asigna automáticamente mientras sea la única opción activa.
 
 Configure previamente PostgreSQL en `.env`. El comando de usuarios crea una cuenta activa y verificada. No pase la contraseña mediante `--password` en una terminal compartida porque puede quedar en el historial o lista de procesos; utilice el prompt oculto.
 
@@ -49,13 +51,13 @@ php artisan migrate --seed --force
 Conservar el Excel fuera del repositorio y simular la única importación histórica permitida:
 
 ```bash
-php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --from=2026-01-01 --dry-run
+php artisan legacy:import-control "/ruta/Captura de vales 2025 (1).xlsx" --dry-run
 ```
 
 Sólo si el resumen es correcto, ejecutar la carga real:
 
 ```bash
-php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --from=2026-01-01
+php artisan legacy:import-control "/ruta/Captura de vales 2025 (1).xlsx"
 ```
 
 Verificar finalmente que las partidas reconocidas conservaron su unidad curada:
@@ -64,7 +66,11 @@ Verificar finalmente que las partidas reconocidas conservaron su unidad curada:
 php artisan catalog:sync-material-units
 ```
 
-En una primera carga ordenada debe mostrar cero materiales y cero partidas por actualizar. Un material genuinamente desconocido puede conservar `s/e` y quedar pendiente de revisión sin que esto represente un fallo de la importación. No importar transacciones de 2025.
+En una primera carga ordenada debe mostrar cero materiales y cero partidas por actualizar. El importador no crea materiales o personas desconocidos: omite el vale completo, conserva la incidencia en la traza y exige corregir el Excel o el catálogo antes de la carga definitiva. No importa transacciones de 2025 ni meses distintos de agosto de 2026.
+
+Con la fuente actual, la simulación debe mostrar 14 vales listos, un solo inválido (`16576`, sin receptor) y 25 partidas. No ejecutar la carga real hasta corregir ese receptor y obtener 15 vales listos, cero inválidos y 28 partidas.
+
+Los inicios de las series se pueden ajustar antes del despliegue con `VOUCHER_SEQUENCE_START_WAREHOUSE` y `VOUCHER_SEQUENCE_START_YARD`. Los valores iniciales del MVP son `16576` y `3753` respectivamente.
 
 Si el histórico se cargó antes que el catálogo curado, no volver a importar el libro. Respaldar la base, revisar la simulación anterior y seguir el procedimiento con `--apply` de [`docs/data-import.md`](data-import.md#sincronización-de-una-base-ya-importada).
 

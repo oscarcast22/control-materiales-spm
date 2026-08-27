@@ -24,10 +24,11 @@ PostgreSQL + almacenamiento privado de adjuntos
 
 ## Servicios de dominio
 
-- `Normalizer`: genera claves comparables para folios, materiales y personas.
+- `Normalizer`: genera claves comparables para folios, materiales, ubicaciones y personas.
+- `VoucherSequence`: detecta huecos numéricos por tipo a partir de los inicios configurados. Las trazas inválidas pueden extender el último folio observado, pero nunca cuentan como folios presentes.
 - `VoucherData`: construye el contrato de presentación de un vale y calcula los estados de sus partidas.
 - `MaterialTracking`: aplica el corte de 2026 y agrega partidas por material/unidad o por técnico.
-- `LegacyControlWorkbook` y `LegacyReportComment`: aíslan la lectura del libro y la interpretación conservadora de comentarios.
+- `LegacyControlWorkbook`: lee únicamente las hojas de Almacén y Patio y selecciona agosto de 2026.
 - `ImportLegacyControl`: valida, prepara y escribe la importación histórica dentro de una transacción.
 
 La pantalla y el XLSX de seguimiento consumen el mismo agregador para evitar resultados divergentes.
@@ -40,6 +41,9 @@ erDiagram
     STORAGE_LOCATIONS ||--o{ VOUCHERS : contains
     PEOPLE ||--o{ VOUCHERS : receives_delivers_authorizes
     PROGRAMS ||--o{ VOUCHERS : classifies
+    PROGRAMS ||--o{ ACTIONS : contains
+    ACTIONS ||--o{ VOUCHERS : classifies
+    DESTINATIONS }o--o{ VOUCHERS : locates
     VOUCHERS ||--|{ VOUCHER_ITEMS : contains
     MATERIALS ||--o{ VOUCHER_ITEMS : identifies
     UNITS ||--o{ VOUCHER_ITEMS : measures
@@ -49,30 +53,36 @@ erDiagram
     VOUCHERS ||--o{ VOUCHER_ATTACHMENTS : evidences
     MATERIALS ||--o{ MATERIAL_ALIASES : recognizes
     PEOPLE ||--o{ PERSON_ALIASES : recognizes
+    DESTINATIONS ||--o{ DESTINATION_ALIASES : recognizes
     USERS ||--o{ AUDIT_EVENTS : performs
     VOUCHERS ||--o{ LEGACY_IMPORT_ROWS : traces
 ```
 
 ## Diccionario resumido
 
-| Tabla | Responsabilidad |
-| --- | --- |
-| `users` | Cuentas autorizadas. `is_active` bloquea inmediatamente el acceso. |
-| `storage_locations` | Área de origen del vale, actualmente Almacén o Patio. |
-| `units` | Unidad estructurada usada para cantidades. |
-| `materials` | Catálogo canónico; conserva unidad habitual y bandera de revisión. |
-| `material_aliases` | Variantes históricas que apuntan al material canónico. |
-| `people` | Técnicos y personal; sus banderas indican quién recibe, entrega o autoriza. |
-| `person_aliases` | Escrituras alternativas de una misma persona. |
-| `programs` | Clasificación reservada para uso futuro; no aparece actualmente en los vales. |
-| `vouchers` | Cabecera del documento, estado, revisión y responsables. |
-| `voucher_items` | Material, unidad, descripción histórica y cantidad entregada. |
-| `material_application_reports` | Datos comunes y evidencia opcional de una aplicación capturada en bloque. |
-| `material_applications` | Cantidad aplicada a una partida; una anulación conserva fecha, usuario y motivo. |
-| `voucher_attachments` | Metadatos de evidencia guardada en almacenamiento privado. |
-| `audit_events` | Valores anteriores y posteriores de operaciones sensibles. |
-| `legacy_import_rows` | Copia del renglón original, incidencias y vínculo al registro importado. |
-| `inventory_adjustments` | Infraestructura reservada de inventario físico; no tiene rutas activas. |
+| Tabla                          | Responsabilidad                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `users`                        | Cuentas autorizadas. `is_active` bloquea inmediatamente el acceso.                                                 |
+| `storage_locations`            | Implementación interna del catálogo “Tipo de vale”, actualmente Almacén o Patio.                                   |
+| `material_storage_location`    | Relación editable que limita qué materiales se pueden capturar en cada tipo de vale.                               |
+| `units`                        | Unidad estructurada usada para cantidades.                                                                         |
+| `materials`                    | Catálogo canónico; conserva unidad habitual y bandera de revisión.                                                 |
+| `material_aliases`             | Variantes históricas que apuntan al material canónico.                                                             |
+| `people`                       | Técnicos y personal; sus banderas indican quién recibe, entrega o autoriza.                                        |
+| `person_aliases`               | Escrituras alternativas de una misma persona.                                                                      |
+| `programs`                     | Programa opcional exclusivo del vale de Almacén, inicialmente SPM-06.                                              |
+| `actions`                      | Acción opcional de Almacén subordinada a un programa, inicialmente SPM-06-01.                                      |
+| `destinations`                 | Ubicaciones geográficas reutilizables, activables y normalizadas.                                                  |
+| `destination_aliases`          | Abreviaturas, nombres alternativos o anteriores que apuntan a una ubicación canónica; nunca contienen actividades. |
+| `destination_voucher`          | Relación de una o varias ubicaciones con cada vale.                                                                |
+| `vouchers`                     | Cabecera del documento, estado, revisión y responsables.                                                           |
+| `voucher_items`                | Material, unidad, descripción histórica y cantidad entregada.                                                      |
+| `material_application_reports` | Datos comunes y evidencia opcional de una aplicación capturada en bloque.                                          |
+| `material_applications`        | Cantidad aplicada a una partida; una anulación conserva fecha, usuario y motivo.                                   |
+| `voucher_attachments`          | Metadatos de evidencia guardada en almacenamiento privado.                                                         |
+| `audit_events`                 | Valores anteriores y posteriores de operaciones sensibles.                                                         |
+| `legacy_import_rows`           | Copia del renglón original, incidencias y vínculo al registro importado.                                           |
+| `inventory_adjustments`        | Infraestructura reservada de inventario físico; no tiene rutas activas.                                            |
 
 ## Invariantes
 
@@ -82,7 +92,12 @@ erDiagram
 - Una aplicación anulada deja de afectar las sumas, pero permanece auditable.
 - No se puede reducir una partida por debajo de lo ya comprobado ni eliminarla si posee movimientos vigentes.
 - Un vale con movimientos vigentes no puede cancelarse.
-- Las salidas activas desde `2026-01-01` alimentan el seguimiento. Entradas y cancelados quedan fuera.
+- Un cancelado mínimo puede crearse sin movimiento, personas, destino ni partidas para conservar la serie física.
+- Un vale operativo requiere al menos una ubicación o una descripción de uso o actividad; ambas pueden coexistir.
+- Los vales de Patio siempre conservan `program_id` y `action_id` en `null`; únicamente Almacén admite esa clasificación.
+- Las aplicaciones conservan un resumen del destino existente al momento de registrarse, aunque el vale se edite después.
+- La continuidad numérica inicia por defecto en Almacén `16576` y Patio `3753`; los inicios se configuran por entorno.
+- Las salidas activas o prestadas desde `2026-01-01` alimentan el seguimiento. Entradas y cancelados quedan fuera.
 - Las agregaciones cuantitativas se separan por `material_id` y `unit_id`.
 - Los adjuntos residen en el disco privado y sólo se descargan después de autorizar el vale.
 
@@ -98,7 +113,7 @@ vale pendiente        ninguna inconsistente y alguna pendiente
 vale liquidado        todas sus partidas liquidadas
 ```
 
-Las entradas usan el estado informativo `received`. Los vales cancelados usan `cancelled` y no participan en el seguimiento.
+Las entradas usan el estado informativo `received`. Los vales cancelados usan `cancelled` y no participan en el seguimiento. `loaned` describe únicamente la custodia del documento físico y conserva el cálculo operativo.
 
 ## Seguridad y permisos
 

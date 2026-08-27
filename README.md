@@ -16,13 +16,13 @@ El proyecto se encuentra en refinamiento local y todavía no se ha desplegado ni
 
 - Acceso privado con cuentas creadas por consola; el registro público está deshabilitado.
 - Captura y edición de entradas y salidas de Almacén o Patio con varios materiales.
-- Catálogos de materiales, unidades, personas, programas y acciones.
+- Catálogos de materiales, ubicaciones, unidades, personas, programas y acciones.
 - Aplicaciones parciales o en bloque, con saldo por partida.
-- Anulación auditada de movimientos y cancelación controlada de vales.
+- Anulación auditada de movimientos, préstamo/devolución del documento físico y cancelación controlada de vales.
 - Fotos o PDF del vale guardados en almacenamiento privado.
 - Consulta, filtros, impresión y exportación XLSX del seguimiento de material.
 - Resúmenes por material y por técnico de lo entregado, aplicado y pendiente desde 2026.
-- Catálogos iniciales depurados y versionados; importación separada del historial confiable desde 2026.
+- Catálogos iniciales depurados y versionados; importación separada de agosto de 2026.
 
 ## Requisitos
 
@@ -56,36 +56,32 @@ composer dev
 
 ## Catálogos iniciales e histórico
 
-`php artisan migrate --seed` carga directamente el catálogo inicial incluido en `database/data`; no requiere ningún Excel. Contiene 377 materiales canónicos, sus alias históricos, 45 personas, unidades y las 13 acciones observadas del programa SPM-06.
+`php artisan migrate --seed` carga directamente el catálogo inicial incluido en `database/data`; no requiere ningún Excel. Contiene 843 materiales canónicos asignados explícitamente a Almacén, Patio o ambos, 309 ubicaciones reutilizables, 7 nombres alternativos, 44 personas, unidades, el programa SPM-06 y la acción SPM-06-01.
 
-La depuración fusiona únicamente equivalencias inequívocas y conserva como registros separados los calibres, medidas, potencias, modelos o identidades dudosas. Los nombres originales aceptados quedan como alias. El catálogo incluye unidades habituales curadas para los casos seguros: pieza, metro, kilogramo, metro cúbico, rollo o juego. Los 29 materiales cuya presentación no puede determinarse por el nombre conservan `s/e` hasta que una persona confirme su unidad.
+La depuración fusiona únicamente equivalencias inequívocas y conserva como registros separados los calibres, medidas, potencias, modelos o identidades dudosas. Los nombres originales aceptados quedan como alias. El catálogo versiona los textos descriptivos de las columnas de Almacén y Patio; la fila numérica situada encima de los materiales de Almacén se ignora. Las unidades se infieren sólo para presentaciones explícitas o familias previamente uniformes. Hay 199 materiales con `s/e`; los 176 agregados desde el libro sin unidad inferible quedan marcados para revisión.
 
-Después de instalar, entre a **Catálogos** para revisar los 19 nombres de persona que siguen siendo ambiguos. Si corrige un nombre, la forma anterior se conserva como alias; si dos registros representan lo mismo, utilice **Fusionar**.
+Los 527 textos normalizados de la columna Destino se conservan en un mapeo versionado. Los lugares reutilizables alimentan el catálogo de ubicaciones; las actividades o usos permanecen como descripción libre. Las abreviaturas históricas de actividades, como `Mto.`, `Mnto.` y `Mtno.`, se separan del nombre del lugar y se conservan únicamente como actividad. Un vale puede seleccionar varias ubicaciones y agregar una descripción cuando el documento mezcla ambos conceptos.
 
-Los libros `Captura de vales 2025.xlsx` y `Control de vales simplificado - VALIDACIÓN v2.xlsx` ya no son necesarios. El contenido transaccional de 2025 no se importa. Sólo `CONTROL DE ORDEN DE SERVICIO.xlsx` se utiliza una vez si se desea incorporar el historial elegible de 2026. Haga primero una copia intacta y revise sin escribir:
+Después de instalar, entre a **Catálogos** para revisar los 18 nombres de persona que siguen siendo ambiguos. Nelson Treto y Fco. Fierro aparecen sólo como entregadores; Cipriano Salas se asigna automáticamente como autorizador mientras sea la única opción activa.
+
+La única fuente transaccional autorizada es `Captura de vales 2025 (1).xlsx`, siempre fuera del repositorio. Sólo se leen las hojas de Almacén y Patio y únicamente los renglones de agosto de 2026. Haga primero una copia intacta y revise sin escribir:
 
 ```bash
-php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --from=2026-01-01 --dry-run
+php artisan legacy:import-control "/ruta/Captura de vales 2025 (1).xlsx" --dry-run
 ```
 
 Para importarlo:
 
 ```bash
-php artisan legacy:import-control "/ruta/CONTROL DE ORDEN DE SERVICIO.xlsx" --from=2026-01-01
+php artisan legacy:import-control "/ruta/Captura de vales 2025 (1).xlsx"
 ```
 
-Como comprobación final, `php artisan catalog:sync-material-units` debe indicar cero partidas históricas por actualizar en una instalación nueva. Si el historial ya se había importado antes de cargar las unidades curadas, consulte el procedimiento de sincronización en [`docs/data-import.md`](docs/data-import.md#sincronización-de-una-base-ya-importada). La secuencia completa para producción está en [`docs/operations.md`](docs/operations.md#primera-carga-de-datos-en-producción).
-
-El corte es inclusivo y se aplica por renglón. Si un folio contiene filas anteriores y posteriores al límite, sólo se importa su parte válida y el vale queda marcado para revisión. Las filas sin fecha únicamente se importan cuando ésta puede inferirse de un comentario inequívoco de 2026; las demás se conservan como no resueltas sin inventar un vale. Cada fila considerada queda guardada en la tabla de trazabilidad y el mismo archivo no se importa dos veces.
-
-La importación histórica utiliza OpenSpout por streaming, lee directamente los comentarios internos de las columnas `REPORTE 1` a `REPORTE 10` y reutiliza los alias del catálogo depurado. Una fecha de aplicación sólo se acepta si tiene un formato inequívoco y corresponde a 2026; en caso contrario se usa la fecha del vale, se conserva el comentario original y se registra el motivo de revisión. Desde el detalle del vale se pueden consultar estas incidencias y marcar la revisión como atendida con auditoría.
-
-Antes de escribir, el comando valida la estructura del libro, calcula todos los resultados y comprueba que ningún folio choque con los ya capturados. La importación efectiva es transaccional: ante cualquier error no se conserva una carga parcial. No utilice este comando mediante un seeder ni ejecute `migrate:fresh` para cargar el historial.
+Cada renglón se valida como una unidad. Un vale activo con datos o catálogos sin resolver se omite por completo y queda trazado para corregir la fuente. Los cancelados se guardan como vales mínimos para reservar el folio, sin crear responsabilidad; los préstamos históricos mínimos también se conservan. Antes de escribir, el comando comprueba conflictos de folio y la carga efectiva es transaccional. Con el archivo actual la simulación esperada es 15 renglones, 14 vales listos (2 cancelados, 1 prestado), 1 inválido por receptor ausente y 25 partidas. Consulte [`docs/data-import.md`](docs/data-import.md) para la reconciliación completa.
 
 ## Cómo se calculan los saldos
 
 - El pendiente de una salida es la cantidad entregada menos lo documentado como aplicado.
-- El seguimiento incluye únicamente vales de salida activos emitidos desde el 1 de enero de 2026; las entradas y los vales cancelados no generan responsabilidad para un técnico.
+- El seguimiento incluye vales de salida activos o prestados emitidos desde el 1 de enero de 2026; las entradas y los vales cancelados no generan responsabilidad para un técnico.
 - Una cifra positiva es material que todavía debe documentarse como aplicado en un trabajo.
 - Una cifra negativa indica que se comprobó más de lo entregado y se muestra como inconsistencia.
 - Las cantidades se agregan exclusivamente por material y unidad; no se genera un total que mezcle piezas, metros u otros artículos.
@@ -94,8 +90,11 @@ La aplicación no presenta estos saldos como existencias de almacén. Conocer el
 
 ## Modelo de datos
 
-- `storage_locations`: áreas físicas como Almacén y Patio, con su fecha de inicio de control.
-- `vouchers`: documento de entrada o salida; el folio es único dentro de cada área.
+- `storage_locations`: implementación interna de los tipos de vale Almacén y Patio.
+- `material_storage_location`: disponibilidad estricta de cada material por tipo de vale.
+- `destinations` y `destination_aliases`: ubicaciones canónicas y variantes históricas reconocidas.
+- `destination_voucher`: relación que permite asociar uno o varios lugares al mismo vale.
+- `vouchers`: documento de entrada o salida; el folio es único dentro de cada tipo.
 - `voucher_items`: material, unidad y cantidad documentada en cada renglón.
 - `material_application_reports`: encabezado y evidencia opcional de una aplicación capturada en bloque.
 - `material_applications`: cantidades aplicadas a las partidas de un vale.
