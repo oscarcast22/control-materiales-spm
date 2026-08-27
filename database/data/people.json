@@ -64,13 +64,14 @@
         "can_authorize_material": false,
         "needs_review": false,
         "aliases": [
-            "ERK"
+            "ERK",
+            "Erik Aguilar"
         ]
     },
     {
         "name": "Fco. Fierro",
-        "can_receive_material": true,
-        "can_deliver_material": false,
+        "can_receive_material": false,
+        "can_deliver_material": true,
         "can_authorize_material": false,
         "needs_review": true,
         "aliases": []
@@ -282,8 +283,8 @@
     },
     {
         "name": "Nelson Treto",
-        "can_receive_material": true,
-        "can_deliver_material": false,
+        "can_receive_material": false,
+        "can_deliver_material": true,
         "can_authorize_material": false,
         "needs_review": false,
         "aliases": []

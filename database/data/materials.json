@@ -2,1060 +2,3891 @@
     {
         "name": "ABRAZADERA 1BS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "ABRAZADERA 2BS",
         "unit": "pza",
         "aliases": [
             "ABRAZADERA 2 BS"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
         "name": "ABRAZADERA 3BS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "ABRAZADERA OMEGA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "ABRAZADERA OMEGA 1/2",
+        "name": "ABRAZADERA U",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "ABRAZADERA OMEGA 2\"",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "ACEITE ATF",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "ACEITE H 300 GRUA",
         "unit": "s/e",
         "aliases": [
             "ACEITE H-300"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
         "name": "ACEITE HIDRAULICO",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "ACEITE MOTOR A GASOLINA",
         "unit": "s/e",
         "aliases": [
             "ACEITE PARA MOTOR A GASOLINA"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
-        "name": "ACEITE PARA MOTOR A GASOLINA 15-30",
+        "name": "ACELERANTE PARA CONCRETO",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
-        "name": "ACEITE PARA MOTOR A GASOLINA 20-50",
-        "unit": "s/e",
-        "aliases": []
+        "name": "ACOMETIDA COMPLETA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "ACOMETIDA COMPLETA CON QUINTA TERMINAL",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "ACRILICO (hoja)",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "ADAPTADOR TIPO L",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "AISLADOR DE PORCELANA",
+        "name": "AEROSOL AMARILLO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "AEROSOL AZUL",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "AEROSOL BLANCO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "AEROSOL MORADO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "AEROSOL ROJO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "AEROSOL ROSA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "AEROSOL VERDE",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "AISLADOR CORRIENTE 6DC",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "aislador de carrete",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
         "name": "AISLADOR DE PORCELANA TIPO CARRETE CHICO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "AISLADOR DE PORCELANA TIPO CARRETE GRANDE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "AISLADOR DE PORCELANA TIPO CARRETE MEDIANO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "ALAMBRE DE PACA.",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "ALAMBRE DESNUDO",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "ALAMBRE DESNUDO DE COBRE CAL 6",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "ALAMBRE RECOCIDO",
         "unit": "kg",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "ALUMBRADO",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "ANGULO 1 1/2",
-        "unit": "pza",
-        "aliases": []
+        "name": "AMPLIFICADOR DE PROTOCOLO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
-        "name": "ANGULO 1 1/4",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "ANGULO 1\"",
-        "unit": "pza",
-        "aliases": []
+        "name": "ANCLA DE COOL ROOL",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "ANTICONGELANTE",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "APAGADOR SENCILLO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "APARTARAYOS",
+        "name": "APARTA RAYOS 110 KA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "APARTA RAYOS 12 KV",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "ARBOTANTE METALICO 8 MTS",
+        "name": "APARTA RAYOS 15 KV",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "APARTA RAYOS 8.1",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "APARTA RAYOS LA 603",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "APARTARAYOS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "Apartarayos quemado",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
         "name": "ARBOTANTE METALICO 10 MTS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "ARBOTANTE METALICO 12 MTS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "ARENA",
+        "name": "ARBOTANTE METALICO 7 MTS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "ARBOTANTE METALICO 8 MTS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "ARBOTANTE METALICO 9 MTS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "ARBOTANTE METALICO ACCIDENTADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "ARBOTANTE METALICO COLONIAL",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "ARBOTANTE METALICO CUADRADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "ARBOTANTE METALICO PARA DOS BRAZOS, CAL-11 CONICO CIRCULAR DE 12 METROS DE LONGITUD, DIAMETRO DE BASE DE 8\", DIAMETRO DE PUNTA DE 3.5\" PLACA DE 12\"X12\" X 3/4\". CENTRO DE BARRENOS A 91/4\", CON REGISTRO PARA CONEXIONES A 30 CM DE SU BASE.",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "ARBOTANTE METALICO PARA UN BRAZO CAL-11 CONICO CIRCULAR DE 10 METROS DE LONGITUD, DIAMETRO DE BASE DE 6\", DIAMETRO DE PUNTA DE 3 PLACA DE 10\"X10\" X 1/2 CENTRO DE BARRENOS A 7.5, CON REGISTRO PARA CONEXIONES A 30 CM DE SU BASE.",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "ARBOTANTE METALICO PARA UN BRAZO CAL-11 CONICO CIRCULAR DE 8 METROS DE LONGITUD, DIAMETRO DE BASE DE 6\", DIAMETRO DE PUNTA DE 3 PLACA DE 10\"X10\" X 1/2 CENTRO DE BARRENOS A 7.5, CON REGISTRO PARA CONEXIONES A 30 CM DE SU BASE.",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "ARCO 3\"",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "ARENA M3",
         "unit": "m³",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "ARRANCADOR",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "ARRANCADOR TP 2 HP 220V SIEMENS CON BOTONERA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "ARRANCADOR TP 3 HP 220V SIEMENS CON BOTONERA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "ARRANCADOR TP 5 HP 220V SIEMENS CON BOTONERA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "BALASTRO 1*39",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "BALASTRO 100 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
+    },
+    {
+        "name": "BALASTRO 1000 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "BALASTRO 140 W.",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "BALASTRO 150 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "BALASTRO 175 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "BALASTRO 2*28",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "BALASTRO 2*39",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Balastro 250 w",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
         "name": "BALASTRO 400 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
     },
     {
         "name": "BALASTROS DE 100 DAÑADOS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "BASE MEDIDOR",
+        "name": "BARRA LED",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "BARRETA DE PUNTA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "Base de Concreto 1.2m *43*43",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "BASE FUSIBLE REDONDO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "BASE MEDIDOR 4-100",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "BASE MEDIDOR 7-100",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "BASE MEDIDOR 7-200",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "BASE MEDIDOR S-100",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "BASE PARA FILAMENTO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "BASE PARA FOTOCELDA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
+    },
+    {
+        "name": "BASE PARA LAMPARA TUBULAR",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "BASE PARA MEDIDOR 7-100",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "BASE SOQUET",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "BASES G13 TUBO LED T8 (2 PIEZAS)",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "BASTIDOR",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ],
+        "needs_review": false
     },
     {
         "name": "BASTIDOR B1",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "BASTIDOR B4",
-        "unit": "pza",
-        "aliases": []
+        "name": "BATERIA PARA GENERADOR",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "BOBINA 1955",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "BOBINA ALLEN",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "BRAZO METALICO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "BRAZO METALICO TUBULAR CEDULA 30 DE 1.50 MTS X 1.5 DIAMETRO CON PERCHA PARA MONTAJE CON ABRAZADERA TIPO B5, CON 10 GRADOS DE ANGULO ELEVACION DE BM RESPECTO AL SU PUNTO DE ANCLAJE.",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "BROCA 13/32",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "BROCHA 1\" 1/2",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "BROCHA 2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "BROCHA 3\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "BROCHA 4\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "BROCHA DE 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "BROCHA DE6\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "BROCHE BACO JUMBO",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CABLE # 10",
+        "name": "CABLE #8",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "CABLE NEUTRANEL",
+        "name": "CABLE DE ALUMINIO PARA DISTRIBUCIÓN SUBTERRANEA (DRS) XLP 600V 90°C CAL 4 2+1",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CABLE DE ALUMINIO PARA DISTRIBUCIÓN SUBTERRANEA (DRS) XLP 600V 90°C CAL 6 2+1",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CABLE DE CONEXIÓN DE REGLETA",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CABLE DMX FLEXIBLE DE 25 PIES PARA SEÑAL CON TERMINALES MACHO Y HEMBRA DE 3 PINES",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CABLE MULTI-CONDUCTOR 5 HILOS SIN BLINDAJE CALIBRE 22 POR BOBINA",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CABLE NEUTRANEL 2+1",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
     },
     {
         "name": "CABLE NEUTRANEL 2+1 CALIBRE 6 AL",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CABLE NEUTRANEL ALUMINIO 3+1 CALIBRE 3/0-1/0",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "cable porta electrodo",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
         "name": "CABLE PORTA ELECTRODO CALIBRE 4",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CABLE POT 16",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CABLE POT CALIBRE NO. 14",
         "unit": "m",
         "aliases": [
             "CABLE POT 14"
+        ],
+        "voucher_types": [
+            "warehouse",
+            "yard"
         ]
     },
     {
-        "name": "CABLES PASA CORRIENTE",
-        "unit": "jgo",
-        "aliases": []
+        "name": "CABLE SUMERGIBLE PLANO 3X10",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CABLE SUMERGIBLE PLANO 3X12",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CABLE T.H.W. # 10 NEGRO",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CABLE T.H.W. # 12 NEGRO",
         "unit": "m",
         "aliases": [
             "cable thw # 12 negro"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
-        "name": "CABLE THW # 8 NEGRO",
+        "name": "CABLE T.H.W. # 12 VERDE",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CABLE T.H.W # 14 NEGRO",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CABLE T.H.W # 16 BLANCO",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CABLE T.H.W # 16 NEGRO",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CABLE THW #10",
         "unit": "m",
-        "aliases": []
-    },
-    {
-        "name": "CABLE THW # 10 NEGRO",
-        "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CABLE THW #12",
         "unit": "m",
         "aliases": [
             "CABLE THW CAL 12"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
-        "name": "CABLE THW # 12 VERDE",
+        "name": "CABLE THW # 8 NEGRO",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CABLE THW CAL 16",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CABLE URD XLP #6",
+        "name": "CABLE USO RUDO 3X10",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "CABLE UTP",
+        "name": "CABLE USO RUDO 3X12",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CABLE XLP #6",
         "unit": "m",
         "aliases": [
             "CABLE XLP CAL 6"
+        ],
+        "voucher_types": [
+            "warehouse",
+            "yard"
         ]
     },
     {
         "name": "CABLE XLP CAL 4",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CABLES PASA CORRIENTE",
+        "unit": "jgo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CADENA",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CAJA CANOA",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "CAJA CANOA 2*4",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CAJA CANOA CONDULET FS 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CAJA PARA ARCHIVO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CAJA REGISTRO 3*3",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CAJA REGISTRO 4*4",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CANALETA PROTECTOR CABLE",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CANDADO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "Candado de cortina",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CANILLAS DE CORTA CIRCUITO 12 KV",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CAÑON DE LUZ",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "CARCAZA CALIMA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "CARCAZA LED CITY PLUS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "Carcaza proyectores",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CARETA PARA SOLDADURA ECLIPSE",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "CARPETA MANILA CARTA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CARTUCHO SILICON",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "Cascajo de control tork",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
     },
     {
         "name": "CASQUILLOS DE FOCO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "CAUTIN LAPIZ 60W",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "CEMENTO GRIS",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
+    },
+    {
+        "name": "CENTRO DE CARGA 2 ESPACIOS Z PPALES. 70 A 1F, 2H 15P NEMA 1 DE SOBREPONER",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CENTRO DE CARGA QO-2 70A",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CENTRO DE CARGA QO2",
+        "name": "CENTRO DE CARGA QO-4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CENTRO DE CARGA QO30 Z PPALES. 200 A 1F, 3H 30P NEMA 1 DE SOBREPONER",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CEPILLO DE ALAMBRE",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CERRADURA DE MANIJA PARAPUERTA",
-        "unit": "pza",
-        "aliases": []
+        "name": "CHAROLA ORGANIZADORA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "CINTA DE AISLAR",
         "unit": "rollo",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CINTA DE AISLAR BURNDY",
         "unit": "rollo",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CINTA DE AISLAR DE VINILO SUPER 33 3M",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CINTA DE AISLAR SUPER 23 MCA SCOTCH",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CINTA PRECAUCIÓN",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CINTA SCOTT",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CINTA SUPER 33",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CINTA VULCANIZADA (SCOTCH, E-800)",
         "unit": "rollo",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CINTA VULKANIZADA",
+        "name": "CINTAS DE AISLAR DE VINILO TEMFLEX",
         "unit": "rollo",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CINTILLOS",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CINTILLOS NEGROS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "CINTURON PORTA HERRAMIENTAS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CLIP",
+        "name": "CLAVIJA BUNDADA CON ABRAZADERA ATERRIZADA 15A 127V",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CLAVIJA MANGUERA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CLAVIJA MANGUERA 3 PUNTAS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CLAVIJA NORMAL",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CLAVIJA USO RUDO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CLAVO 1 1/2",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CLAVO 2 1/2\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CLAVO P/CONCRETO 1\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CLAVO P/CONCRETO 2\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CLAVO P/CONCRETO 2\"1/2",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CLAVO P/MADERA 8\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "CLIP CHICO",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CLIP GRANDE",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CLIP JUMBO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CODO 1 1/4",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CODO 1  1/4 90°",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CODO 45° 1\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CODO 90° 1\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CODO CONDUIT 3/4",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CODO CONDUIT GALVANIZADO PARED GRUESA 1 1/4",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CODO GALVANIZADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CODO GALVANIZADO 1 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CODO PG 1 1/4\"",
-        "unit": "pza",
-        "aliases": []
+        "name": "CONDULET 1/2\" LB",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
-        "name": "CONDULET L",
-        "unit": "pza",
-        "aliases": []
+        "name": "CONDULETT 1\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CONDULETT  1 1/4\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CONDULETT 2\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CONDULETT LL 1-1/4\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CONDULETT TEE 1-1/4\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CONDULETT TIPO C",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CONDULETT TIPO TEE 1 1/4",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "CONECTOR 1/2 CON OPRESOR",
         "unit": "pza",
         "aliases": [
             "conector con opreso 1/2"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "CONECTOR A TOPE P/ACOMETIDA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR BIPARTIDO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONECTOR BURNDY",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CONECTOR CILÍNDRICO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONECTOR CILÍNDRICO DE ALUMINIO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONECTOR CONDUIT 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CONECTOR DE DERIVACION BRUNDY",
+        "name": "CONECTOR CONDUIT 3/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR CURVO 1 1/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR CURVO 1 3/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR CURVO LICUATITE 1-1/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR CURVO LICUATITE 2 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR LICUATITE 1 1/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR LICUATITE 2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR MANGUERA LED",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR MANGUERA-MANGUERA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR MANGUERA - NEON",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR MANMGUERA NEON",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR MEDIO PARA MANGUERA LED 100W WAC-017",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR OPRESOR 1\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR OPRESOR 1 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR OPRESOR 1/2",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONECTOR P/D 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CONECTOR P/D 3/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CONECTOR PARA USO RUDO 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CONECTOR PARA VARILLA A TIERRA",
         "unit": "pza",
         "aliases": [
             "conector varilla a tierra"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
-        "name": "CONECTOR PARA VARILLA A TIERRA REFORZADO",
+        "name": "CONECTOR PERICO 18",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR PERICO LINEA VIVA CAL 6-2/0 AWG",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR PILPO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONECTOR RECTO 1 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONECTOR RECTO 1 1/4\" PARA TUBO LICUATITE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONECTOR RECTO 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONECTOR RECTO 3/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR RECTO LICUATITE 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONECTOR REFORZADO PARA VARILLA DE TIERRAS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONECTOR SIMPLE PARA MANGUERA NEON WAC-018 WINLED",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR SIN OPRESOR 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR TIPO H Y HO 150",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR TOPE CALIBRE 3/0",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONECTOR USO RUDO 1/2\" (EX)",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTACTO DOBLE POLARIZADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONTACTO DOBLE POLARIZADO CON TAPA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CONTACTO DUPLEX",
+        "name": "CONTACTO DÚPLEX DE SOBREPONER 15 AMPERES",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONTACTO DUPLEX POLARIZADO 127 VOLTS 15 A",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CONTACTOR",
+        "name": "CONTACTO POLARIZADO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "CONTACTOR 3RT10-45 BOBINA A 220 VOLTS",
+        "name": "CONTACTO SENCILLO",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "CONTACTOR 3RT20-27 BOBINA A 220 VOLTS",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "CONTACTOR 3RT20-35 BOBINA A 220 VOLTS",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONTACTOR 1026",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CONTACTOR 1034",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONTACTOR 1036",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONTACTOR 1045",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CONTACTOR 2027",
+        "name": "CONTACTOR 1054",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTACTOR 2017",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONTACTOR 2027 -34",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CONTACTOR 2035",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CONTACTOR 2036",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CONTACTOR 2037",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "CONTRA 1 1/4\"",
+        "name": "CONTACTOR 3RT10-34 BOBINA A 220 VOLTS",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTACTOR 3RT10-36 BOBINA A 220 VOLTS",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTACTOR 3RT10-45 BOBINA A 220 VOLTS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONTACTOR 3RT20-27 BOBINA A 220 VOLTS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONTACTOR 3RT20-35 BOBINA A 220 VOLTS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONTACTOR CON BOBINA A 24 V MODELO 3RT1017 1AB01 SIRIUS",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTACTOR SIEMENS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Contactores Dañados",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
     },
     {
         "name": "CONTRA 1\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONTRA 1 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTRA 1 1/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONTRA 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTRA 1 3/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTRA 2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTRA 3\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTRA 3/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTROL ELECTRONICO DE NIVEL DE ELECTRODOS PARA BOMBA CISTERNA/TINACO CON 6 ELECTRODOS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CONTROL PARA REGLETA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CONTROL TORK",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CONTROLADOR BARRAS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CONTROLADOR DMX DE 16 CANALES CON MONTAJE PARA RACKS S-DMX192",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CONTROLADOR RGBW TOUCH SR-2812-US3 TL APPS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CONTROLADOR WIFI TUYA RGBW MODELO C-RGBW-TUYA PARA REFLECTORES SUBACUATICOS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "COPLE 1\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "COPLE 1 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "COPLE 1 1/4 PARED GRUESA",
+        "name": "COPLE 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "COPLE 1/2 C/OPRESOR",
+        "name": "COPLE 3/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "COPLE 4 OPRESOR 2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "COPLE CON 2 OPRESOR 1\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "COPLE CON 2 OPRESOR 1/2\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "COPLE CON 2 OPRESOR 3/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "COPLE CON OPRESOR 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Cople conduit 3/4 PD",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "COPLE CONDUIT GALVANIZADO PARED DELGADA 1/2\" CON OPRESOR",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "COPLE CONDUIT GALVANIZADO PARED GRUESA ROSCADA DE 1 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "COPLE GALVANIZADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "COPLE GALVANIZADO 1 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "COPLE PARED DELGADA 1 1/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "COPLE PARED DELGADA 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "COPLE PARED DELGADA 3/4\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "COPLE ROSCADO 1 1/4\"",
+        "name": "COPLE PARED GRUESA 1 1/4\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "CORDON POT",
-        "unit": "m",
-        "aliases": []
+        "name": "COPLE PARED GRUESA 3/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "COPLE PVC 6\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "COPLE ROSCA INTERNA 1 1/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "COPLE ROSCA INTERNA 2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "COPLE ROSCA INTERNA 2 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "COPLE SIN OPRESOR 1\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CORRECTOR EN CINTA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CORRECTOR LIQUIDO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CORTA CIRCUITO 13KV",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CORTA CIRCUITO 15 KV",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CORTA CIRCUITO 15 KV INCOMPLETO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CORTA CIRCUITO 15 KV INCOMPLETO USADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CORTA CIRCUITO 38 KV",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "CORTA CIRCUITO 38 KV INCOMPLETO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "CORTA PERNO DE 36",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "CUCHILLA PARA LINIERO",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "CUENTA FACIL",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "CUERDA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "CUTER",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "DECODIFICADOR CON PROTOCOLO DMX512  PARA LUMINARIAS RGBW SR-2102B",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "DESARMADOR CRUZ 1/8",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "DESARMADOR PLANO 1/4",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "DISCO DE CORTE 7\"",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "DISCO DE CORTE 14\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "DISCO DE CORTE 4 1/2",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "DISCO DE CORTE 7\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "DISCO DE DESBASTE 4 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "DISCO DE DESBASTE 7\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "DISCO DESBASTE",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "DRIVER CON SALIDA A 24V DE 200 W PARA PROYECTO (ALUMINIO) DRIVERLED-24V-360W-PR",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "DRIVER CON SALIDA A 24V DE 360 W PARA PROYECTO (ALUMINIO) DRIVERLED-24V-360W-PR",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "DRIVER LED 24 V",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "ELECTRO NIVEL DE CONTRAPESO MARCA EVANS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "ESCALERA DE FIBRA DE VIDRIO 10 PELDAÑOS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "ESPUMA DE POLURIETANO",
-        "unit": "pza",
-        "aliases": []
+        "name": "ESLABON FUSIBLE 38 KV DE 10 AMPER",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "ESPUMA SELLADORA DE POLIURETANO 500 ML",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "EX ABRAZADERA 1BS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "EX ABRAZADERA 2BS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "EX ABRAZADERA 3BS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "EX BASE MEDIDOR 7X200",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "EX FOCO LED RETROFIT 54W",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "FAROL KID BARROCO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "FAROL KID JUAREZ 70W.",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "FAROL KID MEXICANO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "FAROL KID MEXICANO 70 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "FAROL KIT HACIENDA 70W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "FESTON RUDO BLANCO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "FESTON RUDO ROJO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "FESTON RUDO VERDE",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "FILAMENTO 1500 W",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "FILAMENTO 300 W",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "FILAMENTO 500 W",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "FLEJE ACERADO 3/4",
         "unit": "m",
         "aliases": [
             "FLEJE DE ACERO 3/4"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
-    },
-    {
-        "name": "FOCO",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "FOCO 8 W",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "FOCO 8.5",
-        "unit": "pza",
-        "aliases": []
     },
     {
         "name": "FOCO 10 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "FOCO 100 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "FOCO 100 W SODIO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "FOCO 1000 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO 140 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "FOCO 150 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
+    },
+    {
+        "name": "FOCO 30 W LUZ CALIDA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO 400 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
     },
     {
         "name": "FOCO 50 W",
         "unit": "pza",
         "aliases": [
             "FOCO 50W"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "FOCO 60 AMP",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "FOCO 70 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "FOCO 100 W",
+        "name": "FOCO 75 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FOCO 100 W SODIO",
+        "name": "FOCO 8 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "FOCO 140 W",
+        "name": "FOCO AMARILLO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FOCO 150 W",
+        "name": "FOCO AMARILLO 10 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FOCO 400 W",
+        "name": "FOCO AMARILLO 8 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FOCO LED 8 W LUZ BLANCO FRIO",
+        "name": "FOCO AZUL PEQUEÑO 10 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Foco ceramico 10w",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO CERÁMICO 40 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO CHICO 10 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO CHICO AZUL 8 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO CHICO ROJO 8 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO DE 40 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO DE 70",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO LED 100 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "FOCO LED 75 W ALTA POTENCIA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "FOCO LED ALTA POTENCIA",
+        "name": "FOCO LED 8 W LUZ BLANCO FRIO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "FOCO LED RETROFIT 54 WATTS DE POTENCIA",
+        "name": "FOCO LED AZUL 8 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO LED BLANCO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "FOCO LED RETROFIT 100 WATTS DE POTENCIA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "FOCO LED RETROFIT 54 WATTS DE POTENCIA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "FOCO LED ROJO 10 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO MORADO 8 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO MR16 5W LUZ CALIDA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO MR16 BLANCO LED 5.5 WATTS MCA TECNOLITE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO MR16 RGB MCA TECNOLITE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO MR16 ROJO LED MCA TECNOLITE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO MR16 VERDE LED MCA TECNOLITE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "FOCO RETROFIT 54 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "FOCO ROSA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO SODIO 250 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO SPOT",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO SPOT ROJO 13.5 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO SPOT VERDE 13.5 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO TECNOLITE 13 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO TECNOLITE 50 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO VERDE 10 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FOCO VERDE 8 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "FOCOS DE 100 W DAÑADOS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "FOCO VAPOR DE SODIO 100 W",
+        "name": "FOCOS DE LED PAR30 AZUL DE 13.5 W ENTRADA NORMAL",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FOTOCELDA 110",
+        "name": "FOCOS DE LED PAR30 BLANCOS DE 13 W ENTRADA NORMAL",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FOTOCELDA 127",
+        "name": "FOCOS DE LED PAR30 CALIDOS DE 13 W ENTRADA NORMAL",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FOTOCELDA 220",
+        "name": "FOCOS DE LED PAR30 ROJOS DE 13.5 W ENTRADA NORMAL",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FOTOCELDA MULTIVOLTAJE 110",
+        "name": "FOCOS DE LED PAR30 VERDES DE 13.5 W ENTRADA NORMAL",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "FOTO CONTACTOR 40 AMP (CONTROL TORK)",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "FOTOCONTROL",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "FUSIBLE CARTUCHO 2*30",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "FUSIBLE ESLABON 1 A",
-        "unit": "pza",
-        "aliases": [
-            "fusible eslabon 1a"
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
-        "name": "FUSIBLE ESLABON 2A",
+        "name": "FOTOCELDA 110",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "FUSIBLE ESLABON 3 A",
+        "name": "FOTOCELDA 127",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
     },
     {
-        "name": "FUSIBLE ESLABON 5 A",
+        "name": "FOTOCELDA 1800 VA A 120 VOLTS OMNIDIRECCIONAL OPERACIÓN DE ENCENDIDO 10 A 30 LX",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FUSIBLE ESLABON 10 A",
+        "name": "FOTOCELDA 1800 VA A 208-277 VOLTS OMNIDIRECCIONAL OPERACIÓN DE ENCENDIDO 10 A 30 LX",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FUSIBLE ESLABON 20 A",
+        "name": "FOTOCELDA 220",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
+    },
+    {
+        "name": "Fotocelda 220 V 127 V Multivoltaje Arteike2",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Fotoceldas Dañadas",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "FOTOCONTACTOR TRIFÁSICO CON INTERRUPTOR TERMOMAGNETICO 3X40 AMP CON CONTACTOR Y BOBINA 220 VOLTS 50/60 HZ, FOTOCONTROL Y MONTADO EN GABINETE NEMA TIPO III A PRUEBA DE LLUVIA",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FRENTE PARA TABLERO QO 30 ESPACIOS PARA SOBREPONER",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "FUENTE DE PODER",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "FUENTE DE PODER DRIVER 12 VOLTS 200 WATTS CORRIENTE DIRECTA  PARA PROYECTO IP66",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "FUSIBLE CARTUCHO 30 AMP",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FUSIBLE CARTUCHO 60 AMP",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FUSIBLE CARTUCHO RENOVABLE COMPLETO 30 AMP",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FUSIBLE CARTUCHO RENOVABLE COMPLETO 60 AMP",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "FUSIBLE ESLABON MT 10 A",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "FUSIBLE ESLABON MT 15 A",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "FUSIBLE ESLABON MT 1A",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "FUSIBLE ESLABON MT 2 A",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "FUSIBLE ESLABON MT 20 A",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "FUSIBLE ESLABON MT 3 A",
         "unit": "pza",
         "aliases": [
             "Fusible eslabon M.T. 3 A"
+        ],
+        "voucher_types": [
+            "warehouse",
+            "yard"
         ]
     },
     {
         "name": "FUSIBLE ESLABON MT 5 A",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "FUSIBLE ESLABON MT 10 A",
+        "name": "FUSIBLE ESLABON MT 7A",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "FUSIBLE ESLABON MT 20 A",
+        "name": "FUSIBLE ESLABON MT 8 A",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "GABINETE 0.25 X 0.35 X 0.2 USADO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "GABINETE PARA CONTROL 40*30*20",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "GOMA MIGAJON",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "GRAPA PARA CABLE",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "GRAPAS",
         "unit": "s/e",
-        "aliases": []
-    },
-    {
-        "name": "GRAVA",
-        "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "GRAVA M3",
         "unit": "m³",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "GUATA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "GUIA JALACABLE",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "HEBILLA 3/4",
         "unit": "pza",
         "aliases": [
             "HEBILLAS 3/4"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
         "name": "HOJAS DE MAQUINA",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "HORQUILLA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "HULE NEGRO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "Interruptor de seguridad 1*15",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Interruptor de seguridad 2*30",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
         "name": "INTERRUPTOR DE SEGURIDAD 2X30 A CON PORTAFUSIBLE",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "INTERRUPTOR DE SEGURIDAD DE 3X60A CON PORTAFUSIBLE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 1*15",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 1*15 FALLA TIERRA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "INTERRUPTOR TERMO MAGNETICO 1*20",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "INTERRUPTOR TERMOMAGNETICO 2 X 10",
+        "name": "INTERRUPTOR TERMO MAGNETICO 1*30",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "INTERRUPTOR TERMOMAGNETICO 2*10 DIN",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "INTERRUPTOR TERMO MAGNETICO 2*15",
@@ -1063,21 +3894,57 @@
         "aliases": [
             "INTERRUPTOR TERMO MARNETICO 2*15",
             "INTERRUPTOR TERMOMAGNETICO 2*15"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 2*15 FALLA TIERRA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "INTERRUPTOR TERMO MAGNETICO 2*20",
         "unit": "pza",
         "aliases": [
             "INTERRUPTOR TERMOMAGNETICO 2*20"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 2*20 FALLA TIERRA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "INTERRUPTOR TERMO MAGNETICO 2*30",
         "unit": "pza",
         "aliases": [
             "INTERRUPTOR TERMOMAGNETICO 2*30"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 2*30 FALLA TIERRA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "INTERRUPTOR TERMO MAGNETICO 2*40",
@@ -1085,208 +3952,837 @@
         "aliases": [
             "interruptor termomagnetico 2 x 40",
             "INTERRUPTOR TERMOMAGNETICO 2*40"
+        ],
+        "voucher_types": [
+            "warehouse",
+            "yard"
         ]
     },
     {
         "name": "INTERRUPTOR TERMO MAGNETICO 2*50",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "INTERRUPTOR TERMO MAGNETICO 2*60",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "INTERRUPTOR TERMO MAGNETICO 2*70",
         "unit": "pza",
         "aliases": [
             "INTERRUPTOR TERMOMAGNETICO 2*70"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 3*20",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 3*30",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO 3*60",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO FALLA A TIERRA 1X15",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO FALLA A TIERRA 1X20",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO FALLA A TIERRA 2X20",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO QO DE 1X15",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO QO DE 1X20",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO QO DE 1X50",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO QO DE 2X15",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO QO DE 2X30",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO QO DE 2X50",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO QO DE 2X60",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO QO DE 2X70",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMO MAGNETICO QO DE 3X40",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMOMAGNETICO 2 X 10",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "INTERRUPTOR TERMOMAGNETICO FAL 50 AMP",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "INTERRUPTOR TERMOMARGNETICO FAL 100 AMP",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "IXTLE",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "JUEGO ANCLAS COLL ROLLED 3/4\", 90 CM DE LARGO, LONGITUD DE ROSCA DE 4\", BOBLES 10 CM. INCLUYA TUERCA Y RONDANAS PLANA Y DE PRESION",
         "unit": "jgo",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "JUEGO DE ANCLAS DE 3/4",
+        "name": "JUEGO DE BROCAS  21 PZAS",
         "unit": "jgo",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "JUEGO DE DADOS DE IMPACTO",
         "unit": "jgo",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "L23 ANGULO 1/8 X 3/4",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "L23 BISAGRAS TUBULARES DE 3/4\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "L23 CADENA GALVANIZADA DE 5/16 (1.33KG X ML)",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 CANDADOS CUADRADOS DE CORTINA 65MM",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "L23 DISCO CORTE METAL DE 14\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "L23 DISCO CORTE METAL DE 4 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 DISCO CORTE METAL DE 7\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "L23 DISCO DE DESBASTE 4-1/2\"2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "L23 DISCO DE DESBASTE Y PULIDO 4-1/2\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "L23 DISCO DERBASTE METAL 7\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "L23 DISCO DIAMANTE DE CORTE PARA CONCRETO 14\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 DISCO DIAMANTE DE CORTE PARA CONCRETO 4-1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 DISCO DIAMANTE DE CORTE PARA CONCRETO 7\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "L23 DISCO LAMINADO #40 4 1/2\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "L23 LAMINA ANTIDERRAPANTE CAL 14 4 X 10",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "L23 LAMINA NEGRA 4 X 8 CAL. 3/16(112)",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 LAMINA NEGRA 4X10 C-14",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 PIJA PUNTA DE BROCA CABEZA DE CRUZ NO.8 X 1-1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "L23 PIJA PUNTA DE BROCA CABEZA DE CRUZ NO.8 X 1/2\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "L23 PIJA PUNTA DE BROCA CABEZA DE CRUZ NO.8 X 3/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 PIJA PUNTA DE BROCA  CABEZA HEXAGONAL CON RONDANA DE NEOPRENO NO.14 X 2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "L23 PIJA PUNTA DE BROCA CABEZA HEXAGONAL CON RONDANA DE NEOPRENO NO.14 X 3/4\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "L23 PTR 1-1/4\" CAL. 14",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 PTR 2\" CAL. 14",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "L23 SEGUETA BIMETÁLICA PARA ARCO 12\" BLANCA DIENTE FINO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "L23 SEMIFLECHA DE 1/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 SOLDADURA 6011 DE 1/8\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 SOLERA 1/4 X 1-1/2\" 20 FT",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 SOLERA 1/4 X 1-1/4\" 20FT",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 SOLERA 3/16 X 3\" 20 FT",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 TUBO NEGRO 3\" CEDULA 30",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "L23 VARILLA CORRUGADA DE 3/8 \"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "L23 VARILLA LISA REDONDO 3/8\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "LADRILLO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "LAMINA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "LAMPARA FLOURECENTE 34 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 100 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 150 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 50 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 70 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "LAMPARA MANOS LIBRES",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "LAMPARA SUB-ACUATICA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "LAMPARA SUB-ACUATICA MODELO H-550/N MCA TECNOLITE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "LÁMPARA UFO LED HIGH BAY CAMPANA 150 W, LUZ DE DÍA, IP65, IK10, INDUSTRIAL, LED INTEGRADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "LAMPARA VITORIO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "LAPIZ",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "LAPIZ ADHESIVO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "LATA DE SPRAY COLOR BLANCO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "LED DE 2 PANELES",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "LIBRETA",
+        "name": "LIQUIDO PARA FRENOS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "LISTON ROJO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "Lñuminaria Led LHD 150 w Licitacion 2023",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "luces de lluvia de meteoritos",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "LUMINARIA 20 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "LUMINARIA APOLO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "LUMINARIA APOLO 100 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "LUMINARIA CALIMA 100W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "LUMINARIA CALIMA 140W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "LUMINARIA CUTOF",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "LUMINARIA LED 50 W DAÑADA",
+        "name": "Luminaria General Electric",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "LUMINARIA LED 50W",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "LUMINARIA LED 70 W DONACION",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "LUMINARIA LED 70W",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
         "name": "LUMINARIA LED 100 W DAÑADA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "LUMINARIA LED 100W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "LUMINARIA LED 150 W.",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "LUMINARIA LED 50 W DAÑADA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "LUMINARIA LED 50 W DONACION",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "LUMINARIA LED 50W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "LUMINARIA LED 70 W DONACION",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "LUMINARIA LED 70W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "Luminaria Led Arteike 100 w",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Luminaria Led Arteike 150 w2",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "LUMINARIA LED BUUMER 50",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "LUMINARIA LED CITY PLUS",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "LUMINARIA LED CITY PLUS 50 W",
-        "unit": "pza",
-        "aliases": [
-            "Luminaria led City Plus 50w. Garantia",
-            "Luminaria led City Plus 50w."
-        ]
-    },
-    {
-        "name": "LUMINARIA LED CITY PLUS 70 W",
-        "unit": "pza",
-        "aliases": [
-            "Luminaria led City Plus 70w. Garantia"
+        "aliases": [],
+        "voucher_types": [
+            "yard"
         ]
     },
     {
@@ -1294,593 +4790,2415 @@
         "unit": "pza",
         "aliases": [
             "Luminaria led City Plus 100w. Garantia"
+        ],
+        "voucher_types": [
+            "yard"
         ]
     },
     {
         "name": "LUMINARIA LED CITY PLUS 150 W.",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "LUMINARIA LED LHD 50 W",
+        "name": "Luminaria led City Plus 150w. Garantia",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
-        "name": "LUMINARIA LED LHD 100 W",
+        "name": "LUMINARIA LED CITY PLUS 50 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [
+            "Luminaria led City Plus 50w. Garantia",
+            "Luminaria led City Plus 50w."
+        ],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "LUMINARIA LED CITY PLUS 70 W",
+        "unit": "pza",
+        "aliases": [
+            "Luminaria led City Plus 70w. Garantia"
+        ],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "LUMINARIA LED COLONIAL PUNTA DE POSTE DE 70 W CON EFICIENCIA MÍNIMA DE 125 Lm/W CON GRADO IP65 CON DISEÑO CLÁSICO CARCASA DE ALUMINIO Y 5 AÑOS DE GARANTÍA.",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Luminaria Led G.E. 138",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
         "name": "LUMINARIA LED PHILIPS 73 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "LUMINARIA LHD",
+        "name": "Luminaria led praha  210 w",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
         "name": "LUMINARIA OV-15",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "LUMINARIA OV7",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "LUMINARIA PHILIPS 105 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "LUMINARIA PRAHA DAÑADA 210 W2",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "LUMINARIAS DAÑADAS",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "LUMINARIA SUBURBANA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 50 W",
+        "name": "luminarias ATBO 130w luz violetas",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
-        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 70 W",
+        "name": "LUMINARIAS DAÑADAS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
-        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 100 W",
+        "name": "LUMINARIAS SELLADAS IP65 GAMMA TOT L6812-5I0",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "LÁMPARA LHD LED PARA ALUMBRADO PÚBLICO DE 150 W",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "MALLA PARA CRIBA",
+        "name": "LUMINARIO SUMERGIBLE PARA PISCINAS RGB MODELO AQUA-12W-REFLEC 7W/RGB 12 VOLTS CD CON CERTIFICACIÓN IP68",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "MANGUERA AZUL PLANA",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "MANGUERA DE LED BLANCA FRIO PLANA ROLLO DE 25 METROS",
         "unit": "rollo",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "MANGUERA LICUATITE",
-        "unit": "m",
-        "aliases": []
+        "name": "MANGUERA DE LED ROJA PLANA ROLLO DE 25 METROS",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
-        "name": "MARCADOR PERMANENTE GRUESO",
-        "unit": "pza",
-        "aliases": []
+        "name": "MANGUERA DE LED VERDE PLANA ROLLO DE 25 METROS",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LAVABO",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED AMARILLO",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED BLANCA",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED NEON DOBLE 25M EXT BLANCO FRIO",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED NEON ROLLO DE 25 MTS AZUL EXTERIOR",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED NEON ROLLO DE 25 MTS BLANCO CALIDO EXTERIOR",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED NEON ROLLO DE 25 MTS PURPURA EXTERIOR",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED NEON ROLLO DE 25 MTS RGBW EXTERIOR",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED NEON  ROLLO DE 25 MTS ROJA EXTERIOR",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED NEON ROLLO DE 25 MTS ROSA EXTERIOR",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED NEON ROLLO DE 25 MTS VERDE EXTERIOR",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED ROJO",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA LED VERDE",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA NEON BLANCA CALIDA",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA NEON BLANCO FRIO",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA NEÓN ROJO",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "MANGUERA NEON VERDE",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Manguera Verde Para Jardin",
+        "unit": "rollo",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "MARCA TEXTOS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "MARCADOR PERMANENTE GRUESO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "MASTER LEDTUBE EM/ MAINS T8 MASTER LEDTUBE 1200MM HO VWV 18W 840 T8",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "MONITOR DE VOLTAJE TRIFASICO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "MORTERO",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "MUFA 1 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "MULTIMETRO  DIGITAL DE GANCHO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "NAVAJA TRUPPER",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "Neutranel 2+1 dañado",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
     },
     {
         "name": "PALA CUADRADA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "PALA REDONDA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "PAR 18X12 EXT. 4 PAR 18 LED DE 12W CINCO EN 1 RGBA+UV (GABINETE DE 4 PIEZAS, CON CERTIFICACIÓN IP65 PARA LLUVIA LIGERA, CON 5 Y 8 CANALES DMX, 100-240 VOLTS, CON DIMMER, ESTROBO Y CAMBIO DE COLOR, PARA DMX512, ANGULO DE 35°) LITE TEK",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "PASTILLA TERMOMAGNETICA 40 AMP",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "Pastilla Termomagnetica Dañada",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
     },
     {
         "name": "PEDAZO DE LUMINARIA DRIVE",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "PEGAMENTO PVC",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "PERROS SOGUILLA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "Pertiga 3 secciones",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "Pertiga de Escopéta  Retractil 1.9 m.",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "PIJA BROCA 1*1/4",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "PIJA BROCA 1/2\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "PIJA BROCA 4 3/4",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "PIJA DE 1/2",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "PIJA DE 2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "PIJA PUNTA BROCA 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "PIJA PUNTA BROCA PHILIPS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "PIJA PUNTA DE BROCA",
+        "name": "PIJAS 1 1/2",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "PILA 9V",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "PILA AA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "PILA AAA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "PILA ALCALINA 9 VOLTS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "PILA ALCALINA AA PAQUETE 4 PIEZAS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "PILA ALCALINA AAA PAQUETE 4 PIEZAS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "PILAS 6 VOLTS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "PINTARRON",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "PINTURA AMARILLO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "PINTURA AZUL MARINO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "PINTURA DORADO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "PINTURA ESMALTE BLANCA",
         "unit": "s/e",
         "aliases": [
             "PINTURA DE ESMALTE BLANCO"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
         "name": "PINTURA ESMALTE NEGRA",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "PINTURA ESMALTE VERDE",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "PINTURA GRIS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "PINTURA NEGRA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "PINTURA VINILICA BLANCA",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "PINZA DE CORTE DIAGONAL",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "PINZAS DE ELECTRICISTA DE LINERO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "PIOLA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "PISTOLA A GRAVEDAD",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "PLACA DE ACERO 3.05 M X .92 M X 1/4 ESPESOR",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "PLUMA AZUL",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "PLUMA NEGRA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "PLUMON NEGRO PERMANENTE",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "PLUMON PERMANENTE",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "PLUMON PINTARRON",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "POLIDUCTO ANARANJADO 1 1/4",
         "unit": "m",
         "aliases": [
             "POLIDUCTO NARANJA 1 1/4"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
-        "name": "POLIDUCTO ANARANJADO 1/2",
+        "name": "POLIDUCTO ANARANJADO 3/4",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "POLIDUCTO CORRUGADO 3/4 (NARANJA)",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "POLIDUCTO NARANJA 1\"",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "POLIDUCTO NARANJA 1/2\"",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "POLIDUCTO NARANJA 2\"",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "POLIDUCTO REFORZADO DE 1 1/4\" (NARANIA)",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "POLIDUCTO REFORZADO DE 1/2\" (NARANIA)",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "POLIDUCTO REFORZADO DE 1\" (NARANJA)",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "POLIDUCTO REFORZADO DE 3/4\" (NARANIA)",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "PORTA JETS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "poste de madera con mensula",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
     },
     {
         "name": "PROTECTOR DE HOJAS",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "PROYECTOR DE 1000 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "PROYECTOR DE 1500 W",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "proyector halcon con balastro 100 am",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
     },
     {
         "name": "PROYECTOR LED 100 W PHILIPS LUZ DE DIA BLANCO FRIO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "proyectores de 1500w",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "PTR 1\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "PTR 1 1/2",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "PTR 1 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "PTR 2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "PTR 3/4",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "PTR 6\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "PUNTA BROCA 3/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "QUINTA TERMINAL",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "REFLECTOR LED 30 W DAÑADO",
-        "unit": "pza",
-        "aliases": []
+        "name": "QUINTUPLEX",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
-        "name": "REFLECTOR LED 50 W DAÑADO",
+        "name": "REACTOR PARA LUMINARIA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "REDUCCION 1 1/2 A 3/4\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "REDUCCION 1 1/4 A 1\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "REDUCCION 1 1/4 A 3/4\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "REDUCCION 1 A 3/4\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "REDUCCIONES P/SOQUET",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "REELEVADOR DE SOBRE CARGA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "reflector 1000 w",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR 20 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR 250 HID",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR 30 WATTS",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR 50 W AMBAR",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR 50 W BLANCO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR 50 W BLANCO USADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR 500 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR 75 W VERDE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR ALOGENO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR AMBAR 50 W USADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR DE CABEZA SIMPLE COLOR GRIS OSCURO EATON, PARA USO EN EXTERIORES",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR DE COLORES",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "REFLECTOR LED 185 W DAÑADO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "REFLECTOR LED 30 W DAÑADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
+    },
+    {
+        "name": "REFLECTOR LED 300 WATTS MULTIVOLTAJE LUZ DE DIA PROTECIÓN IP65 RELLENO SANITARIO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR LED 50 W DAÑADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "REFLECTOR LED PARA EXTERIORES, 100 W, LUZ DE DÍA, A PRUEBA DE POLVO Y CHORROS DE AGUA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "REFLECTOR LED PARA EXTERIORES, 50 W, LUZ DE DÍA, A PRUEBA DE POLVO Y CHORROS DE AGUA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR LED PARA SOBREPONER, 50 W, LUZ ÁMBAR",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR LQ-LED LUMINERE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR RGB 10 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR RGB 30 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR ROJO 13 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Reflector tipo halcon",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REFLECTOR VERDE 13 W",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "REGISTRO 30*40",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "REGISTRO 40*40",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "REGISTRO 60*60",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "REGISTRO CANOA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "REGISTRO ELECTRICO DE CONCRETO 40*40",
-        "unit": "pza",
-        "aliases": []
+        "name": "REGLETA 40 W",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
-        "name": "RIEL DIN",
-        "unit": "pza",
-        "aliases": []
+        "name": "REGLETA CONTROLABLE 40 WATTS RGBW REGLED-40-RGBW",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "REPUESTO PARA FUSIBLE 60 AMP",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "RODILLO COMPLETO",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "ROLLO PAPEL",
-        "unit": "rollo",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "ROLLO PAPEL SANITARIO",
         "unit": "rollo",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "RONDANA 5/8",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "RONDANA PLANA 1\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "RONDANA PLANA 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "RONDANA PLANA 3/16",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "RONDANA PLANA 3/4",
         "unit": "pza",
         "aliases": [
             "Rondadna plana 3/4"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "RONDANA PLANA 3/8",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "RONDANA PLANA 5/8",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "RONDANA PRESION 1\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "RONDANA PRESIÓN 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "RONDANA PRESIÓN 3/4",
         "unit": "pza",
         "aliases": [
             "RONDANA DE PRESION 3/4"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "RONDANA PRESIÓN 3/8",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "RUEDA PARA DIABLO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "SANITAS",
         "unit": "s/e",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "SEGUETA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "SEGUETA BIMETALICA",
+        "name": "SEPARADOR CUADRADO 34\"",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "SEPARADOR DE FIBRA DE VIDRIO",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "SEPARADOR DE FIBRA DE VIDRIO 25.5\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "SOCKET",
-        "unit": "pza",
-        "aliases": []
+        "name": "SERIE AZUL",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE BCO FRIO 300 LUCES",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE CÁLIDA NUEVA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE CASCADA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE DE 100 LUCES",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE DE 200 LUCES BLANCA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "serie led 300 luces luz blanca fria",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "serie led 300 luces luz calida",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE LED 300 LUCES ROJA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE LED 300 LUCES VERDE",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE LED BLANCO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE LED MAGICA CASCADA 300 LUCES LUZ BLANCA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE ROJO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIE VERDE",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIES LED DE 300 LUCES AZULES",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIES LED DE 300 LUCES LUZ BLANCA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SERIES LED DE 300 LUCES LUZ CALIDA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SOCKET PARA INTEMPERIE BASE E26",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "SOGA 3/4",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "Soga Metro",
+        "unit": "m",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "SOGUILLA DE ACERO",
         "unit": "m",
-        "aliases": []
-    },
-    {
-        "name": "SOGUILLA DE ACERO 1/4",
-        "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "SOLA LED KIT JUAREZ",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "SOLDADURA 60-11",
         "unit": "kg",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "SOLDADURA 6011",
-        "unit": "kg",
-        "aliases": []
-    },
-    {
-        "name": "SOLDADURA 7018",
-        "unit": "kg",
-        "aliases": []
+        "name": "SOLERA 1 1/2",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "SOLERA 1 3/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "SOLERA 2 1/2",
+        "name": "SOLERA 2\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "SOLERA 3\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "SOLERA 4\"",
+        "name": "SOLERA 3/8",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "SOMBRILLA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "SOQUET BAQUELITA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "SOQUET DE VINILI",
+        "name": "SOQUET DE CERÁMICA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "SOQUET DOBLE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "SOQUET INTEMPERIE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "SOQUET MOGUL",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
+    },
+    {
+        "name": "SOQUET MOGUL USADO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "SOQUET PLASTICO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "SOQUET PORCELANA CHICO",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "sujeta cable 15 cm",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "sujeta cable 36 cm",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "SUJETACABLE DE 5,5 X 3,5",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TALADRO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "TAPA 1 VENTANA",
         "unit": "pza",
         "aliases": [
             "tapa de 1 ventana"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "TAPA 1 VENTANA2",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TAPA 2 VENTANA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "TAPA 2 VENTANAS",
         "unit": "pza",
         "aliases": [
             "TAPA DOBLEVENTANA"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "TAPA 3 VENTANA",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "TAPA CIEGA",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "TAPA DE 2 VENTANAS",
+        "name": "TAPA CON APAGADOR",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "TAPA PARA CONTACTO DUPLEX POLARIZADO",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "TAPA PVC 6\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TAQUETE",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "TAQUETE PARA BROCA DE 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "TELA ORGANZA AMARILLO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA ORGANZA AZUL",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA ORGANZA BLANCO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA ORGANZA BLANCO METALICO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA ORGANZA MORADO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA ORGANZA NARANJA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA ORGANZA ROJO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA ORGANZA ROSA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA ORGANZA VERDE",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA RAZO AMARILLO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA RAZO AZUL",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA RAZO BLANCO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA RAZO MORADO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA RAZO NARANJA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA RAZO ROJO",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA RAZO ROSA",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TELA RAZO VERDE",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TEMPORIZADOR",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TERMINAL OJILLO PONCHABLE CAL 3/0",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
+    },
+    {
+        "name": "TERMINAL OJILLO PONCHABLE CAL 6 3/16\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "THINNER",
         "unit": "s/e",
         "aliases": [
             "thiner"
+        ],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "TORNILLO 1/2",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TORNILLO 2 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TORNILLO 5/16",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TORNILLO CABEZA COCHI",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TORNILLO PIJA 3/8",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TORNILLO PUNTA BROCA 14 X 3/4",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
         "name": "TORNILLO PUNTA BROCA 8 X 1 1/2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "TORNILLO PUNTA BROCA 14 X 3/4",
+        "name": "TORNILLO PUNTA BROCA2",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TORNILLOS PIJA 10 X 1\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "TORNILLOS PIJA 8 X 10",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "TUBO 1 1/4",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "TUBO CONDUCT 3/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "TUBO CONDUIT 1\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "TUBO CONDUIT 1/2",
         "unit": "pza",
         "aliases": [
             "Tubo conduit de 1/2"
+        ],
+        "voucher_types": [
+            "warehouse",
+            "yard"
         ]
+    },
+    {
+        "name": "TUBO CONDUIT 3/4",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "TUBO CONDUIT DE 1 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "yard"
+        ]
     },
     {
         "name": "TUBO CONDUIT METALICO PARED DELGADA 1/2\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "TUBO CONDUIT METALICO PARED GRUESA 1 1/4\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
-        "name": "TUBO CONDUIT P.D. 1/2",
-        "unit": "pza",
-        "aliases": []
+        "name": "TUBO CONDUIT PARED GRUESO 1 1/4",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
-        "name": "TUBO CONDUIT PG 1 1/4\"",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "TUBO CONDUIT PG 1\"",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "TUBO DE PVC 4/2",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "TUBO NEGRO1 1/2",
-        "unit": "pza",
-        "aliases": []
+        "name": "TUBO FLEXIBLE LICUATITE 1 1/4\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "TUBO NEGRO 2\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "TUBO NEGRO 3/4\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "TUBO PARA ACOMETIDA 1 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "TUBO PVC 1\"",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     },
     {
         "name": "TUBO PVC 6\"",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "TUBO TERMO CONTRÁCTIL CAL.12",
         "unit": "m",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "TUERCA 1/2",
@@ -1888,70 +7206,175 @@
         "aliases": [
             "TUERCAS 1/2",
             "tuerca de 1/2"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
         "name": "TUERCA 3/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "TUERCA 3/8",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "TUERCA 5/16",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse",
+            "yard"
+        ]
+    },
+    {
+        "name": "TUERCA 5/8",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TUERCA GALVANIZADA 1/2\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TUERCA GALVANIZADA 3/4\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TUERCA GALVANIZADA 5/16",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "TUERCA GALVANIZADA 5/8\"",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "VARILLA A TIERRA 1/2 X 1M",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "VARILLA A TIERRA 1.5M",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "VARILLA A TIERRA 3/8",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "VARILLA A TIERRA 5/8 3M",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "VARILLA CORRUGADA 1/2",
         "unit": "pza",
         "aliases": [
             "VARILLA CORRUGADA DE 1/2"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
     },
     {
         "name": "VARILLA CORRUGADA 3/8",
         "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "VARILLA PARA TIERRA FISICA",
-        "unit": "pza",
-        "aliases": []
-    },
-    {
-        "name": "VARILLA ROSCADA /16",
-        "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "VARILLA ROSCADA DE 1/2",
         "unit": "pza",
         "aliases": [
             "VARILLA ROSCADA 1/2"
+        ],
+        "voucher_types": [
+            "warehouse"
         ]
+    },
+    {
+        "name": "VARILLA ROSCADA DE 5/16",
+        "unit": "pza",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": false
     },
     {
         "name": "VARILLA ROSCADA GALVANIZADA DE 1/2 X 3 METROS",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
     },
     {
         "name": "VARILLA SEMIFLECHA 1/4",
         "unit": "pza",
-        "aliases": []
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ]
+    },
+    {
+        "name": "VOLTAMPERIMETRO  KLEIN TOOLS",
+        "unit": "s/e",
+        "aliases": [],
+        "voucher_types": [
+            "warehouse"
+        ],
+        "needs_review": true
     }
 ]

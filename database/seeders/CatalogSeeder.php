@@ -2,13 +2,18 @@
 
 namespace Database\Seeders;
 
+use App\Models\Action;
 use App\Models\AuditEvent;
+use App\Models\Destination;
+use App\Models\DestinationAlias;
 use App\Models\Material;
 use App\Models\MaterialAlias;
 use App\Models\Person;
 use App\Models\PersonAlias;
 use App\Models\Program;
+use App\Models\StorageLocation;
 use App\Models\Unit;
+use App\Support\CuratedDestinationCatalog;
 use App\Support\CuratedMaterialCatalog;
 use App\Support\Normalizer;
 use Illuminate\Database\Seeder;
@@ -18,14 +23,45 @@ use RuntimeException;
 
 class CatalogSeeder extends Seeder
 {
-    public function run(CuratedMaterialCatalog $catalog): void
+    public function run(CuratedMaterialCatalog $catalog, CuratedDestinationCatalog $destinationCatalog): void
     {
-        DB::transaction(function () use ($catalog): void {
+        DB::transaction(function () use ($catalog, $destinationCatalog): void {
             $units = $this->seedUnits($catalog);
             $this->seedMaterials($units, $catalog);
+            $this->seedDestinations($destinationCatalog);
             $this->seedPeople();
             $this->seedPrograms();
         });
+    }
+
+    private function seedDestinations(CuratedDestinationCatalog $catalog): void
+    {
+        foreach ($catalog->destinations() as $data) {
+            $key = Normalizer::key($data['name']);
+            $knownAlias = DestinationAlias::query()->where('normalized_alias', $key)->first();
+            $destination = $knownAlias
+                ? $knownAlias->destination
+                : Destination::query()->where('normalized_name', $key)->first();
+            if (! $destination) {
+                $destination = Destination::create([
+                    'name' => $data['name'],
+                    'normalized_name' => $key,
+                    'needs_review' => $data['needs_review'],
+                ]);
+            }
+
+            foreach ($data['aliases'] as $alias) {
+                $aliasKey = Normalizer::key($alias);
+                if ($aliasKey === '' || DestinationAlias::query()->where('normalized_alias', $aliasKey)->exists()) {
+                    continue;
+                }
+                DestinationAlias::create([
+                    'destination_id' => $destination->id,
+                    'alias' => $alias,
+                    'normalized_alias' => $aliasKey,
+                ]);
+            }
+        }
     }
 
     /** @return array<string, Unit> */
@@ -43,6 +79,10 @@ class CatalogSeeder extends Seeder
     private function seedMaterials(array $units, CuratedMaterialCatalog $catalog): void
     {
         $unspecified = $units['s/e'];
+        $voucherTypes = StorageLocation::query()->whereIn('code', ['warehouse', 'yard'])->get()->keyBy('code');
+        if ($voucherTypes->count() !== 2) {
+            throw new RuntimeException('Primero deben existir los tipos de vale warehouse y yard.');
+        }
 
         foreach ($catalog->materials() as $data) {
             $key = Normalizer::key($data['name']);
@@ -56,7 +96,7 @@ class CatalogSeeder extends Seeder
                     'name' => $data['name'],
                     'normalized_name' => $key,
                     'default_unit_id' => $unit->id,
-                    'needs_review' => false,
+                    'needs_review' => $data['needs_review'],
                 ]);
             } elseif ($material->default_unit_id === $unspecified->id && $unit->id !== $unspecified->id) {
                 $before = $material->toArray();
@@ -65,6 +105,10 @@ class CatalogSeeder extends Seeder
             }
 
             $this->seedMaterialAliases($material, [$data['name'], ...$data['aliases']]);
+            $material->voucherTypes()->syncWithoutDetaching(array_map(
+                fn (string $code): int => $voucherTypes->get($code)->id,
+                $data['voucher_types'],
+            ));
         }
     }
 
@@ -131,7 +175,12 @@ class CatalogSeeder extends Seeder
 
     private function seedPrograms(): void
     {
-        Program::firstOrCreate(['code' => 'SPM-06'], ['name' => 'Alumbrado público']);
+        $program = Program::firstOrCreate(['code' => 'SPM-06'], ['name' => 'Alumbrado público']);
+
+        Action::firstOrCreate(
+            ['code' => 'SPM-06-01'],
+            ['program_id' => $program->id, 'name' => null],
+        );
     }
 
     /** @return list<array{name: string, can_receive_material: bool, can_deliver_material: bool, can_authorize_material: bool, needs_review: bool, aliases: list<string>}> */

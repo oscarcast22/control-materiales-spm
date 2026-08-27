@@ -1,0 +1,1559 @@
+[
+    {
+        "name": "2 de Octubre",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "8 de Septiembre",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "28 de Noviembre",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Acceso Dolores del Rio",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Acceso Paseo del Parque",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Acceso Peatonal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Acereros",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Acometidas Priv. Mascareñas, Estaño Manuel Morales",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Alimentacion a Clinica",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Almacén",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Almacén General",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Almacén General Spm",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Aquiles Serdan",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Aranjuez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Asentamientos Humanos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Av. Camino a la Loma",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Av. Cima Subestacion Ap",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Av. Circuito Interior",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Av. Col. el Saltito Calle Trueno",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Av. Ensenada",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Av. España",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Av. Primo de Verdad",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Av. Sahuatoba",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Av. San Juan",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Av. San Juan de Letran",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Azcapotzalco",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Banderas del Aguila",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Barrio de Tierra Blanca Priv. de Bravo 226",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Benjamin Montoya",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Armando del Castillo / Prol. Hidalgo y Fanny Anitua",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Armando del Castillo Franco",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Cima Transformador de Subestacion",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Dolores del Rio",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Dolores del Rio Col. Atzcapozalco",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Dolores del Rio y Col. Maderera",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Domingo Arrieta",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Durango",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Fco. Villa",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Guadiana",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. Rio Grande",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Blvd. San Ignacio",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Brisas Diamante",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Calle Independencia Zona Centro",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Camino Real Sta. Maria",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Canchas Deportivas Pob. Gabino Santillán",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Carr. al Mezquital",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Carr. Mazatlan Por Col. las Flores",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Carretera al Pueblito",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Carretera a Parral",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Carretera Mezquital",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Carretera México",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Ceballos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Cebollas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Cieneguita",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Cinco de Mayo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Cobaed Lomas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. 8 de Septiembre",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. 20 de Noviembre",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Ampliacion Pri",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Ampliacion Tapias",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Benigno Montoya",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Benito Juarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Benjamin Mendez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Buenos Aires",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Cdf",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Cdp",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Chapultepec",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Cielo Vista",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Cipres Calles: Cd. Juarez Fte. Salon el Palmar",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Constitucion Calle: 24 de Febrero",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Dolores del Rio",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. el Cipres Calle Juarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. el Saltito",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Hector Mayagoitia Calle. Pastor Rouaix",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Hidalgo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Ignacio Zaragoza",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Insurgentes",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. J Gpe. Rguez. y Fracc. Granja Graciela",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Joyas del Valle Calle: Alejandria",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. la Arboleda",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. las Magdalenas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. las Morenitas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. La Virgen",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Luz del Carmen",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Maderera",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Manuel Alvarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Manuel Nevarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Masie Calle Rio de Luna 132",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Morelos Norte",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Morga",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Olga Margarita, Blvd. Durango y Primo de Verdad",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Real del Prado",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Ricardo Rosales",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Rincon del Lobo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. San Carlos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. San Miguel",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Santa Fe",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Sta. Maria Av. del Guadiana",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Valle Florido",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Col. Valle Verde Oriente",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Contingencias Por Inundaciones Arroyo Temazcal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Contreras",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Controles Sist. de Tierra Col. Constitucion",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Cristobal Colon",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Dolores Hidalgo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Ejido Benito Juarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "El Carmen y Anexos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "El Conejo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "El Español",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "El Marquez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "El Nayar",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "El Pueblito",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "El Tunal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Emiliano Zapata",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Espacio Publico Benjamin Mendez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Ex Hacienda de San Agustin",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Explanada de los Insurgentes",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Explannada del Santuario",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fco. Villa Viejo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Felipe Angeles",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fenadu",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fidel Velazquez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Forrado de Tunel",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Frac. Camino Real",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Frac. Fidel Velazquez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Acereros",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Acereros y Fracc. el Naranjal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Alamillos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Aranjuez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Barcelona",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Brisas Diamante",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Camino Real/ Fracc. Gpe y Blvd. Fco. Villa",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. del Valle",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Domingo Arrieta",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Fidel Velazquez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Guadalupe",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Guadalupe Infonavit",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Guadalupe Victoria Infonavit",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Huizache",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Huizache 1",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Jardines de Durango",
+        "aliases": [
+            "Jardines de Dgo.",
+            "Jardines de Durango"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Joyas del Valle Calle. Alejandra",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. la Cima",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. la Forestal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. las Nubes Calle, Nube Ascendente",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. los Acereros",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Madero",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Puertas del Sol",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. San Ignacio Circuito en Corto",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. San Juan",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Santa Amelia",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Santa Elena",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Sta. Amelia",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Toledo y Orquidea",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Villa Jacaranda",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fracc. Villas 7 Calle Tecuan y Fenadu",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Francisco Villa Nuevo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fuente Azteca",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fuente de las Bailarinas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Fulgencio",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Gabino Santillán",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Garabitos Nuevo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Gilberto Muñoz Mosqueda Fracc. Jardines de San Antonio",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Gral. Carlos Real",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Hacienda de San Agustin",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Huizache",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Huizache 2, Circuito Interior, Fracc. Aranzazu",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Independencia y Libertad",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Integral Col. Manuel Alvarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Jardines de San Antonio",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Jardin Juarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Jose Ma. Pino Suarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Juan B. Ceballos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "La Ferreria",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "La Forestal (Deportivo)",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Las Bayas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Las Palmas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Las Yukas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "La Tinaja",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "La Virgen",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Llano Grande",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Lokers Para Material en Taller",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Lomas del Sahuatoba",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Los Remedios",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Los Viñedos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Mariano Matamoros",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Morcillo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Morelos Sur",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Nueva Vizcaya",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Obra Atrio Iglesia de Guadalupe",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Para Vehiculos 760,1294,1366,462,1724,1728,2049,1735,1734 y 587",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Parque de las Americas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Parque Guadiana",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Parque Industrial Ladrillero",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Parque Lineal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Parque Lineal Col. Arturo Gamiz",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Parque Sahuatoba",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Parque Zahuatoba Vivero",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Paseo de las Alamedas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Paseo las Alamedas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pdo. Sta. Cruz del Rio",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pilar de Zaragoza",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pino Suarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pintado de Arbotantes Patio de Almacén",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Plan de Ayala",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Planta de Transferencia",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Plaza de Armas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pob. 2 de Octubre",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pob. 5 de Febrero",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pob. Contreras",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pob. Ejido Felipe Angeles y Otros",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pob. J. Refugio Salcido",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pob. Juan Ceballos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pob. la Loma",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pob. Pino Suarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Pob. Plan de Ayala",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado 5 de Febrero",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado 5 de Mayo",
+        "aliases": [
+            "5 de Mayo"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado 15 de Oct.",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado 15 de Sep.",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado 15 de Septiembre",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado 27 de Noviembre",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Antonio Gaxiola",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Aquiles Serdan",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Carmen y Anexos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Chupaderos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Col. Hidalgo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Contreras",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado de Corriento",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Ejido Felipe Angeles",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado el Arenal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado el Carmen y Anexos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado el Conejo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado El Manzanal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado el Nayar",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado el Pueblito",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Ignacio Zaragoza",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Independencia y Libertad",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Juan B. Ceballos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado la Ferreria",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado la Flor",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Malaga",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Morcillo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Otinapa",
+        "aliases": [
+            "Otinapa"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Pilar de Zaragoza",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Pino Suarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Plan de Ayala",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado San Jose de la Vinata",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Santiago Bayacora",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Sebastián Lerdo de Tejada",
+        "aliases": [
+            "Sebastián Lerdo de Tejada"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Tapias",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Tapias y Col. San Miguel",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Tomas Urbina",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Valle Florido",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Poblado Veintisiete de Noviembre",
+        "aliases": [
+            "Veintisiete de Noviembre",
+            "Vientisiete de Noviembre"
+        ],
+        "needs_review": false
+    },
+    {
+        "name": "Praxedis Guerrero",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Praxedis Guerrero la Loma",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Primo de Verdad",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Priv. Casuarinas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Provedencia Fovissste",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Quintas del Real",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Recuperacion de Material de Almacén Gral. Spm",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Refugio Salcido",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Regocijo",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Reinstalacion Fco. Lbarra y Ana Leyva",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Relleno 1294",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Relleno Sanitario",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Ricardo Rosales",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Rinconada Sol",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Rio Verde",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Rosas del Tepeyac Av. Ensenada",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Rosaura Revueltas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "San Jose del Molino",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Santa Amelia",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "San Vicente Chupaderos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Sectores Carr. Mezquital y Juan Lira",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Subestacion Carr. al Pueblito Fte. a la Coca",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Subestacion de Av. Cima",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Taller de Pruebas",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Taller de Pruebas Ap. Garantias",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Tierra y Libertad",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Unidaad Deportiva la Forestal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Unidad Deportiva",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Unidad Deportiva Col. Juan Lira",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Unidad Deportiva Daniel Corral",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Unidad Deportiva Fracc. la Forestal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Valle de Guadalupe",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Valle del Guadiana",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Valle del Sur",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Valle Verde",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Valle Verde Sur",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Versalles",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Vicente Suarez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Villa Montemorelos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Villa Monte Morelos",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Villas del Gdna.",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Villas del Guadiana",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Villas del Guadiana Iv",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Villas del Guadiana Vii",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Vivero Parque Sahuatoba",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Viñedos 2 y Pob. la Ferreria",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Zona Centro",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Zona Centro C. Laureano Roncal",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Zona Centro Calle. Constitucion",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Área Deportiva , Gabino Santillán",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Área Verde Domingo Arrieta",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Área Verde Fracc. Aranjuez",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Área Verde Fracc. Valle del Mezquital",
+        "aliases": [],
+        "needs_review": false
+    },
+    {
+        "name": "Área Verde Nvo. Durango",
+        "aliases": [],
+        "needs_review": false
+    }
+]

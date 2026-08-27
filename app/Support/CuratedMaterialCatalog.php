@@ -21,7 +21,7 @@ final class CuratedMaterialCatalog
         ];
     }
 
-    /** @return list<array{name: string, unit: string, aliases: list<string>}> */
+    /** @return list<array{name: string, unit: string, aliases: list<string>, voucher_types: list<string>, needs_review: bool}> */
     public function materials(): array
     {
         $rows = $this->json('materials.json');
@@ -42,10 +42,27 @@ final class CuratedMaterialCatalog
                 }
             }
 
+            $voucherTypes = $row['voucher_types'] ?? null;
+            if (! is_array($voucherTypes) || ! array_is_list($voucherTypes) || $voucherTypes === []) {
+                throw new RuntimeException('El catálogo de materiales contiene tipos de vale inválidos.');
+            }
+            foreach ($voucherTypes as $voucherType) {
+                if (! is_string($voucherType) || ! in_array($voucherType, ['warehouse', 'yard'], true)) {
+                    throw new RuntimeException('El catálogo de materiales contiene un tipo de vale desconocido.');
+                }
+            }
+
+            $needsReview = $row['needs_review'] ?? false;
+            if (! is_bool($needsReview)) {
+                throw new RuntimeException('El catálogo de materiales contiene un indicador de revisión inválido.');
+            }
+
             $result[] = [
                 'name' => $row['name'],
                 'unit' => $row['unit'],
                 'aliases' => $aliases,
+                'voucher_types' => array_values(array_unique($voucherTypes)),
+                'needs_review' => $needsReview,
             ];
         }
 
