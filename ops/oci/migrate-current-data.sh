@@ -102,7 +102,7 @@ sudo -u materiales psql \
     --dbname=control_materiales_spm \
     --command='TRUNCATE TABLE sessions, cache, cache_locks'
 sudo -u materiales php "$APP_ROOT/artisan" optimize
-systemctl reload php8.3-fpm
+systemctl reload php8.4-fpm
 systemctl enable --now control-materiales-queue.service
 systemctl restart control-materiales-queue.service
 sudo -u materiales php "$APP_ROOT/artisan" up

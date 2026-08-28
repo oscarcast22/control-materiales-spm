@@ -112,7 +112,7 @@ sudo -u materiales php "$RELEASE_DIR/artisan" optimize
 if [[ $FIRST_RELEASE == true ]]; then
     ln -sfn "$RELEASE_DIR" /srv/control-materiales/current
     chown -h materiales:www-data /srv/control-materiales/current
-    systemctl reload php8.3-fpm
+    systemctl reload php8.4-fpm
     systemctl reload nginx
     echo 'Primer release preparado; resta restaurar la base antes de habilitar la cola.'
     exit 0
@@ -129,7 +129,7 @@ fi
 sudo -u materiales php "$RELEASE_DIR/artisan" migrate --force --no-interaction
 ln -sfn "$RELEASE_DIR" /srv/control-materiales/current
 chown -h materiales:www-data /srv/control-materiales/current
-systemctl reload php8.3-fpm
+systemctl reload php8.4-fpm
 systemctl enable --now control-materiales-queue.service
 systemctl restart control-materiales-queue.service
 sudo -u materiales php "$RELEASE_DIR/artisan" up
