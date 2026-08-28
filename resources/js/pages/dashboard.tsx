@@ -80,12 +80,20 @@ export default function Dashboard({
                     size="display"
                     description="Identifica primero lo que requiere atención y continúa con la actividad más reciente."
                     actions={
-                        <Button asChild>
-                            <Link href="/vouchers/create">
-                                <Plus data-icon="inline-start" />
-                                Capturar vale
-                            </Link>
-                        </Button>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Badge
+                                variant="info"
+                                className="min-h-8 px-3 font-mono text-[11px] tracking-[0.04em]"
+                            >
+                                Seguimiento · 2026
+                            </Badge>
+                            <Button asChild>
+                                <Link href="/vouchers/create">
+                                    <Plus data-icon="inline-start" />
+                                    Capturar vale
+                                </Link>
+                            </Button>
+                        </div>
                     }
                 />
 
@@ -111,7 +119,7 @@ export default function Dashboard({
                                         <ChevronDown data-icon="inline-end" />
                                     </Button>
                                 </CollapsibleTrigger>
-                                <CollapsibleContent className="mt-3 space-y-3">
+                                <CollapsibleContent className="mt-3 flex flex-col gap-3">
                                     {voucher_sequence.types
                                         .filter((row) => row.missing_count > 0)
                                         .map((row) => (
@@ -144,10 +152,11 @@ export default function Dashboard({
                 )}
 
                 <section aria-labelledby="prioridades-title">
-                    <h2 id="prioridades-title" className="sr-only">
-                        Prioridades operativas
-                    </h2>
-                    <div className="grid gap-3 md:grid-cols-3">
+                    <SectionHeader
+                        title="Prioridad operativa"
+                        description="Responsabilidad abierta que conviene atender primero."
+                    />
+                    <div className="mt-3 grid gap-3 md:grid-cols-3">
                         <MetricCard
                             label="Vales con saldo pendiente"
                             value={metrics.pending_vouchers}
@@ -170,7 +179,7 @@ export default function Dashboard({
                             emphasis="primary"
                         />
                     </div>
-                    <div className="mt-4 grid border-y sm:grid-cols-3">
+                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
                         <MetricCard
                             label="Vales liquidados"
                             value={metrics.settled_vouchers}
@@ -208,7 +217,7 @@ export default function Dashboard({
                         />
                         <div className="mt-3">
                             <DataTableSurface label="Partidas con material pendiente más antiguo">
-                                <Table className="min-w-[640px]">
+                                <Table className="min-w-[560px]">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Vale</TableHead>
@@ -273,12 +282,12 @@ export default function Dashboard({
                             title="Actividad reciente"
                             description="Últimos vales capturados o actualizados."
                         />
-                        <div className="mt-3 overflow-hidden rounded-xl border bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.05)]">
+                        <div className="glass-panel-strong mt-3 overflow-hidden rounded-2xl border">
                             {recent.map((voucher) => (
                                 <Link
                                     key={voucher.id}
                                     href={`/vouchers/${voucher.id}`}
-                                    className="group flex min-h-16 items-center justify-between gap-4 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-hover focus-visible:bg-hover focus-visible:ring-3 focus-visible:ring-ring/25 focus-visible:outline-none focus-visible:ring-inset"
+                                    className="group flex min-h-16 items-center justify-between gap-4 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-hover/70 focus-visible:bg-hover focus-visible:ring-3 focus-visible:ring-ring/25 focus-visible:outline-none focus-visible:ring-inset"
                                 >
                                     <div className="min-w-0">
                                         <p className="font-medium group-hover:text-primary">

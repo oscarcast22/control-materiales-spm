@@ -15,7 +15,7 @@ const EmptyState = () => {
     return (
         <div className="p-8 text-center">
             <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-md bg-primary-subtle text-primary">
-                <KeyRound className="h-7 w-7 text-muted-foreground" />
+                <KeyRound className="size-7 text-muted-foreground" />
             </div>
             <p className="font-medium">Aún no hay passkeys</p>
             <p className="mt-1 text-sm text-muted-foreground">

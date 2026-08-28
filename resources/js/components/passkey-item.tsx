@@ -29,9 +29,9 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
         <div className="flex items-center justify-between border-b p-4 last:border-b-0">
             <div className="flex items-center gap-4">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-subtle text-primary">
-                    <KeyRound className="h-5 w-5 text-muted-foreground" />
+                    <KeyRound className="size-5 text-muted-foreground" />
                 </div>
-                <div className="space-y-1">
+                <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2.5">
                         <p className="font-medium tracking-tight">
                             {passkey.name}
@@ -63,7 +63,7 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
                         size="sm"
                         className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="size-4" />
                         <span className="sr-only">Eliminar</span>
                     </Button>
                 </DialogTrigger>

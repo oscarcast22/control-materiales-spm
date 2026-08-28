@@ -15,7 +15,7 @@ import { useId, useState } from 'react';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
 import { MetricCard } from '@/components/metric-card';
-import { Page, PageHeader } from '@/components/page';
+import { Page, PageHeader, SectionHeader } from '@/components/page';
 import { SearchableSelect } from '@/components/searchable-select';
 import { SimpleSelect } from '@/components/simple-select';
 import { StatusBadge } from '@/components/status-badge';
@@ -188,6 +188,10 @@ export default function MaterialTracking({
                     aria-label="Métricas del seguimiento"
                     className="flex flex-col gap-4"
                 >
+                    <SectionHeader
+                        title="Panorama del periodo"
+                        description="Señales operativas de los vales incluidos en los filtros actuales."
+                    />
                     <div className="grid gap-3 md:grid-cols-3">
                         <MetricCard
                             label="Vales pendientes"
@@ -211,7 +215,7 @@ export default function MaterialTracking({
                             emphasis="primary"
                         />
                     </div>
-                    <div className="grid border-y sm:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-3">
                         <MetricCard
                             label="Vales entregados"
                             value={metrics.delivered_vouchers}
@@ -399,7 +403,7 @@ function MaterialTable({ rows }: { rows: MaterialSummary[] }) {
                 <TableBody>
                     {rows.map((row) => (
                         <TableRow key={`${row.material.id}-${row.unit.id}`}>
-                            <TableCell className="font-medium">
+                            <TableCell className="max-w-[22rem] font-medium whitespace-normal">
                                 {row.material.name}
                                 <span className="ml-2 text-xs text-muted-foreground">
                                     {row.unit.symbol}

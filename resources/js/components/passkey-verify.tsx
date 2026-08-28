@@ -49,7 +49,7 @@ export default function PasskeyVerify({
                     onClick={verify}
                     disabled={isLoading}
                 >
-                    {isLoading ? <Spinner /> : <KeyRound className="h-4 w-4" />}
+                    {isLoading ? <Spinner /> : <KeyRound className="size-4" />}
                     {isLoading
                         ? (loadingLabel ?? 'Autenticando…')
                         : (label ?? 'Entrar con passkey')}

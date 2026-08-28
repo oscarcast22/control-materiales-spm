@@ -104,7 +104,7 @@ export default function TwoFactorRecoveryCodes({
                     aria-hidden={!codesAreVisible}
                 >
                     <div className="min-h-0 overflow-hidden">
-                        <div className="mt-3 space-y-3">
+                        <div className="mt-3 flex flex-col gap-3">
                             {errors?.length ? (
                                 <AlertError errors={errors} />
                             ) : (
@@ -129,7 +129,7 @@ export default function TwoFactorRecoveryCodes({
                                             )
                                         ) : (
                                             <div
-                                                className="space-y-2"
+                                                className="flex flex-col gap-2"
                                                 aria-label="Cargando códigos de recuperación"
                                             >
                                                 {Array.from(
