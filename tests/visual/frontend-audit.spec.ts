@@ -240,10 +240,11 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
         if (viewport.name === 'desktop-light') {
             await page.goto('/dashboard', { waitUntil: 'networkidle' });
             await expect(
-                page
-                    .getByRole('group', { name: 'Mostrar vales de' })
-                    .getByRole('button', { name: 'Almacén' }),
-            ).toHaveAttribute('data-state', 'on');
+                page.getByRole('heading', { name: 'Resumen general' }),
+            ).toBeVisible();
+            await expect(
+                page.getByRole('group', { name: 'Mostrar vales de' }),
+            ).toHaveCount(0);
 
             await page.goto('/vouchers', { waitUntil: 'networkidle' });
             await expect(page.getByLabel('Tipo de vale')).toContainText(
@@ -251,6 +252,10 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             );
             await expect(
                 page.getByRole('button', { name: 'Aplicar filtros' }),
+            ).toHaveCount(0);
+            await expect(page.getByText('Sin filtros activos')).toBeVisible();
+            await expect(
+                page.getByRole('button', { name: /Limpiar \d+ filtro/ }),
             ).toHaveCount(0);
 
             let voucherFilterRequests = 0;
@@ -273,8 +278,11 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                 .poll(() => voucherFilterRequests, { timeout: 1500 })
                 .toBe(1);
             page.off('request', countVoucherFilterRequests);
-            await page.getByRole('button', { name: 'Limpiar' }).click();
+            await page
+                .getByRole('button', { name: 'Limpiar 1 filtro activo' })
+                .click();
             await page.waitForLoadState('networkidle');
+            await expect(page.getByText('Sin filtros activos')).toBeVisible();
 
             await page
                 .getByRole('button', {
@@ -378,6 +386,36 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             await expect(
                 page.getByRole('tab', { name: 'Por vale' }),
             ).toHaveAttribute('aria-selected', 'true');
+            await expect(page.getByText('Sin filtros activos')).toBeVisible();
+            await expect(
+                page.getByRole('button', { name: /Limpiar \d+ filtro/ }),
+            ).toHaveCount(0);
+
+            let trackingFilterRequests = 0;
+            const countTrackingFilterRequests = (request: Request) => {
+                const url = new URL(request.url());
+
+                if (
+                    url.pathname === '/reports/material-tracking' &&
+                    request.headers()['x-inertia'] === 'true' &&
+                    url.searchParams.has('search')
+                ) {
+                    trackingFilterRequests++;
+                }
+            };
+            page.on('request', countTrackingFilterRequests);
+            await page
+                .getByLabel('Buscar', { exact: true })
+                .pressSequentially('165', { delay: 40 });
+            await expect
+                .poll(() => trackingFilterRequests, { timeout: 1500 })
+                .toBe(1);
+            page.off('request', countTrackingFilterRequests);
+            await page
+                .getByRole('button', { name: 'Limpiar 1 filtro activo' })
+                .click();
+            await page.waitForLoadState('networkidle');
+            await expect(page.getByText('Sin filtros activos')).toBeVisible();
 
             const voucherToggles = page.getByRole('button', {
                 name: /materiales del vale/,

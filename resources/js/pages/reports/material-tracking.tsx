@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
-import { ChevronRight, Download, X } from 'lucide-react';
-import type { MouseEvent } from 'react';
+import { ChevronRight, Download, Search } from 'lucide-react';
+import type { FormEvent, MouseEvent } from 'react';
 import { Fragment, useId, useState } from 'react';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
@@ -97,6 +97,7 @@ type Props = {
 };
 
 type TrackingFilterState = {
+    search: string;
     from: string;
     to: string;
     received_by_id: string;
@@ -134,6 +135,7 @@ export default function MaterialTracking({
         voucherTypes.find((type) => type.code === 'warehouse')?.id ?? '',
     );
     const initialFilters: TrackingFilterState = {
+        search: String(filters.search ?? ''),
         from: String(filters.from ?? cutoff),
         to: String(filters.to ?? ''),
         received_by_id: String(filters.received_by_id ?? ''),
@@ -144,6 +146,7 @@ export default function MaterialTracking({
     };
     const {
         filters: form,
+        flush,
         replaceFilters,
         updateFilter,
     } = useReactiveFilters({
@@ -154,6 +157,7 @@ export default function MaterialTracking({
     });
     const clearFilters = () => {
         const next = {
+            search: '',
             from: cutoff,
             to: '',
             received_by_id: '',
@@ -163,6 +167,10 @@ export default function MaterialTracking({
             tab: form.tab,
         };
         replaceFilters(next);
+    };
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        flush();
     };
     const changeTab = (tab: Tab) => {
         const next = { ...form, tab };
@@ -174,6 +182,7 @@ export default function MaterialTracking({
             .map(([key, value]) => [key, value]),
     ).toString();
     const activeFilters = [
+        form.search,
         form.from === cutoff ? '' : form.from,
         form.to,
         form.received_by_id,
@@ -202,109 +211,140 @@ export default function MaterialTracking({
 
                 <FilterBar
                     title="Filtrar seguimiento"
-                    description="Delimita el periodo y el contexto antes de comparar cantidades. Los cambios se aplican automáticamente."
+                    description="Busca por folio, técnico, destino o material y delimita el periodo. Los cambios se aplican automáticamente."
                     activeFilters={activeFilters}
+                    onClear={clearFilters}
                 >
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-8">
-                        <FormField>
-                            <FormLabel htmlFor="tracking-from">Desde</FormLabel>
-                            <Input
-                                id="tracking-from"
-                                type="date"
-                                min={cutoff}
-                                max={form.to || undefined}
-                                value={form.from}
-                                onChange={(event) =>
-                                    updateFilter('from', event.target.value)
+                    <form onSubmit={submit} className="flex flex-col gap-3">
+                        <div className="grid gap-3 md:grid-cols-6 xl:grid-cols-12">
+                            <FormField className="md:col-span-6 xl:col-span-4">
+                                <FormLabel htmlFor="tracking-search">
+                                    Buscar
+                                </FormLabel>
+                                <div className="relative">
+                                    <Search
+                                        aria-hidden="true"
+                                        className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                                    />
+                                    <Input
+                                        id="tracking-search"
+                                        className="pl-9"
+                                        value={form.search}
+                                        maxLength={100}
+                                        onChange={(event) =>
+                                            updateFilter(
+                                                'search',
+                                                event.target.value,
+                                                true,
+                                            )
+                                        }
+                                        placeholder="Folio, destino, técnico o material"
+                                    />
+                                </div>
+                            </FormField>
+                            <FilterSelect
+                                className="md:col-span-2 xl:col-span-2"
+                                label="Tipo de vale"
+                                value={form.voucher_type_id}
+                                onChange={(value) =>
+                                    updateFilter('voucher_type_id', value)
                                 }
+                                empty="Todos los tipos"
+                                options={voucherTypes.map((type) => ({
+                                    value: String(type.id),
+                                    label: type.name,
+                                }))}
                             />
-                        </FormField>
-                        <FormField>
-                            <FormLabel htmlFor="tracking-to">Hasta</FormLabel>
-                            <Input
-                                id="tracking-to"
-                                type="date"
-                                min={form.from || cutoff}
-                                value={form.to}
-                                onChange={(event) =>
-                                    updateFilter('to', event.target.value)
+                            <FilterSelect
+                                className="md:col-span-2 xl:col-span-3"
+                                label="Técnico"
+                                value={form.received_by_id}
+                                onChange={(value) =>
+                                    updateFilter('received_by_id', value)
                                 }
+                                empty="Todos los técnicos"
+                                searchable
+                                searchPlaceholder="Buscar técnico…"
+                                emptyMessage="No se encontró ningún técnico."
+                                options={receivers.map((person) => ({
+                                    value: String(person.id),
+                                    label: person.name,
+                                }))}
                             />
-                        </FormField>
-                        <FilterSelect
-                            label="Técnico"
-                            value={form.received_by_id}
-                            onChange={(value) =>
-                                updateFilter('received_by_id', value)
-                            }
-                            empty="Todos los técnicos"
-                            searchable
-                            searchPlaceholder="Buscar técnico…"
-                            emptyMessage="No se encontró ningún técnico."
-                            options={receivers.map((person) => ({
-                                value: String(person.id),
-                                label: person.name,
-                            }))}
-                        />
-                        <FilterSelect
-                            label="Material"
-                            value={form.material_id}
-                            onChange={(value) =>
-                                updateFilter('material_id', value)
-                            }
-                            empty="Todos los materiales"
-                            searchable
-                            searchPlaceholder="Buscar material…"
-                            emptyMessage="No se encontró ningún material."
-                            options={materials.map((material) => ({
-                                value: String(material.id),
-                                label: material.name,
-                                meta: material.default_unit?.symbol ?? 's/e',
-                                searchTerms: material.default_unit
-                                    ? [
-                                          material.default_unit.name,
-                                          material.default_unit.symbol,
-                                      ]
-                                    : [],
-                            }))}
-                        />
-                        <FilterSelect
-                            label="Tipo de vale"
-                            value={form.voucher_type_id}
-                            onChange={(value) =>
-                                updateFilter('voucher_type_id', value)
-                            }
-                            empty="Todos los tipos"
-                            options={voucherTypes.map((type) => ({
-                                value: String(type.id),
-                                label: type.name,
-                            }))}
-                        />
-                        <FilterSelect
-                            label="Estado"
-                            value={form.state}
-                            onChange={(value) => updateFilter('state', value)}
-                            empty="Todos los estados"
-                            options={[
-                                { value: 'pending', label: 'Pendiente' },
-                                { value: 'settled', label: 'Liquidado' },
-                                {
-                                    value: 'anomaly',
-                                    label: 'Inconsistencia',
-                                },
-                            ]}
-                        />
-                        <div className="flex items-end justify-end gap-2 md:col-span-2">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={clearFilters}
-                            >
-                                <X data-icon="inline-start" />
-                                Limpiar
-                            </Button>
+                            <FilterSelect
+                                className="md:col-span-2 xl:col-span-3"
+                                label="Material"
+                                value={form.material_id}
+                                onChange={(value) =>
+                                    updateFilter('material_id', value)
+                                }
+                                empty="Todos los materiales"
+                                searchable
+                                searchPlaceholder="Buscar material…"
+                                emptyMessage="No se encontró ningún material."
+                                options={materials.map((material) => ({
+                                    value: String(material.id),
+                                    label: material.name,
+                                    meta:
+                                        material.default_unit?.symbol ?? 's/e',
+                                    searchTerms: material.default_unit
+                                        ? [
+                                              material.default_unit.name,
+                                              material.default_unit.symbol,
+                                          ]
+                                        : [],
+                                }))}
+                            />
                         </div>
-                    </div>
+                        <div className="grid gap-3 border-t pt-3 md:grid-cols-3 xl:grid-cols-12">
+                            <FilterSelect
+                                className="xl:col-span-3"
+                                label="Estado"
+                                value={form.state}
+                                onChange={(value) =>
+                                    updateFilter('state', value)
+                                }
+                                empty="Todos los estados"
+                                options={[
+                                    { value: 'pending', label: 'Pendiente' },
+                                    { value: 'settled', label: 'Liquidado' },
+                                    {
+                                        value: 'anomaly',
+                                        label: 'Inconsistencia',
+                                    },
+                                ]}
+                            />
+                            <FormField className="xl:col-span-3">
+                                <FormLabel htmlFor="tracking-from">
+                                    Desde
+                                </FormLabel>
+                                <Input
+                                    id="tracking-from"
+                                    type="date"
+                                    min={cutoff}
+                                    max={form.to || undefined}
+                                    value={form.from}
+                                    onChange={(event) =>
+                                        updateFilter('from', event.target.value)
+                                    }
+                                />
+                            </FormField>
+                            <FormField className="xl:col-span-3">
+                                <FormLabel htmlFor="tracking-to">
+                                    Hasta
+                                </FormLabel>
+                                <Input
+                                    id="tracking-to"
+                                    type="date"
+                                    min={form.from || cutoff}
+                                    value={form.to}
+                                    onChange={(event) =>
+                                        updateFilter('to', event.target.value)
+                                    }
+                                />
+                            </FormField>
+                        </div>
+                    </form>
                 </FilterBar>
 
                 <TrackingMetrics metrics={metrics} />
@@ -1011,6 +1051,7 @@ function Quantity({
 }
 
 function FilterSelect({
+    className,
     label,
     value,
     onChange,
@@ -1020,6 +1061,7 @@ function FilterSelect({
     searchPlaceholder,
     emptyMessage,
 }: {
+    className?: string;
     label: string;
     value: string;
     onChange: (value: string) => void;
@@ -1032,7 +1074,7 @@ function FilterSelect({
     const id = useId();
 
     return (
-        <FormField>
+        <FormField className={className}>
             <FormLabel htmlFor={id}>{label}</FormLabel>
             {searchable ? (
                 <SearchableSelect

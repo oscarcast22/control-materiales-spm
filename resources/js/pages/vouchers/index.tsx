@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { FilePlus2, Search, Wrench, X } from 'lucide-react';
+import { FilePlus2, Search, Wrench } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { CancelledVoucherDialog } from '@/components/cancelled-voucher-dialog';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
@@ -169,10 +169,11 @@ export default function VoucherIndex({
                     title="Buscar y filtrar vales"
                     description="Localiza un documento por folio, persona, material, fecha o estado. Los cambios se aplican automáticamente."
                     activeFilters={activeFilters}
+                    onClear={clear}
                 >
                     <form onSubmit={submit} className="flex flex-col gap-3">
-                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-12">
-                            <FormField className="sm:col-span-2 xl:col-span-4">
+                        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-6 xl:grid-cols-12">
+                            <FormField className="sm:col-span-2 md:col-span-6 xl:col-span-4">
                                 <FormLabel htmlFor="voucher-search">
                                     Buscar
                                 </FormLabel>
@@ -196,35 +197,25 @@ export default function VoucherIndex({
                                     />
                                 </div>
                             </FormField>
-                            <FormField className="xl:col-span-2">
-                                <FormLabel htmlFor="voucher-from">
-                                    Desde
+                            <FormField className="md:col-span-2 xl:col-span-2">
+                                <FormLabel htmlFor="voucher-type">
+                                    Tipo de vale
                                 </FormLabel>
-                                <Input
-                                    id="voucher-from"
-                                    type="date"
-                                    value={form.from}
-                                    max={form.to || undefined}
-                                    onChange={(event) =>
-                                        updateFilter('from', event.target.value)
+                                <SimpleSelect
+                                    id="voucher-type"
+                                    value={form.voucher_type_id}
+                                    onValueChange={(value) =>
+                                        updateFilter('voucher_type_id', value)
                                     }
+                                    options={voucherTypes.map((type) => ({
+                                        value: String(type.id),
+                                        label: type.name,
+                                    }))}
+                                    placeholder="Seleccionar tipo"
+                                    emptyLabel="Todos los tipos"
                                 />
                             </FormField>
-                            <FormField className="xl:col-span-2">
-                                <FormLabel htmlFor="voucher-to">
-                                    Hasta
-                                </FormLabel>
-                                <Input
-                                    id="voucher-to"
-                                    type="date"
-                                    value={form.to}
-                                    min={form.from || undefined}
-                                    onChange={(event) =>
-                                        updateFilter('to', event.target.value)
-                                    }
-                                />
-                            </FormField>
-                            <FormField className="xl:col-span-2">
+                            <FormField className="md:col-span-2 xl:col-span-3">
                                 <FormLabel htmlFor="voucher-technician">
                                     Técnico
                                 </FormLabel>
@@ -244,45 +235,7 @@ export default function VoucherIndex({
                                     emptyLabel="Todos los técnicos"
                                 />
                             </FormField>
-                            <FormField className="xl:col-span-2">
-                                <FormLabel htmlFor="voucher-type">
-                                    Tipo de vale
-                                </FormLabel>
-                                <SimpleSelect
-                                    id="voucher-type"
-                                    value={form.voucher_type_id}
-                                    onValueChange={(value) =>
-                                        updateFilter('voucher_type_id', value)
-                                    }
-                                    options={voucherTypes.map((type) => ({
-                                        value: String(type.id),
-                                        label: type.name,
-                                    }))}
-                                    placeholder="Seleccionar tipo"
-                                    emptyLabel="Todos los tipos"
-                                />
-                            </FormField>
-                        </div>
-                        <div className="flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-end">
-                            <FormField className="sm:w-52">
-                                <FormLabel htmlFor="voucher-direction">
-                                    Movimiento
-                                </FormLabel>
-                                <SimpleSelect
-                                    id="voucher-direction"
-                                    value={form.direction}
-                                    onValueChange={(value) =>
-                                        updateFilter('direction', value)
-                                    }
-                                    options={[
-                                        { value: 'entry', label: 'Entradas' },
-                                        { value: 'exit', label: 'Salidas' },
-                                    ]}
-                                    placeholder="Seleccionar movimiento"
-                                    emptyLabel="Entradas y salidas"
-                                />
-                            </FormField>
-                            <FormField className="sm:w-52">
+                            <FormField className="md:col-span-2 xl:col-span-3">
                                 <FormLabel htmlFor="voucher-status">
                                     Estado
                                 </FormLabel>
@@ -322,16 +275,54 @@ export default function VoucherIndex({
                                     emptyLabel="Todos los estados"
                                 />
                             </FormField>
-                            <div className="flex gap-2 sm:ml-auto">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    onClick={clear}
-                                >
-                                    <X data-icon="inline-start" />
-                                    Limpiar
-                                </Button>
-                            </div>
+                        </div>
+                        <div className="grid gap-3 border-t pt-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-12">
+                            <FormField className="xl:col-span-3">
+                                <FormLabel htmlFor="voucher-direction">
+                                    Movimiento
+                                </FormLabel>
+                                <SimpleSelect
+                                    id="voucher-direction"
+                                    value={form.direction}
+                                    onValueChange={(value) =>
+                                        updateFilter('direction', value)
+                                    }
+                                    options={[
+                                        { value: 'entry', label: 'Entradas' },
+                                        { value: 'exit', label: 'Salidas' },
+                                    ]}
+                                    placeholder="Seleccionar movimiento"
+                                    emptyLabel="Entradas y salidas"
+                                />
+                            </FormField>
+                            <FormField className="xl:col-span-3">
+                                <FormLabel htmlFor="voucher-from">
+                                    Desde
+                                </FormLabel>
+                                <Input
+                                    id="voucher-from"
+                                    type="date"
+                                    value={form.from}
+                                    max={form.to || undefined}
+                                    onChange={(event) =>
+                                        updateFilter('from', event.target.value)
+                                    }
+                                />
+                            </FormField>
+                            <FormField className="xl:col-span-3">
+                                <FormLabel htmlFor="voucher-to">
+                                    Hasta
+                                </FormLabel>
+                                <Input
+                                    id="voucher-to"
+                                    type="date"
+                                    value={form.to}
+                                    min={form.from || undefined}
+                                    onChange={(event) =>
+                                        updateFilter('to', event.target.value)
+                                    }
+                                />
+                            </FormField>
                         </div>
                     </form>
                 </FilterBar>
