@@ -19,7 +19,7 @@ Antes de modificar reglas de negocio lea:
 - No importar transacciones de 2025. Ese histórico fue descartado por sus inconsistencias.
 - `Pendiente = entregado - aplicado`.
 - Un saldo negativo es una inconsistencia; no debe ocultarse ni convertirse automáticamente en cero.
-- No sumar cantidades de materiales o unidades diferentes en un total común.
+- No sumar cantidades de materiales o unidades diferentes en cálculos contables, agregaciones por material/unidad ni exportaciones. La fila resumida por vale en Seguimiento es la única excepción visual: presenta un total abstracto de “materiales” y obliga a conservar las cantidades y unidades reales en el desglose.
 - Las entradas, los vales cancelados y las aplicaciones anuladas no generan responsabilidad pendiente para un técnico.
 - Las correcciones contables se anulan con motivo y auditoría; no se borran silenciosamente.
 - El folio se normaliza y es único dentro de cada tipo de vale.

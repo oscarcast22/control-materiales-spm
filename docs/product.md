@@ -21,7 +21,7 @@ La usuaria principal captura y revisa información administrativa. No controla e
 6. Un vale sólo puede cancelarse si no tiene aplicaciones vigentes.
 7. Si el formato físico ya está cancelado, se registra sólo su tipo, folio y fecha; el sistema no exige personas ni materiales.
 8. El resumen avisa los huecos en las series numéricas de Almacén y Patio para facilitar la conciliación de documentos.
-9. Un vale físico puede marcarse como prestado, indicando a quién. El préstamo no cambia sus partidas ni el pendiente y termina al registrar su devolución.
+9. Si un formato físico fue prestado antes de asignarlo, se registra únicamente su tipo, folio, fecha y, opcionalmente, el nombre libre de quien lo recibió. No admite personas operativas, destinos, materiales ni devolución.
 
 Los adjuntos son evidencia privada del vale físico o del reporte de aplicación. Las incidencias del importador se conservan hasta que una persona marque su revisión como atendida.
 
@@ -35,7 +35,7 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 | Liquidado      | Todas las partidas activas tienen pendiente cero.                                                    |
 | Inconsistencia | Alguna partida tiene pendiente negativo, normalmente por datos heredados.                            |
 | Por revisar    | El importador detectó información inferida, ambigua o anómala que requiere atención humana.          |
-| Prestado       | El documento físico está temporalmente con otra persona; su material conserva el seguimiento normal. |
+| Prestado       | El formato físico quedó bajo responsabilidad externa antes de asignarse; sólo reserva su folio.      |
 
 “Liquidado” significa que todo el material entregado quedó documentado como aplicado. No equivale a existencia física disponible.
 
@@ -45,13 +45,14 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 - Captura, consulta, edición, impresión y cancelación controlada de vales.
 - Registro rápido de folios cancelados y revisión de continuidad por tipo de vale.
 - Materiales filtrados estrictamente según el tipo de vale elegido.
-- Préstamo y devolución auditados del documento físico.
+- Registro mínimo y corrección auditada de folios prestados.
 - Varias partidas por vale y adjuntos privados JPG, PNG, WebP o PDF.
 - Captura rápida de varias aplicaciones del mismo vale, con evidencia opcional y anulación auditada.
 - Catálogos editables y alias. La fusión auditada de duplicados permanece como contingencia técnica y no se expone en la interfaz.
 - Catálogo buscable de ubicaciones con alta desde el vale; una actividad no geográfica se conserva por separado como texto libre.
 - Seguimiento desde 2026 por material, técnico y detalle.
 - Exportación XLSX con los mismos filtros del seguimiento.
+- Vales, seguimiento y resumen abren con Almacén como contexto predeterminado; Patio o la vista combinada se consultan mediante una selección explícita.
 - Importación trazable y repetible únicamente de agosto de 2026 desde el control actualizado.
 
 ## Fuera de alcance
@@ -67,7 +68,8 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 
 - Priorizar captura rápida, legibilidad y prevención de errores sobre densidad de información.
 - Mantener visibles la unidad y el material junto a cada cantidad.
-- No presentar un total general de cantidades heterogéneas.
+- No presentar un total general de cantidades heterogéneas en cálculos contables, tablas por material/unidad ni exportaciones. La fila resumida por vale en Seguimiento puede mostrar un total abstracto de “materiales” para consulta rápida, siempre acompañado de un desglose con las cantidades y unidades reales.
 - Conservar etiquetas y estados de dominio; un rediseño no debe cambiar sus cálculos.
 - Diseñar primero para escritorio, con funcionamiento correcto en tablet y móvil.
+- Aplicar los filtros de consulta al cambiar cada campo; la búsqueda textual espera brevemente a que la usuaria termine de escribir y no requiere un botón de confirmación.
 - Los estados vacíos deben explicar qué falta capturar; nunca insinuar que existe inventario cero.

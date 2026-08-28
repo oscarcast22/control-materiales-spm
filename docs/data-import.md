@@ -48,7 +48,7 @@ No ejecutar el importador desde un seeder. La escritura real es transaccional y 
 - Una salida o entrada requiere folio, fecha, movimiento reconocido, al menos una ubicación o descripción de uso, receptor, entregador y al menos un material resuelto.
 - Si falta un dato o una referencia de catálogo, no se crea ninguna parte del vale. El renglón queda en `legacy_import_rows` con sus incidencias.
 - Los renglones `CANCELADO` crean un vale mínimo sin personas, destino ni materiales. Reservan el folio y no crean responsabilidad operativa.
-- Un renglón `Prestado` puede crear un vale histórico mínimo con folio, fecha y nombre libre de quien lo tiene. No inventa movimiento, personas ni materiales ausentes.
+- Un renglón `Prestado` crea un vale histórico mínimo con folio y fecha. Conserva como texto libre el nombre de quien lo tiene cuando existe, pero ese nombre es opcional y no crea personas, movimiento, destinos ni materiales.
 - Sólo los vales de Almacén interpretan programa y acción. Sus valores numéricos se normalizan como códigos completos; por ejemplo, `6` y `1` se resuelven como SPM-06 y SPM-06-01. Los vales de Patio ignoran esas columnas y guardan ambos campos en `null`.
 - Una frase puede asociar varias ubicaciones y una actividad. Los ocho destinos de agosto están mapeados explícitamente; un texto no clasificado se conserva completo como descripción y marca el vale para revisión.
 - Almacén y Patio mantienen series de folio independientes. Un conflicto existente aborta antes de escribir trazas o vales.

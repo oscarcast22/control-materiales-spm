@@ -33,6 +33,8 @@ PostgreSQL + almacenamiento privado de adjuntos
 
 La pantalla y el XLSX de seguimiento consumen el mismo agregador para evitar resultados divergentes.
 
+Las consultas de vales, seguimiento y resumen comparten el mismo alcance por tipo de vale. El parámetro `voucher_type_id` acepta un identificador activo o `all`; cuando se omite, el sistema usa Almacén (`warehouse`). El frontend conserva este alcance en ordenamiento, paginación, enlaces de detalle y exportación, y actualiza los resultados mediante visitas parciales de Inertia.
+
 ## Relaciones principales
 
 ```mermaid
@@ -93,12 +95,14 @@ erDiagram
 - No se puede reducir una partida por debajo de lo ya comprobado ni eliminarla si posee movimientos vigentes.
 - Un vale con movimientos vigentes no puede cancelarse.
 - Un cancelado mínimo puede crearse sin movimiento, personas, destino ni partidas para conservar la serie física.
+- Un prestado mínimo sólo conserva tipo, folio, fecha y un nombre libre opcional; nunca se deriva de un vale operativo ni admite partidas.
 - Un vale operativo requiere al menos una ubicación o una descripción de uso o actividad; ambas pueden coexistir.
 - Los vales de Patio siempre conservan `program_id` y `action_id` en `null`; únicamente Almacén admite esa clasificación.
 - Las aplicaciones conservan un resumen del destino existente al momento de registrarse, aunque el vale se edite después.
 - La continuidad numérica inicia por defecto en Almacén `16576` y Patio `3753`; los inicios se configuran por entorno.
-- Las salidas activas o prestadas desde `2026-01-01` alimentan el seguimiento. Entradas y cancelados quedan fuera.
+- Sólo las salidas activas desde `2026-01-01` alimentan el seguimiento. Entradas, prestados y cancelados quedan fuera.
 - Las agregaciones cuantitativas se separan por `material_id` y `unit_id`.
+- El total abstracto de “materiales” mostrado en la fila resumida de Seguimiento se calcula únicamente en el frontend sobre las partidas filtradas. Es una ayuda visual y no forma parte del contrato agregado, los saldos contables ni el XLSX.
 - Los adjuntos residen en el disco privado y sólo se descargan después de autorizar el vale.
 
 ## Estados derivados
@@ -113,7 +117,7 @@ vale pendiente        ninguna inconsistente y alguna pendiente
 vale liquidado        todas sus partidas liquidadas
 ```
 
-Las entradas usan el estado informativo `received`. Los vales cancelados usan `cancelled` y no participan en el seguimiento. `loaned` describe únicamente la custodia del documento físico y conserva el cálculo operativo.
+Las entradas usan el estado informativo `received`. Los vales cancelados usan `cancelled` y los prestados usan `loaned`; ambos reservan numeración y quedan fuera del seguimiento operativo.
 
 ## Seguridad y permisos
 
