@@ -17,6 +17,16 @@ export OCI_PROFILE=CONTROL_MATERIALES
 export OCI_CLI_AUTH=security_token
 ```
 
+Si WSL no completa el callback de la sesión temporal, usar el bootstrap con navegador y autenticación por llave:
+
+```bash
+oci setup bootstrap --profile-name CONTROL_MATERIALES
+export OCI_PROFILE=CONTROL_MATERIALES
+export OCI_CLI_AUTH=api_key
+```
+
+La llave API creada para el despliegue debe revocarse al finalizar.
+
 Definir la IP pública desde la que se administrará el servidor y aprovisionar:
 
 ```bash

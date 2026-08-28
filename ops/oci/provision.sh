@@ -11,7 +11,7 @@ require_command jq
 require_command ssh-keygen
 
 OCI_PROFILE=${OCI_PROFILE:-CONTROL_MATERIALES}
-OCI_CLI_AUTH=${OCI_CLI_AUTH:-security_token}
+OCI_CLI_AUTH=${OCI_CLI_AUTH:-api_key}
 APP_COMPARTMENT_NAME=${APP_COMPARTMENT_NAME:-control-materiales-spm-prod}
 VCN_NAME=${VCN_NAME:-control-materiales-spm-vcn}
 SUBNET_NAME=${SUBNET_NAME:-control-materiales-spm-public}
