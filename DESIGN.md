@@ -1,206 +1,277 @@
 ---
-name: Kinetic Minimal
-colors:
-  surface: '#f6fafe'
-  surface-dim: '#d6dade'
-  surface-bright: '#f6fafe'
-  surface-container-lowest: '#ffffff'
-  surface-container-low: '#f0f4f8'
-  surface-container: '#eaeef2'
-  surface-container-high: '#e4e9ed'
-  surface-container-highest: '#dfe3e7'
-  on-surface: '#171c1f'
-  on-surface-variant: '#474651'
-  inverse-surface: '#2c3134'
-  inverse-on-surface: '#edf1f5'
-  outline: '#777682'
-  outline-variant: '#c8c5d3'
-  surface-tint: '#5655a8'
-  primary: '#060046'
-  on-primary: '#ffffff'
-  primary-container: '#1a146b'
-  on-primary-container: '#8482d9'
-  inverse-primary: '#c3c0ff'
-  secondary: '#00677f'
-  on-secondary: '#ffffff'
-  secondary-container: '#00d2ff'
-  on-secondary-container: '#00566a'
-  tertiary: '#00130a'
-  on-tertiary: '#ffffff'
-  tertiary-container: '#002b1b'
-  on-tertiary-container: '#009f6e'
-  error: '#ba1a1a'
-  on-error: '#ffffff'
-  error-container: '#ffdad6'
-  on-error-container: '#93000a'
-  primary-fixed: '#e2dfff'
-  primary-fixed-dim: '#c3c0ff'
-  on-primary-fixed: '#100563'
-  on-primary-fixed-variant: '#3e3c8f'
-  secondary-fixed: '#b6ebff'
-  secondary-fixed-dim: '#47d6ff'
-  on-secondary-fixed: '#001f28'
-  on-secondary-fixed-variant: '#004e60'
-  tertiary-fixed: '#6ffbbe'
-  tertiary-fixed-dim: '#4edea3'
-  on-tertiary-fixed: '#002113'
-  on-tertiary-fixed-variant: '#005236'
-  background: '#f6fafe'
-  on-background: '#171c1f'
-  surface-variant: '#dfe3e7'
-  deep-indigo: '#1a146b'
-  electric-blue: '#00d2ff'
-  slate-gray: '#474651'
-  surface-border: '#e2e8f0'
+name: Operación en Cristal
+updated: '2026-08-28'
+language: es-MX
+sources:
+    tokens: resources/css/app.css
+    primitives: resources/js/components/ui/
+    layout: resources/js/components/ui/sidebar.tsx
 typography:
-  display-lg:
-    fontFamily: Inter
-    fontSize: 40px
-    fontWeight: '800'
-    lineHeight: 48px
-    letterSpacing: -0.03em
-  headline-lg:
-    fontFamily: Inter
-    fontSize: 32px
-    fontWeight: '700'
-    lineHeight: 40px
-    letterSpacing: -0.02em
-  headline-lg-mobile:
-    fontFamily: Inter
-    fontSize: 26px
-    fontWeight: '700'
-    lineHeight: 32px
-    letterSpacing: -0.02em
-  headline-md:
-    fontFamily: Inter
-    fontSize: 24px
-    fontWeight: '600'
-    lineHeight: 32px
-    letterSpacing: -0.01em
-  body-lg:
-    fontFamily: Inter
-    fontSize: 18px
-    fontWeight: '400'
-    lineHeight: 28px
-  body-md:
-    fontFamily: Inter
-    fontSize: 16px
-    fontWeight: '400'
-    lineHeight: 24px
-  body-sm:
-    fontFamily: Inter
-    fontSize: 14px
-    fontWeight: '400'
-    lineHeight: 20px
-  label-md:
-    fontFamily: Inter
-    fontSize: 12px
-    fontWeight: '600'
-    lineHeight: 16px
-    letterSpacing: 0.05em
-  label-caps:
-    fontFamily: Inter
-    fontSize: 11px
-    fontWeight: '700'
-    lineHeight: 16px
-    letterSpacing: 0.08em
-rounded:
-  sm: 0.25rem
-  DEFAULT: 0.5rem
-  md: 0.75rem
-  lg: 1rem
-  xl: 1.5rem
-  full: 9999px
-spacing:
-  unit: 8px
-  gutter-md: 24px
-  margin-mobile: 16px
-  margin-desktop: 32px
-  container-max: 1440px
+    sans: IBM Plex Sans Variable
+    mono: IBM Plex Mono
+palette:
+    light:
+        background: '#eef4fb'
+        surface: '#fbfdff'
+        surface-raised: '#ffffff'
+        text-primary: '#15213b'
+        text-secondary: '#40516d'
+        primary: '#164a8c'
+        electric: '#0787d1'
+        success: '#087b57'
+        warning: '#8a5200'
+        danger: '#b42318'
+        info: '#096a82'
+    dark:
+        background: '#0b1220'
+        surface: '#111c2d'
+        surface-raised: '#17243a'
+        text-primary: '#f1f5f9'
+        text-secondary: '#d3dfef'
+        primary: '#93c5fd'
+        electric: '#7dd3fc'
+        success: '#72e0b5'
+        warning: '#ffd18a'
+        danger: '#ffb4ab'
+        info: '#a7e4ef'
+radius:
+    control: 0.5rem
+    compact-surface: 0.75rem
+    surface: 1rem
+    large-surface: 1.5rem
+layout:
+    spacing-unit: 0.25rem
+    page-mobile: 1rem
+    page-tablet: 1.5rem
+    page-desktop: 2rem
+    content-max: 80rem
+    wide-max: 90rem
 ---
 
-## Brand & Style
+# Sistema de diseño
 
-The design system is a high-performance, professional UI framework that balances executive authority with modern agility. It targets professional SaaS environments, fintech, and enterprise tools where clarity and precision are non-negotiable.
+## Propósito
 
-The visual direction is **Minimalism with Kinetic Depth**. Unlike traditional flat design which can feel "dead," this system uses subtle, multi-layered shadows and a high-contrast palette to create a sense of focused energy. It avoids the visual noise of neomorphism and the heavy blurring of glassmorphism in favor of structural integrity, generous whitespace, and sharp functional boundaries. The emotional response is one of "calm efficiency"—a tool that feels expensive, reliable, and exceptionally fast.
+Esta es una interfaz operativa interna de Servicios Públicos Municipales. Debe ayudar a una persona administrativa no técnica a capturar vales físicos, registrar material aplicado y reconocer saldos pendientes sin confundirlos con existencias de almacén.
 
-**Key Principles:**
-- **Intentional Flatness:** Surfaces are primary flat planes; depth is an functional indicator, not a decorative texture.
-- **High Contrast:** Strong delineation between primary brand colors and neutral backgrounds to ensure accessibility and rapid information scanning.
-- **Micro-Precision:** 1px borders and specific corner radii create a "machined" feel.
+La experiencia debe sentirse moderna, tecnológica y precisa, pero también sobria y fácil de leer durante jornadas prolongadas. No es una interfaz editorial, promocional ni de inventario físico.
 
-## Colors
+Si este documento contradice la implementación, los tokens de `resources/css/app.css` y los componentes de `resources/js/components/ui/` son la fuente de verdad técnica. Actualice este archivo cuando cambie el sistema visual.
 
-The color strategy is anchored by **Deep Indigo**, providing a sophisticated and trustworthy foundation. The neutral scale is biased toward **Slate Grays**, avoiding warm or muddy tones to keep the interface feeling clean and crisp.
+## Dirección visual
 
-**Application Strategy:**
-- **Primary:** Deep Indigo is used for primary brand moments, core navigation, and high-priority action buttons.
-- **Secondary:** Electric Blue acts as a functional accent for focus states, progress indicators, and interactive highlights.
-- **Neutral Scale:** Backgrounds use a very light slate (#f8fafc to #f1f5f9). Text should primarily use the Deep Indigo at high contrast for headings and Slate Gray for secondary information.
-- **Borders:** A consistent 1px border (#e2e8f0) is used to define containers where shadows are too heavy or where distinct data boundaries are required.
+La dirección se denomina **Operación en Cristal**: un sistema administrativo de alta claridad con glassmorphism moderado, profundidad localizada y color semántico.
 
-## Typography
+Principios:
 
-This design system uses **Inter** across all levels to maximize legibility in dense administrative data, forms, and tables while preserving a precise contemporary tone.
+- **Lienzo continuo:** el fondo ambiental pertenece a toda la aplicación; el contenido principal no es una tarjeta gigante.
+- **Una sola estructura dominante:** el sidebar es el único gran panel elevado. Debe acompañar, no competir con el trabajo.
+- **Elevación local:** tarjetas, filtros, tablas, popovers y diálogos manejan su propio contraste y profundidad.
+- **Cristal con propósito:** la transparencia separa capas funcionales. No debe aplicarse a cada elemento ni reducir la legibilidad.
+- **Color operativo:** azul para interacción; verde, ámbar, rojo y cian para estados. El color nunca sustituye texto, icono o etiqueta.
+- **Tecnología sobria:** sin cuadrículas decorativas, ruido, neón excesivo, grandes glows ni recursos editoriales.
 
-**Usage Rules:**
-- **Tight Kerning:** High-level headers use negative letter-spacing to feel more compact and modern.
-- **Labeling:** The `label-caps` style is essential for metadata, table headers, and small descriptive text to ensure it is not confused with interactive body text.
-- **Scale:** On mobile, large headlines are aggressively scaled down to maintain visual hierarchy without forcing excessive scrolling.
-- **Weight:** Avoid light weights; use Regular (400) for body and Semi-Bold (600) or Bold (700+) for structural elements to maintain the "high contrast" requirement.
+## Lienzo y estructura
 
-## Layout & Spacing
+### Fondo global
 
-The layout philosophy follows a **Fixed Grid** on desktop and a **Fluid Grid** on mobile, grounded in an 8px spacing rhythm.
+- El `body` usa `--background` y un único degradado radial azul fijo y tenue en la zona superior derecha.
+- La opacidad del degradado es 11% en claro y 12% en oscuro.
+- No usar patrones de cuadrícula, tramas, ruido ni degradados múltiples en el fondo global.
+- El wrapper y el `main` son transparentes para que el lienzo sea continuo.
 
-- **Grid Model:** 12-column grid for desktop with 24px gutters. Elements should align strictly to these columns to maintain the "Flat/Minimalist" structured feel.
-- **Desktop (1200px+):** Centered content area with a 1440px max-width and 32px outer margins.
-- **Tablet (768px - 1199px):** 8-column fluid grid with 24px margins.
-- **Mobile (<768px):** 4-column fluid grid with 16px margins.
-- **Spacing Rhythm:** All internal padding and external margins must be multiples of 8px. Use 24px (Unit 3) as the default internal padding for cards and containers.
+### Sidebar
 
-## Elevation & Depth
+- Es un panel inset flotante con superficie de cristal neutra, borde fino, radio de 16 px y sombra ambiental suave.
+- En claro se integra con las tarjetas mediante un blanco gris azulado translúcido. En oscuro adopta la familia de las superficies oscuras.
+- El elemento activo es una pastilla azul suave con texto e icono azules; no usa línea lateral ni resplandor.
+- Logo, navegación, tema y usuario comparten la misma jerarquía discreta.
+- Debe conservar su identidad al estar expandido, contraído y abierto como sheet móvil.
 
-To maintain the "flat" requirement while providing visual hierarchy, the system uses **Multi-layered Soft Shadows** instead of gradients or bevels.
+### Header de aplicación
 
-- **Resting State (Flat):** Most components (Inputs, Chips, Lists) sit directly on the surface with a 1px #e2e8f0 border and no shadow.
-- **Surface Level 1 (Cards):** Uses a very subtle, dual-stack shadow to indicate elevation: 
-  *Shadow 1: 0px 1px 2px rgba(0,0,0,0.05)*
-  *Shadow 2: 0px 4px 12px rgba(26, 20, 107, 0.04)*
-- **Surface Level 2 (Modals/Popovers):** A more pronounced but still diffused shadow:
-  *Shadow 1: 0px 10px 25px -5px rgba(26, 20, 107, 0.08)*
-- **Interactive Depth:** On hover, primary buttons do not grow; instead, their shadow deepens slightly to simulate being "raised" toward the user.
+- Es sticky y mide 64 px.
+- En la parte superior es completamente transparente para no cortar el degradado global.
+- Después de 8 px de scroll activa `background/80`, blur y un divisor inferior tenue.
+- No usa sombra. La transición dura 200 ms y sólo modifica fondo, borde y backdrop-filter.
 
-## Shapes
+### Contenido
 
-The shape language is modern and approachable without becoming "bubbly."
+- Ancho estándar: 1280 px. Ancho amplio y completo: 1440 px.
+- Padding horizontal: 16 px en móvil, 24 px en tablet y 32 px desde 1200 px.
+- Padding vertical de página: 24 px; 32 px desde 1200 px.
+- Las páginas usan un flujo vertical de 24 px. Las secciones densas pueden usar 16 px internamente.
+- Los encabezados de página se apoyan directamente sobre el lienzo y usan un divisor estructural, no una superficie elevada.
 
-- **Primary Radius:** 12px-16px is used for large containers like cards and modals.
-- **Component Radius:** 8px for buttons, inputs, and selection controls. This provides a clean, professional "clicky" feel.
-- **Consistency:** Every corner must be rounded. Sharp 0px corners are forbidden to maintain the design system's friendly-yet-professional tone.
+## Color
 
-## Components
+Todos los colores se consumen mediante tokens semánticos. No introduzca hexadecimales aislados en componentes salvo un detalle óptico documentado.
 
-### Buttons
-- **Primary:** Solid Deep Indigo background with white text. 8px corner radius. No gradient. On hover, apply a 10% white overlay.
-- **Secondary:** 1px #e2e8f0 border with Deep Indigo text. 
-- **Ghost:** No border or background; uses Deep Indigo or Electric Blue text.
+### Roles principales
 
-### Input Fields
-- **Default:** 1px #e2e8f0 border, white background, 8px radius.
-- **Focus:** 1px Electric Blue border with a 3px soft outer glow (#00d2ff at 10% opacity). Labels use the `label-md` style above the field.
+- `primary`: acciones principales, enlaces, foco y navegación activa.
+- `electric`: acento tecnológico controlado y detalles de información.
+- `success`: material liquidado o acción completada.
+- `warning`: saldos pendientes o continuidad que requiere revisión.
+- `danger`: anomalías, inconsistencias y acciones destructivas.
+- `info`: mensajes operativos o aclaraciones de contexto.
+- `violet` y `coral`: apoyos secundarios en acentos de métricas; nunca dominan una pantalla.
 
-### Cards
-- **Structure:** White background, 16px radius, 1px #e2e8f0 border. 
-- **Elevation:** Use the "Surface Level 1" soft shadow.
+Cada estado dispone de un tono principal y una superficie `*-subtle`. En modo oscuro cambian tanto el fondo como el texto; no invierta colores manualmente dentro de los componentes.
 
-### Chips & Badges
-- **Status:** Pill-shaped (rounded-full). Use a 10% opacity version of the status color (e.g., 10% Green for success) with a 100% opacity bold label inside.
+## Tipografía
 
-### Lists & Data Tables
-- **Rows:** 1px bottom-border only. No alternating row colors. On hover, the entire row takes a 2% Deep Indigo tint to indicate interactivity.
-- **Headers:** Use `label-caps` for all column headers to maximize data-density and clarity.
+- **IBM Plex Sans Variable** es la tipografía principal para interfaz, formularios y datos.
+- **IBM Plex Mono** se reserva para folios, chips técnicos, códigos, periodos y metadatos donde el ritmo tabular aporta valor.
+- Los números dinámicos usan cifras tabulares.
+- Títulos principales: 26 px en móvil y 32 px en escritorio; el dashboard puede usar 32/40 px.
+- Títulos de sección: 18 px, semibold.
+- Cuerpo habitual: 14 px con 20-24 px de interlineado.
+- Encabezados de tabla y labels operativos: 10-11 px, bold, mayúsculas y tracking entre 0.08 y 0.12 em.
+- Use tracking negativo sólo en titulares. Evite pesos light y texto secundario con contraste insuficiente.
 
-### Checkboxes & Radios
-- **Active State:** Solid Deep Indigo fill with a white checkmark/dot. Use an 8px radius for checkboxes (softened square) to match the button language.
+## Superficies y profundidad
+
+### Glass panel
+
+`glass-panel` es la superficie estándar para tarjetas y métricas principales:
+
+- Fondo `--glass`.
+- Borde `--border`.
+- Blur de 18 px y saturación de 130%.
+- Highlight interior de 1 px y sombra ambiental de baja opacidad.
+
+### Glass panel strong
+
+`glass-panel-strong` se usa en tablas, filtros, popovers y diálogos:
+
+- Fondo `--glass-strong`.
+- Blur de 20 px y saturación de 125%.
+- Mayor opacidad para proteger la lectura de contenido denso.
+
+Reglas:
+
+- Una superficie elevada debe corresponder a una unidad funcional completa.
+- No anide glass panels sólo por decoración.
+- Use bordes para estructura o estado; use sombras para elevación.
+- El sidebar puede elevarse como estructura. El `main` y el wrapper nunca reciben borde, radio o sombra.
+
+## Formas
+
+- Controles: 8 px (`rounded-lg`).
+- Métricas compactas: 12 px (`rounded-xl`).
+- Tarjetas, tablas, filtros y diálogos: 16 px (`rounded-2xl`).
+- Badges y chips: forma pill.
+- Los radios anidados deben ser concéntricos: radio exterior = radio interior + padding visual.
+- No fuerce radios en divisores, filas o superficies que deban continuar visualmente.
+
+## Componentes
+
+### Botones
+
+- Altura estándar: 40 px; 44 px en móvil o tamaño grande.
+- Primario: degradado vertical entre `primary` y `primary-hover`, borde azul y sombra táctil contenida.
+- Outline: cristal fuerte, borde reforzado y texto primario.
+- Destructivo: rojo semántico con profundidad menor que el primario.
+- Press: `scale(0.96)`. Transición de 150 ms sobre propiedades explícitas.
+- Foco: borde de ring y halo de 3 px. El estado disabled mantiene texto legible.
+
+### Campos y selección
+
+- Altura estándar de 40 px y mínima móvil de 44 px.
+- Fondo `glass-strong`, borde reforzado y sombra interior mínima.
+- En foco, el borde cambia a `ring`, el fondo gana opacidad y aparece un halo de 3 px.
+- Labels siempre visibles sobre el control; placeholder no sustituye etiqueta.
+- Errores usan borde y ring `danger`, acompañados de mensaje textual.
+
+### Checkboxes
+
+- Tamaño de 20 px, radio de 6 px y borde visible.
+- Checked: degradado `primary` a `electric`, check blanco y sombra corta.
+- El área interactiva debe ser cómoda aunque el indicador visible sea compacto.
+
+### Tarjetas y métricas
+
+- Las tarjetas base usan `glass-panel`, radio de 16 px y borde.
+- Las métricas usan acentos superiores de 1 px, un glow muy difuso y un icono sobre superficie semántica.
+- El color refuerza la categoría; label y valor siempre explican el significado.
+- No sumar materiales o unidades incompatibles en una métrica común.
+
+### Tablas
+
+- La tabla completa vive dentro de `glass-panel-strong` con radio de 16 px.
+- Header sticky translúcido, labels de 11 px en mayúsculas y divisor inferior.
+- Filas separadas por un borde; no usar zebra striping.
+- Hover con tinte primario de muy baja opacidad.
+- En móvil se permite scroll horizontal y se muestra una indicación textual.
+- Cantidades mantienen su unidad visible y usan cifras tabulares.
+
+### Badges y alertas
+
+- Badges en forma pill con fondo semántico tenue, icono cuando aporta significado y label explícito.
+- Alertas reservan color fuerte para borde, icono o encabezado; el cuerpo debe seguir siendo fácil de leer.
+- Pendiente, liquidado, cancelado y anomalía nunca dependen únicamente del color.
+
+### Diálogos, popovers y sheets
+
+- Usan `glass-panel-strong`, blur, borde y una sombra más profunda que las tarjetas.
+- Overlay azul muy oscuro al 55% con blur moderado.
+- El botón de cierre tiene un área mínima de 40 px.
+- En móvil respetan un margen exterior de 16 px y permiten scroll interno cuando sea necesario.
+
+## Movimiento e interacción
+
+- Transiciones habituales: 150-200 ms, `ease-out`.
+- Nunca usar `transition: all`; enumere propiedades.
+- No añadir animaciones decorativas a interacciones frecuentes.
+- Hover, foco, active y disabled deben tener señales estáticas además de movimiento.
+- `prefers-reduced-motion` reduce animaciones y transiciones a 0.01 ms.
+- Use `will-change` sólo al resolver un problema medido de rendimiento.
+
+## Responsive y accesibilidad
+
+- Ancho mínimo soportado: 320 px.
+- Targets: 44 px en móvil y al menos 40 px en escritorio denso.
+- El foco siempre es visible y no debe recortarse por overflow.
+- La interfaz debe funcionar con teclado y lector de pantalla; iconos decorativos usan `aria-hidden`.
+- Mantenga contraste suficiente en ambos temas y no use color como única señal.
+- Respete zoom, textos largos, nombres de materiales extensos y tablas sin resultados.
+- La navegación móvil se presenta como sheet; el contenido principal no debe desbordar horizontalmente.
+
+## Lenguaje de producto
+
+- Todo texto de interfaz se escribe en español claro para una persona administrativa no técnica.
+- Prefiera verbos operativos: “Capturar vale”, “Registrar aplicación”, “Ver seguimiento”.
+- “Pendiente” significa entregado menos aplicado; no significa existencia de almacén.
+- “Liquidado” significa que todo lo entregado fue documentado como aplicado.
+- No presente cantidades de materiales o unidades diferentes como un total común.
+- Los detalles de dominio viven en `docs/product.md`; este documento sólo define cómo comunicarlos visualmente.
+
+## Evitar
+
+- Cuadrículas, ruido, texturas o patrones decorativos en el fondo.
+- Un contenedor principal elevado alrededor de toda la página.
+- Sidebar oscuro dominante en tema claro.
+- Glassmorphism de baja opacidad que comprometa contraste.
+- Glows fuertes, neón, morado dominante o gradientes decorativos sin función.
+- Composición editorial, hero marketing, ilustraciones genéricas o exceso de espacio vacío.
+- Colores, sombras o radios duplicados fuera de los tokens y primitives compartidos.
+
+## Verificación
+
+Después de cambios visuales:
+
+```bash
+npm run format:check
+npm run types:check
+npm run lint:check
+npm run build
+```
+
+Ejecute también la auditoría Playwright con credenciales de prueba configuradas en variables de entorno:
+
+```bash
+npm run visual:audit
+```
+
+Revise al menos escritorio claro, escritorio oscuro y móvil claro, incluidos sidebar expandido/contraído, header en top/scroll, formularios, tablas, estados vacíos y diálogos.
