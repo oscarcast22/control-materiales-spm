@@ -30,13 +30,13 @@ export function MetricCard({
             className={cn(
                 'flex min-w-0 items-center gap-3 border-border',
                 emphasis === 'primary'
-                    ? 'rounded-lg border bg-surface p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_12px_rgba(26,20,107,0.04)]'
+                    ? 'rounded-xl border bg-surface p-5 shadow-[0_1px_2px_rgb(15_23_42/0.05),0_8px_24px_rgb(15_23_42/0.035)] sm:p-6'
                     : 'border-b py-4 last:border-b-0 sm:border-r sm:border-b-0 sm:px-4 sm:first:pl-0 sm:last:border-r-0',
             )}
         >
             <div
                 className={cn(
-                    'flex shrink-0 items-center justify-center rounded',
+                    'flex shrink-0 items-center justify-center rounded-lg',
                     emphasis === 'primary' ? 'size-11' : 'size-9',
                     tones[tone],
                 )}

@@ -100,61 +100,66 @@ export default function TwoFactorRecoveryCodes({
                 </div>
                 <div
                     id="recovery-codes-section"
-                    className={`relative overflow-hidden transition-all duration-300 ${codesAreVisible ? 'h-auto opacity-100' : 'h-0 opacity-0'}`}
+                    className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${codesAreVisible ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
                     aria-hidden={!codesAreVisible}
                 >
-                    <div className="mt-3 space-y-3">
-                        {errors?.length ? (
-                            <AlertError errors={errors} />
-                        ) : (
-                            <>
-                                <div
-                                    ref={codesSectionRef}
-                                    className="grid gap-1 rounded-lg bg-muted p-4 font-mono text-sm"
-                                    role="list"
-                                    aria-label="Códigos de recuperación"
-                                >
-                                    {recoveryCodesList.length ? (
-                                        recoveryCodesList.map((code, index) => (
-                                            <div
-                                                key={index}
-                                                role="listitem"
-                                                className="select-text"
-                                            >
-                                                {code}
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div
-                                            className="space-y-2"
-                                            aria-label="Cargando códigos de recuperación"
-                                        >
-                                            {Array.from(
-                                                { length: 8 },
-                                                (_, index) => (
+                    <div className="min-h-0 overflow-hidden">
+                        <div className="mt-3 space-y-3">
+                            {errors?.length ? (
+                                <AlertError errors={errors} />
+                            ) : (
+                                <>
+                                    <div
+                                        ref={codesSectionRef}
+                                        className="grid gap-1 rounded-lg bg-muted p-4 font-mono text-sm"
+                                        role="list"
+                                        aria-label="Códigos de recuperación"
+                                    >
+                                        {recoveryCodesList.length ? (
+                                            recoveryCodesList.map(
+                                                (code, index) => (
                                                     <div
                                                         key={index}
-                                                        className="h-4 animate-pulse rounded bg-muted-foreground/20"
-                                                        aria-hidden="true"
-                                                    />
+                                                        role="listitem"
+                                                        className="select-text"
+                                                    >
+                                                        {code}
+                                                    </div>
                                                 ),
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                                            )
+                                        ) : (
+                                            <div
+                                                className="space-y-2"
+                                                aria-label="Cargando códigos de recuperación"
+                                            >
+                                                {Array.from(
+                                                    { length: 8 },
+                                                    (_, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className="h-4 animate-pulse rounded bg-muted-foreground/20"
+                                                            aria-hidden="true"
+                                                        />
+                                                    ),
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
 
-                                <div className="text-xs text-muted-foreground select-none">
-                                    <p id="regenerate-warning">
-                                        Cada código se puede utilizar una sola
-                                        vez. Si necesitas otros, selecciona{' '}
-                                        <span className="font-bold">
-                                            Regenerar códigos
-                                        </span>{' '}
-                                        .
-                                    </p>
-                                </div>
-                            </>
-                        )}
+                                    <div className="text-xs text-muted-foreground select-none">
+                                        <p id="regenerate-warning">
+                                            Cada código se puede utilizar una
+                                            sola vez. Si necesitas otros,
+                                            selecciona{' '}
+                                            <span className="font-bold">
+                                                Regenerar códigos
+                                            </span>{' '}
+                                            .
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             </CardContent>

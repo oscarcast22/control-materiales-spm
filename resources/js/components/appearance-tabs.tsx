@@ -20,7 +20,7 @@ export default function AppearanceToggleTab({
     return (
         <div
             className={cn(
-                'inline-flex gap-1 rounded-md border border-border bg-surface-subtle p-1',
+                'inline-flex gap-1 rounded-lg border border-border bg-surface-subtle p-1',
                 className,
             )}
             {...props}
@@ -32,9 +32,9 @@ export default function AppearanceToggleTab({
                     onClick={() => updateAppearance(value)}
                     aria-pressed={appearance === value}
                     className={cn(
-                        'flex min-h-9 items-center rounded px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:ring-3 focus-visible:ring-ring/10 focus-visible:outline-none',
+                        'flex min-h-10 items-center rounded-md px-3 py-1.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-3 focus-visible:ring-ring/10 focus-visible:outline-none',
                         appearance === value
-                            ? 'bg-surface-raised text-primary shadow-[0_1px_2px_rgba(0,0,0,0.05)]'
+                            ? 'bg-surface-raised text-primary shadow-[0_1px_2px_rgb(15_23_42/0.08)]'
                             : 'text-muted-foreground hover:bg-hover hover:text-foreground',
                     )}
                 >
