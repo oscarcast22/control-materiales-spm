@@ -114,7 +114,18 @@ if ! diff -u <(jq -S . "$SOURCE_MANIFEST") <(jq -S . "$REMOTE_MANIFEST"); then
     die "El manifiesto productivo no coincide. Se conservaron los artefactos en $ARTIFACT_DIR y no debe ejecutarse el corte DNS."
 fi
 
-ssh "${SSH_ARGS[@]}" "$TARGET" 'sudo -u materiales /usr/local/sbin/control-materiales-backup release'
+ssh "${SSH_ARGS[@]}" "$TARGET" 'sudo bash -s' <<'REMOTE'
+set -Eeuo pipefail
+set -a
+# shellcheck disable=SC1091
+source /etc/control-materiales-backup.env
+set +a
+sudo -u materiales env \
+    OBJECT_NAMESPACE="$OBJECT_NAMESPACE" \
+    BACKUP_BUCKET="$BACKUP_BUCKET" \
+    BACKUP_RETENTION_DAYS="$BACKUP_RETENTION_DAYS" \
+    /usr/local/sbin/control-materiales-backup release
+REMOTE
 bring_source_up
 SOURCE_WAS_STOPPED=false
 

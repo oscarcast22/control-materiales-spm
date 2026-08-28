@@ -119,7 +119,15 @@ if [[ $FIRST_RELEASE == true ]]; then
 fi
 
 if [[ -x /usr/local/sbin/control-materiales-backup ]]; then
-    sudo -u materiales /usr/local/sbin/control-materiales-backup release
+    set -a
+    # shellcheck disable=SC1091
+    source /etc/control-materiales-backup.env
+    set +a
+    sudo -u materiales env \
+        OBJECT_NAMESPACE="$OBJECT_NAMESPACE" \
+        BACKUP_BUCKET="$BACKUP_BUCKET" \
+        BACKUP_RETENTION_DAYS="$BACKUP_RETENTION_DAYS" \
+        /usr/local/sbin/control-materiales-backup release
 fi
 
 if [[ -L /srv/control-materiales/current ]]; then
