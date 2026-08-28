@@ -7,6 +7,7 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
+import { cn } from '@/lib/utils';
 
 export function DataTableSurface({
     children,
@@ -22,9 +23,12 @@ export function DataTableSurface({
             role="region"
             aria-label={label}
             tabIndex={0}
-            className={`overflow-hidden rounded-xl border bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.05),0_8px_24px_rgb(15_23_42/0.035)] outline-none focus-visible:ring-3 focus-visible:ring-ring/25 ${className ?? ''}`}
+            className={cn(
+                'glass-panel-strong overflow-hidden rounded-2xl border outline-none focus-visible:ring-3 focus-visible:ring-ring/25',
+                className,
+            )}
         >
-            <p className="bg-surface-muted flex items-center gap-1.5 border-b px-4 py-2 text-xs font-medium text-muted-foreground sm:hidden">
+            <p className="flex items-center gap-1.5 border-b bg-surface-muted px-4 py-2 text-xs font-medium text-muted-foreground sm:hidden">
                 <MoveHorizontal className="size-3.5" aria-hidden="true" />
                 Desliza horizontalmente para consultar más columnas.
             </p>
@@ -45,7 +49,7 @@ export function TableEmpty({
     return (
         <tr>
             <td colSpan={colSpan} className="p-0 whitespace-normal">
-                <Empty className="min-h-56 border-0">
+                <Empty className="sticky left-0 min-h-56 w-[calc(100vw-3rem)] max-w-full border-0 md:w-auto">
                     <EmptyHeader>
                         <EmptyMedia variant="icon">
                             <SearchX aria-hidden="true" />

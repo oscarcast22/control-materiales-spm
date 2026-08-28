@@ -10,7 +10,7 @@ function Table({
   return (
     <div
       data-slot="table-container"
-      className={cn("relative w-full overflow-x-auto", containerClassName)}
+      className={cn("relative w-full overflow-x-auto overscroll-x-contain", containerClassName)}
     >
       <table
         data-slot="table"
@@ -25,7 +25,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("sticky top-0 z-10 bg-surface-subtle text-text-secondary shadow-[inset_0_-1px_0_var(--border)] [&_tr]:border-b", className)}
+      className={cn("sticky top-0 z-10 bg-surface-subtle/90 text-text-secondary shadow-[inset_0_-1px_0_var(--border)] backdrop-blur-xl [&_tr]:border-b", className)}
       {...props}
     />
   )
@@ -59,7 +59,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b transition-colors duration-150 hover:bg-primary/[0.035] has-aria-expanded:bg-hover data-[state=selected]:bg-selected",
+        "border-b transition-colors duration-150 hover:bg-primary/[0.045] has-aria-expanded:bg-hover data-[state=selected]:bg-selected",
         className
       )}
       {...props}
@@ -72,7 +72,7 @@ function TableHead({ className, scope = "col", ...props }: React.ComponentProps<
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-4 text-left align-middle text-[11px] font-bold tracking-[0.08em] whitespace-nowrap text-text-secondary uppercase [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "h-11 px-4 text-left align-middle text-[11px] font-bold tracking-[0.09em] whitespace-nowrap text-text-secondary uppercase [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
       scope={scope}

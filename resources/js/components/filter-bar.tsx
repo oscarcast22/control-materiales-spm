@@ -19,13 +19,13 @@ export function FilterBar({
         <section
             aria-label={title}
             className={cn(
-                'overflow-hidden rounded-xl border bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.04)]',
+                'glass-panel tech-highlight overflow-hidden rounded-2xl border',
                 className,
             )}
         >
-            <div className="flex flex-col gap-3 border-b bg-surface-subtle px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="flex flex-col gap-3 border-b bg-gradient-to-r from-primary-subtle/75 via-glass to-info-subtle/55 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-subtle text-primary">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/10 bg-glass-strong text-primary shadow-[inset_0_1px_0_rgb(255_255_255/0.7),0_5px_14px_rgb(22_74_140/0.08)]">
                         <SlidersHorizontal
                             className="size-4"
                             aria-hidden="true"

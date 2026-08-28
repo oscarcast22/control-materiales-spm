@@ -9,22 +9,27 @@ export default function AuthSimpleLayout({
     description,
 }: AuthLayoutProps) {
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-8 bg-background p-4 md:p-6">
-            <div className="w-full max-w-sm">
+        <div className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-background p-4 md:p-6">
+            <div className="pointer-events-none absolute top-[12%] left-[8%] size-64 rounded-full bg-cyan-400/10 blur-3xl" />
+            <div className="pointer-events-none absolute right-[7%] bottom-[10%] size-72 rounded-full bg-violet/10 blur-3xl" />
+            <div className="glass-panel tech-highlight relative w-full max-w-md rounded-3xl border p-7 sm:p-9">
                 <div className="flex flex-col gap-8">
                     <div className="flex flex-col items-center gap-4">
                         <Link
                             href={home()}
-                            className="flex flex-col items-center gap-2 font-medium"
+                            className="flex flex-col items-center gap-3 font-medium"
                         >
-                            <div className="mb-1 flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_1px_2px_rgb(15_23_42/0.1),0_4px_12px_rgb(15_23_42/0.08)]">
-                                <AppLogoIcon className="size-5 fill-current" />
+                            <div className="relative mb-1 flex size-14 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-sky-300 via-cyan-400 to-blue-600 text-slate-950 shadow-[inset_0_1px_0_rgb(255_255_255/0.72),0_12px_30px_rgb(14_165_233/0.25)]">
+                                <AppLogoIcon className="size-8" />
                             </div>
                             <span className="sr-only">{title}</span>
                         </Link>
 
                         <div className="flex flex-col gap-2 text-center">
-                            <h1 className="text-xl font-semibold tracking-[-0.015em]">
+                            <p className="text-[10px] font-bold tracking-[0.14em] text-primary uppercase">
+                                Servicios Públicos Municipales
+                            </p>
+                            <h1 className="text-2xl font-bold tracking-[-0.025em]">
                                 {title}
                             </h1>
                             <p className="text-center text-sm text-muted-foreground">
