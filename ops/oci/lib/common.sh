@@ -41,7 +41,9 @@ oci_cmd() {
 
     for ((attempt = 1; attempt <= max_attempts; attempt++)); do
         if output=$(oci "$@" "${args[@]}" 2>&1); then
-            printf '%s\n' "$output" | sed '/^Action completed\. /d'
+            printf '%s\n' "$output" | sed \
+                -e '/^Action completed\. /d' \
+                -e '/^WARNING: This operation supports pagination /d'
             return 0
         else
             status=$?
