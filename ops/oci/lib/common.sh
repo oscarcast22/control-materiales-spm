@@ -43,7 +43,8 @@ oci_cmd() {
         if output=$(oci "$@" "${args[@]}" 2>&1); then
             printf '%s\n' "$output" | sed \
                 -e '/^Action completed\. /d' \
-                -e '/^WARNING: This operation supports pagination /d'
+                -e '/^WARNING: This operation supports pagination /d' \
+                -e '/^Query returned empty result, no output to show\.$/d'
             return 0
         else
             status=$?
