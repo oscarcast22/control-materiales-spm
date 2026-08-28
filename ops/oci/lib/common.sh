@@ -41,7 +41,7 @@ oci_cmd() {
 
     for ((attempt = 1; attempt <= max_attempts; attempt++)); do
         if output=$(oci "$@" "${args[@]}" 2>&1); then
-            printf '%s\n' "$output"
+            printf '%s\n' "$output" | sed '/^Action completed\. /d'
             return 0
         else
             status=$?
