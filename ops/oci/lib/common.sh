@@ -31,12 +31,30 @@ ensure_state_dir() {
 
 oci_cmd() {
     local args=(--profile "${OCI_PROFILE:-CONTROL_MATERIALES}")
+    local attempt max_attempts output status
 
     if [[ -n ${OCI_CLI_AUTH:-} ]]; then
         args+=(--auth "$OCI_CLI_AUTH")
     fi
 
-    oci "$@" "${args[@]}"
+    max_attempts=${OCI_MAX_ATTEMPTS:-6}
+
+    for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+        if output=$(oci "$@" "${args[@]}" 2>&1); then
+            printf '%s\n' "$output"
+            return 0
+        else
+            status=$?
+        fi
+
+        if [[ $output != *'"code": "NotAuthenticated"'* || $attempt -eq $max_attempts ]]; then
+            printf '%s\n' "$output" >&2
+            return "$status"
+        fi
+
+        log "OCI aún propaga la llave; reintento $attempt/$max_attempts en 8 s..." >&2
+        sleep 8
+    done
 }
 
 profile_value() {
