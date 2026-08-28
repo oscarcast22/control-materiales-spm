@@ -47,7 +47,8 @@ upsert_record() {
     local payload=$2
     local current record_id
     current=$(record_json "$name")
-    record_id=$(jq -r '.id // empty' <<<"${current:-{}}")
+    [[ -n $current ]] || current='{}'
+    record_id=$(jq -r '.id // empty' <<<"$current")
     if [[ -n $record_id ]]; then
         cf_api PUT "/zones/$ZONE_ID/dns_records/$record_id" "$payload" >/dev/null
     else

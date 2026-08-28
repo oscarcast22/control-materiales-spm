@@ -98,7 +98,7 @@ ufw --force reset
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow from "$SSH_INGRESS_CIDR" to any port 22 proto tcp
-while IFS= read -r cidr; do
+while IFS= read -r cidr || [[ -n $cidr ]]; do
     [[ -n $cidr ]] || continue
     ufw allow from "$cidr" to any port 80 proto tcp
     ufw allow from "$cidr" to any port 443 proto tcp
