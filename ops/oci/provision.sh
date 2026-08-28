@@ -227,13 +227,11 @@ PUBLIC_IP=$(oci_cmd network public-ip get \
     --raw-output)
 
 NAMESPACE=$(oci_cmd os ns get --query data --raw-output)
-BUCKET_EXISTS=$(oci_cmd os bucket list \
-    --compartment-id "$COMPARTMENT_ID" \
+if BUCKET_RESULT=$(oci_cmd os bucket get \
     --namespace-name "$NAMESPACE" \
-    --query "data[?name=='$BACKUP_BUCKET'] | length(@)" \
-    --raw-output)
-
-if [[ $BUCKET_EXISTS == 0 ]]; then
+    --bucket-name "$BACKUP_BUCKET" 2>&1); then
+    :
+elif [[ $BUCKET_RESULT == *'"code": "BucketNotFound"'* ]]; then
     log "Creando bucket privado $BACKUP_BUCKET"
     oci_cmd os bucket create \
         --compartment-id "$COMPARTMENT_ID" \
@@ -242,6 +240,9 @@ if [[ $BUCKET_EXISTS == 0 ]]; then
         --public-access-type NoPublicAccess \
         --storage-tier Standard \
         --versioning Disabled >/dev/null
+else
+    printf '%s\n' "$BUCKET_RESULT" >&2
+    die 'No se pudo comprobar el bucket de respaldos.'
 fi
 
 DYNAMIC_GROUP_ID=$(oci_cmd iam dynamic-group list \
