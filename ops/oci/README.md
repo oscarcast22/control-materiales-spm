@@ -61,7 +61,7 @@ ops/oci/cloudflare.sh origin-cert
 
 Si Cloudflare no tiene una ruta estable hacia la IP pública de Oracle, ejecute un
 túnel dedicado `cloudflared` como servicio del VPS, con origen
-`http://127.0.0.1:80`, y use `tunnel-cutover`. El túnel productivo debe ser
+`https://127.0.0.1:443`, y use `tunnel-cutover`. El túnel productivo debe ser
 distinto del túnel local de desarrollo. En ese caso, el registro productivo es
 un CNAME proxied a `<id>.cfargotunnel.com`; la aplicación y sus datos continúan
 alojados íntegramente en Oracle.
