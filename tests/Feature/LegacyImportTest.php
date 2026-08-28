@@ -108,6 +108,29 @@ class LegacyImportTest extends TestCase
         }
     }
 
+    public function test_a_historical_loan_does_not_require_a_holder_name(): void
+    {
+        $this->catalog();
+        $path = $this->workbook([
+            $this->warehouseRow('16584', 'Prestado', '2026-08-27', '', '', '', null, null),
+        ], []);
+
+        try {
+            $this->artisan('legacy:import-control', ['file' => $path])->assertSuccessful();
+
+            $loan = Voucher::query()->sole();
+            $this->assertSame(VoucherStatus::Loaned, $loan->status);
+            $this->assertNull($loan->loaned_to_name);
+            $this->assertNull($loan->direction);
+            $this->assertNull($loan->authorized_by_id);
+            $this->assertSame(0, $loan->items()->count());
+        } finally {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     public function test_import_omits_the_whole_voucher_when_a_material_is_unresolved(): void
     {
         $this->catalog();

@@ -1,7 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Page, Request } from '@playwright/test';
 
 const email = process.env.VISUAL_EMAIL;
 const password = process.env.VISUAL_PASSWORD;
@@ -238,7 +238,43 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
         }
 
         if (viewport.name === 'desktop-light') {
+            await page.goto('/dashboard', { waitUntil: 'networkidle' });
+            await expect(
+                page
+                    .getByRole('group', { name: 'Mostrar vales de' })
+                    .getByRole('button', { name: 'Almacén' }),
+            ).toHaveAttribute('data-state', 'on');
+
             await page.goto('/vouchers', { waitUntil: 'networkidle' });
+            await expect(page.getByLabel('Tipo de vale')).toContainText(
+                'Almacén',
+            );
+            await expect(
+                page.getByRole('button', { name: 'Aplicar filtros' }),
+            ).toHaveCount(0);
+
+            let voucherFilterRequests = 0;
+            const countVoucherFilterRequests = (request: Request) => {
+                const url = new URL(request.url());
+
+                if (
+                    url.pathname === '/vouchers' &&
+                    request.headers()['x-inertia'] === 'true' &&
+                    url.searchParams.has('search')
+                ) {
+                    voucherFilterRequests++;
+                }
+            };
+            page.on('request', countVoucherFilterRequests);
+            await page
+                .getByLabel('Buscar')
+                .pressSequentially('165', { delay: 40 });
+            await expect
+                .poll(() => voucherFilterRequests, { timeout: 1500 })
+                .toBe(1);
+            page.off('request', countVoucherFilterRequests);
+            await page.getByRole('button', { name: 'Limpiar' }).click();
+            await page.waitForLoadState('networkidle');
 
             await page
                 .getByRole('button', {
@@ -282,32 +318,31 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                 .getByRole('button', { name: 'Cerrar diálogo' })
                 .click();
 
+            await page.goto('/vouchers', { waitUntil: 'networkidle' });
+            await page
+                .getByRole('button', {
+                    name: 'Registrar prestado',
+                    exact: true,
+                })
+                .click();
+            await expect(
+                page.getByRole('heading', {
+                    name: 'Registrar folio prestado',
+                }),
+            ).toBeVisible();
+            await page.waitForTimeout(250);
+            await page.screenshot({
+                path: path.join(
+                    evidenceDir,
+                    'desktop-light--dialog-loaned-voucher.png',
+                ),
+            });
+            await page
+                .getByRole('button', { name: 'Cerrar diálogo' })
+                .click();
+
             if (voucherPath) {
                 await page.goto(voucherPath, { waitUntil: 'networkidle' });
-                const loanButton = page.getByRole('button', {
-                    name: 'Marcar prestado',
-                    exact: true,
-                });
-
-                if (await loanButton.isVisible()) {
-                    await loanButton.click();
-                    await expect(
-                        page.getByRole('heading', {
-                            name: 'Marcar vale como prestado',
-                        }),
-                    ).toBeVisible();
-                    await page.waitForTimeout(250);
-                    await page.screenshot({
-                        path: path.join(
-                            evidenceDir,
-                            'desktop-light--dialog-loan-voucher.png',
-                        ),
-                    });
-                    await page
-                        .getByRole('button', { name: 'Cerrar diálogo' })
-                        .click();
-                }
-
                 const cancelButton = page.getByRole('button', {
                     name: 'Cancelar',
                     exact: true,
@@ -329,6 +364,54 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                         .getByRole('button', { name: 'Cerrar diálogo' })
                         .click();
                 }
+            }
+
+            await page.goto('/reports/material-tracking', {
+                waitUntil: 'networkidle',
+            });
+            await expect(page.getByLabel('Tipo de vale')).toContainText(
+                'Almacén',
+            );
+            await expect(
+                page.getByRole('button', { name: 'Aplicar filtros' }),
+            ).toHaveCount(0);
+            await expect(
+                page.getByRole('tab', { name: 'Por vale' }),
+            ).toHaveAttribute('aria-selected', 'true');
+
+            const voucherToggles = page.getByRole('button', {
+                name: /materiales del vale/,
+            });
+
+            if ((await voucherToggles.count()) > 0) {
+                const firstToggle = voucherToggles.first();
+                await firstToggle.click();
+                await expect(firstToggle).toHaveAttribute(
+                    'aria-expanded',
+                    'true',
+                );
+
+                if ((await voucherToggles.count()) > 1) {
+                    const secondToggle = voucherToggles.nth(1);
+                    await secondToggle.click();
+                    await expect(firstToggle).toHaveAttribute(
+                        'aria-expanded',
+                        'true',
+                    );
+                    await expect(secondToggle).toHaveAttribute(
+                        'aria-expanded',
+                        'true',
+                    );
+                }
+
+                await page.waitForTimeout(250);
+                await page.screenshot({
+                    path: path.join(
+                        evidenceDir,
+                        'desktop-light--tracking-vouchers-expanded.png',
+                    ),
+                    fullPage: true,
+                });
             }
         }
 
