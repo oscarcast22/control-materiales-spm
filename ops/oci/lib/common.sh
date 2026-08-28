@@ -47,12 +47,13 @@ oci_cmd() {
             status=$?
         fi
 
-        if [[ $output != *'"code": "NotAuthenticated"'* || $attempt -eq $max_attempts ]]; then
+        if [[ $output != *'"code": "NotAuthenticated"'* && $output != *'"code": "NotAuthorizedOrNotFound"'* ]] ||
+            [[ $attempt -eq $max_attempts ]]; then
             printf '%s\n' "$output" >&2
             return "$status"
         fi
 
-        log "OCI aún propaga la llave; reintento $attempt/$max_attempts en 8 s..." >&2
+        log "OCI aún propaga la identidad o el recurso; reintento $attempt/$max_attempts en 8 s..." >&2
         sleep 8
     done
 }
