@@ -752,6 +752,59 @@ class MaterialControlTest extends TestCase
             ->has('rows', 2));
     }
 
+    public function test_tracking_text_search_finds_complete_vouchers_by_their_visible_context(): void
+    {
+        [$user, , , $yard] = $this->trackingSearchFixtures();
+
+        foreach (['16583', 'jose luis', 'otinapa', 'modernización', 'lampara', 'modelo legado'] as $search) {
+            $this->actingAs($user)->get(route('reports.material-tracking', [
+                'search' => $search,
+            ]))->assertOk()->assertInertia(fn (Assert $page) => $page
+                ->component('reports/material-tracking')
+                ->where('filters.search', $search)
+                ->where('metrics.delivered_vouchers', 1)
+                ->has('rows', 2)
+                ->where('rows.0.folio', '16-583')
+                ->where('rows.1.folio', '16-583'));
+        }
+
+        $this->actingAs($user)->get(route('reports.material-tracking', [
+            'search' => 'jose luis',
+            'voucher_type_id' => $yard->id,
+        ]))->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('filters.voucher_type_id', $yard->id)
+            ->where('metrics.delivered_vouchers', 1)
+            ->has('rows', 1)
+            ->where('rows.0.folio', '3753'));
+    }
+
+    public function test_tracking_export_uses_the_text_search_filter(): void
+    {
+        [$user] = $this->trackingSearchFixtures();
+
+        $response = $this->actingAs($user)->get(route('reports.export', [
+            'search' => 'jose luis',
+        ]));
+
+        $response->assertOk();
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($response->getFile()->getPathname()));
+        $xml = '';
+
+        for ($index = 0; $index < $zip->numFiles; $index++) {
+            $name = $zip->getNameIndex($index);
+
+            if ($name !== false && str_ends_with($name, '.xml')) {
+                $xml .= (string) $zip->getFromIndex($index);
+            }
+        }
+
+        $zip->close();
+        $this->assertStringContainsString('16-583', $xml);
+        $this->assertStringNotContainsString('16584', $xml);
+        $this->assertStringNotContainsString('3753', $xml);
+    }
+
     public function test_old_reports_redirect_to_tracking_and_inventory_adjustments_are_not_exposed(): void
     {
         $user = User::factory()->create();
@@ -982,6 +1035,109 @@ class MaterialControlTest extends TestCase
             'description_snapshot' => $material->name,
             'quantity' => $quantity,
         ]);
+    }
+
+    /** @return array{User, Voucher, Voucher, StorageLocation} */
+    private function trackingSearchFixtures(): array
+    {
+        $user = User::factory()->create();
+        $warehouse = StorageLocation::factory()->create([
+            'code' => 'warehouse',
+            'name' => 'Almacén',
+        ]);
+        $yard = StorageLocation::factory()->create([
+            'code' => 'yard',
+            'name' => 'Patio',
+        ]);
+        $technician = Person::factory()->create([
+            'name' => 'José Luis Tajonar',
+            'normalized_name' => Normalizer::key('José Luis Tajonar'),
+        ]);
+        $otherTechnician = Person::factory()->create([
+            'name' => 'Erick Aguilar',
+            'normalized_name' => Normalizer::key('Erick Aguilar'),
+        ]);
+        $issuer = Person::factory()->create(['can_receive_material' => false]);
+        $unit = Unit::factory()->create(['name' => 'Pieza', 'symbol' => 'pza']);
+        $lamp = Material::factory()->create([
+            'name' => 'Lámpara LED',
+            'normalized_name' => Normalizer::key('Lámpara LED'),
+            'default_unit_id' => $unit->id,
+        ]);
+        $base = Material::factory()->create([
+            'name' => 'Base para fotocelda',
+            'normalized_name' => Normalizer::key('Base para fotocelda'),
+            'default_unit_id' => $unit->id,
+        ]);
+        $otherMaterial = Material::factory()->create([
+            'name' => 'Cable de prueba',
+            'normalized_name' => Normalizer::key('Cable de prueba'),
+            'default_unit_id' => $unit->id,
+        ]);
+        $destination = Destination::factory()->create([
+            'name' => 'Poblado Otiñapa',
+            'normalized_name' => Normalizer::key('Poblado Otiñapa'),
+        ]);
+        $matching = Voucher::factory()->create([
+            'storage_location_id' => $warehouse->id,
+            'folio' => '16-583',
+            'folio_key' => Normalizer::folio('16-583'),
+            'issued_on' => '2026-08-26',
+            'received_by_id' => $technician->id,
+            'delivered_by_id' => $issuer->id,
+            'usage_description' => 'Modernización de alumbrado',
+        ]);
+        $matching->destinations()->attach($destination);
+        VoucherItem::factory()->create([
+            'voucher_id' => $matching->id,
+            'material_id' => $lamp->id,
+            'unit_id' => $unit->id,
+            'description_snapshot' => $lamp->name,
+            'quantity' => 10,
+        ]);
+        VoucherItem::factory()->create([
+            'voucher_id' => $matching->id,
+            'material_id' => $base->id,
+            'unit_id' => $unit->id,
+            'description_snapshot' => 'Modelo legado para fotocelda',
+            'quantity' => 4,
+        ]);
+
+        $other = Voucher::factory()->create([
+            'storage_location_id' => $warehouse->id,
+            'folio' => '16584',
+            'folio_key' => Normalizer::folio('16584'),
+            'issued_on' => '2026-08-26',
+            'received_by_id' => $otherTechnician->id,
+            'delivered_by_id' => $issuer->id,
+            'usage_description' => 'Mantenimiento preventivo',
+        ]);
+        VoucherItem::factory()->create([
+            'voucher_id' => $other->id,
+            'material_id' => $otherMaterial->id,
+            'unit_id' => $unit->id,
+            'description_snapshot' => $otherMaterial->name,
+            'quantity' => 3,
+        ]);
+
+        $yardVoucher = Voucher::factory()->create([
+            'storage_location_id' => $yard->id,
+            'folio' => '3753',
+            'folio_key' => Normalizer::folio('3753'),
+            'issued_on' => '2026-08-26',
+            'received_by_id' => $technician->id,
+            'delivered_by_id' => $issuer->id,
+            'usage_description' => 'Trabajo en patio',
+        ]);
+        VoucherItem::factory()->create([
+            'voucher_id' => $yardVoucher->id,
+            'material_id' => $otherMaterial->id,
+            'unit_id' => $unit->id,
+            'description_snapshot' => $otherMaterial->name,
+            'quantity' => 2,
+        ]);
+
+        return [$user, $matching, $other, $yard];
     }
 
     /** @return array{Person, Person, Unit, Material, Material} */
