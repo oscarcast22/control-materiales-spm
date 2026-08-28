@@ -504,7 +504,7 @@ export default function VoucherForm({
                 )}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Datos del vale</CardTitle>
+                        <CardTitle>1. Datos del vale</CardTitle>
                         <CardDescription>
                             Transcribe los datos tal como aparecen en el
                             documento físico.
@@ -890,7 +890,7 @@ export default function VoucherForm({
                     <CardHeader className="flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
                             <CardTitle>
-                                Material{' '}
+                                2. Material{' '}
                                 {form.data.direction === 'entry'
                                     ? 'recibido'
                                     : 'entregado'}
@@ -1066,7 +1066,7 @@ export default function VoucherForm({
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Respaldo y observaciones</CardTitle>
+                        <CardTitle>3. Respaldo y observaciones</CardTitle>
                         <CardDescription>
                             Adjunta evidencia del documento y conserva cualquier
                             aclaración útil para su consulta.

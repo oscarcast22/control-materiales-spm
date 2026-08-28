@@ -207,8 +207,8 @@ export default function Dashboard({
                             }
                         />
                         <div className="mt-3">
-                            <DataTableSurface>
-                                <Table>
+                            <DataTableSurface label="Partidas con material pendiente más antiguo">
+                                <Table className="min-w-[640px]">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Vale</TableHead>
@@ -273,7 +273,7 @@ export default function Dashboard({
                             title="Actividad reciente"
                             description="Últimos vales capturados o actualizados."
                         />
-                        <div className="mt-3 overflow-hidden rounded-lg border bg-surface">
+                        <div className="mt-3 overflow-hidden rounded-xl border bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.05)]">
                             {recent.map((voucher) => (
                                 <Link
                                     key={voucher.id}
@@ -301,9 +301,21 @@ export default function Dashboard({
                                 </Link>
                             ))}
                             {recent.length === 0 && (
-                                <p className="px-4 py-12 text-center text-sm text-muted-foreground">
-                                    Todavía no hay vales capturados.
-                                </p>
+                                <div className="flex min-h-48 flex-col items-center justify-center px-5 py-8 text-center">
+                                    <span className="flex size-10 items-center justify-center rounded-lg bg-primary-subtle text-primary">
+                                        <ClipboardCheck
+                                            className="size-5"
+                                            aria-hidden="true"
+                                        />
+                                    </span>
+                                    <p className="mt-3 font-semibold">
+                                        Aún no hay actividad reciente
+                                    </p>
+                                    <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+                                        Captura un vale para comenzar el
+                                        seguimiento operativo.
+                                    </p>
+                                </div>
                             )}
                         </div>
                     </section>

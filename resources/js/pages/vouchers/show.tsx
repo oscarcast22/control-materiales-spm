@@ -11,6 +11,9 @@ import {
     Wrench,
 } from 'lucide-react';
 import { useState } from 'react';
+import { ConfirmActionDialog } from '@/components/confirm-action-dialog';
+import { DataTableSurface, TableEmpty } from '@/components/data-table';
+import { Page } from '@/components/page';
 import { QuickApplicationDialog } from '@/components/quick-application-dialog';
 import { StatusBadge } from '@/components/status-badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -29,6 +32,14 @@ import {
 import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { formatBytes, formatDate, formatQuantity } from '@/lib/format';
 import type { MaterialApplication, Voucher, VoucherItem } from '@/types';
 
@@ -58,47 +69,11 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
             },
         );
     };
-    const returnLoan = () => {
-        if (window.confirm('¿Confirmas que el vale físico fue devuelto?')) {
-            router.post(
-                `/vouchers/${voucher.id}/return`,
-                {},
-                { preserveScroll: true },
-            );
-        }
-    };
-    const cancel = () => {
-        const reason = window.prompt(
-            'Motivo de cancelación (mínimo 5 caracteres):',
-        );
-
-        if (reason) {
-            router.post(
-                `/vouchers/${voucher.id}/cancel`,
-                { reason },
-                { preserveScroll: true },
-            );
-        }
-    };
-
-    const markReviewed = () => {
-        if (
-            window.confirm(
-                '¿Confirmas que las incidencias de importación de este vale ya fueron revisadas?',
-            )
-        ) {
-            router.post(
-                `/vouchers/${voucher.id}/review`,
-                {},
-                { preserveScroll: true },
-            );
-        }
-    };
 
     return (
         <>
             <Head title={`Vale ${voucher.folio}`} />
-            <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6 px-4 py-6 min-[1200px]:px-8 md:px-6">
+            <Page width="wide">
                 <div className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex items-start gap-3">
                         <IconButton
@@ -211,16 +186,47 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                <Button variant="destructive" onClick={cancel}>
-                                    Cancelar
-                                </Button>
+                                <ConfirmActionDialog
+                                    trigger={
+                                        <Button variant="destructive">
+                                            Cancelar
+                                        </Button>
+                                    }
+                                    title="Cancelar vale"
+                                    description="La cancelación conserva el folio y deja una traza auditable. No se puede deshacer desde esta pantalla."
+                                    confirmLabel="Cancelar vale"
+                                    destructive
+                                    reasonLabel="Motivo de cancelación"
+                                    reasonPlaceholder="Explica por qué se cancela este vale"
+                                    onConfirm={(reason) =>
+                                        router.post(
+                                            `/vouchers/${voucher.id}/cancel`,
+                                            { reason },
+                                            { preserveScroll: true },
+                                        )
+                                    }
+                                />
                             </>
                         )}
                         {voucher.status === 'loaned' && (
-                            <Button variant="outline" onClick={returnLoan}>
-                                <RotateCcw data-icon="inline-start" />
-                                Registrar devolución
-                            </Button>
+                            <ConfirmActionDialog
+                                trigger={
+                                    <Button variant="outline">
+                                        <RotateCcw data-icon="inline-start" />
+                                        Registrar devolución
+                                    </Button>
+                                }
+                                title="Registrar devolución"
+                                description="Confirma que el documento físico ya fue devuelto. El seguimiento del material no cambia."
+                                confirmLabel="Registrar devolución"
+                                onConfirm={() =>
+                                    router.post(
+                                        `/vouchers/${voucher.id}/return`,
+                                        {},
+                                        { preserveScroll: true },
+                                    )
+                                }
+                            />
                         )}
                     </div>
                 </div>
@@ -265,13 +271,26 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                     </ul>
                                 </div>
                                 {voucher.needs_review && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={markReviewed}
-                                    >
-                                        Marcar revisión atendida
-                                    </Button>
+                                    <ConfirmActionDialog
+                                        trigger={
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                            >
+                                                Marcar revisión atendida
+                                            </Button>
+                                        }
+                                        title="Marcar revisión atendida"
+                                        description="Confirma que las incidencias de importación fueron revisadas. El detalle seguirá disponible en el historial del vale."
+                                        confirmLabel="Marcar como atendida"
+                                        onConfirm={() =>
+                                            router.post(
+                                                `/vouchers/${voucher.id}/review`,
+                                                {},
+                                                { preserveScroll: true },
+                                            )
+                                        }
+                                    />
                                 )}
                             </div>
                         </AlertDescription>
@@ -402,28 +421,35 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                         </span>
                                     </a>
                                     {voucher.status === 'active' && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() =>
-                                                window.confirm(
-                                                    '¿Eliminar este archivo?',
-                                                ) &&
+                                        <ConfirmActionDialog
+                                            trigger={
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                >
+                                                    Eliminar
+                                                </Button>
+                                            }
+                                            title="Eliminar comprobante"
+                                            description={`Eliminarás “${file.original_name}” de este vale. Esta acción no se puede deshacer.`}
+                                            confirmLabel="Eliminar archivo"
+                                            destructive
+                                            onConfirm={() =>
                                                 router.delete(
                                                     `/attachments/${file.id}`,
-                                                    { preserveScroll: true },
+                                                    {
+                                                        preserveScroll: true,
+                                                    },
                                                 )
                                             }
-                                        >
-                                            Eliminar
-                                        </Button>
+                                        />
                                     )}
                                 </div>
                             ))}
                         </CardContent>
                     </Card>
                 )}
-            </div>
+            </Page>
         </>
     );
 }
@@ -511,21 +537,27 @@ function MaterialCard({
                                 material.
                             </p>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="border-y bg-surface-subtle text-left text-[11px] font-bold tracking-[0.08em] text-text-secondary uppercase">
-                                    <tr>
-                                        <th className="px-3 py-2">Fecha</th>
-                                        <th className="px-3 py-2">
+                        <DataTableSurface
+                            label={`Historial de aplicaciones de ${item.description}`}
+                        >
+                            <Table className="min-w-[580px]">
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Fecha</TableHead>
+                                        <TableHead>
                                             Referencia / destino
-                                        </th>
-                                        <th className="px-3 py-2 text-right">
+                                        </TableHead>
+                                        <TableHead className="text-right">
                                             Cantidad
-                                        </th>
-                                        <th className="px-3 py-2"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                                        </TableHead>
+                                        <TableHead>
+                                            <span className="sr-only">
+                                                Acciones
+                                            </span>
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
                                     {item.applications.map((row) => (
                                         <ApplicationRow
                                             key={row.id}
@@ -535,18 +567,15 @@ function MaterialCard({
                                         />
                                     ))}
                                     {item.applications.length === 0 && (
-                                        <tr>
-                                            <td
-                                                colSpan={4}
-                                                className="px-3 py-8 text-center text-muted-foreground"
-                                            >
-                                                Aún no hay aplicaciones.
-                                            </td>
-                                        </tr>
+                                        <TableEmpty
+                                            colSpan={4}
+                                            title="Aún no hay aplicaciones"
+                                            description="Registra el material utilizado cuando el técnico documente el trabajo realizado."
+                                        />
                                     )}
-                                </tbody>
-                            </table>
-                        </div>
+                                </TableBody>
+                            </Table>
+                        </DataTableSurface>
                     </div>
                 )}
             </CardContent>
@@ -563,26 +592,12 @@ function ApplicationRow({
     unit: string;
     active: boolean;
 }) {
-    const voidRow = () => {
-        const reason = window.prompt(
-            'Motivo de anulación (mínimo 5 caracteres):',
-        );
-
-        if (reason) {
-            router.post(
-                `/material-applications/${row.id}/void`,
-                { reason },
-                { preserveScroll: true },
-            );
-        }
-    };
-
     return (
-        <tr
+        <TableRow
             className={`border-b last:border-0 ${row.voided_at ? 'line-through opacity-45' : ''}`}
         >
-            <td className="px-3 py-3">{formatDate(row.occurred_on)}</td>
-            <td className="px-3 py-3">
+            <TableCell>{formatDate(row.occurred_on)}</TableCell>
+            <TableCell>
                 <p>{row.reference || 'Sin orden registrada'}</p>
                 {row.destination_snapshot && (
                     <p className="text-xs text-muted-foreground">
@@ -603,18 +618,35 @@ function ApplicationRow({
                         Ver evidencia
                     </a>
                 )}
-            </td>
-            <td className="px-3 py-3 text-right font-medium">
+            </TableCell>
+            <TableCell className="text-right font-medium tabular-nums">
                 {formatQuantity(row.quantity)} {unit}
-            </td>
-            <td className="px-3 py-3 text-right">
+            </TableCell>
+            <TableCell className="text-right">
                 {active && !row.voided_at && (
-                    <Button size="sm" variant="ghost" onClick={voidRow}>
-                        Anular
-                    </Button>
+                    <ConfirmActionDialog
+                        trigger={
+                            <Button size="sm" variant="ghost">
+                                Anular
+                            </Button>
+                        }
+                        title="Anular aplicación"
+                        description="La aplicación dejará de afectar el pendiente, pero seguirá conservada en el historial con su motivo."
+                        confirmLabel="Anular aplicación"
+                        destructive
+                        reasonLabel="Motivo de anulación"
+                        reasonPlaceholder="Explica qué se corrigió en esta aplicación"
+                        onConfirm={(reason) =>
+                            router.post(
+                                `/material-applications/${row.id}/void`,
+                                { reason },
+                                { preserveScroll: true },
+                            )
+                        }
+                    />
                 )}
-            </td>
-        </tr>
+            </TableCell>
+        </TableRow>
     );
 }
 function Info({ label, value }: { label: string; value: string }) {

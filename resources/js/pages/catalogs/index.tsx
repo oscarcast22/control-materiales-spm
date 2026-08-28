@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import InputError from '@/components/input-error';
 import { Page, PageHeader } from '@/components/page';
 import { SimpleSelect } from '@/components/simple-select';
@@ -20,6 +21,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import type {
     Action,
     Destination,
@@ -132,13 +141,18 @@ function DestinationSection({ destinations }: { destinations: Destination[] }) {
                 </form>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Input
+                        aria-label="Buscar ubicación"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
                         placeholder="Buscar ubicación"
                         className="sm:max-w-xs"
                     />
-                    <Label className="flex items-center gap-2 text-sm">
+                    <Label
+                        htmlFor="destination-review-only"
+                        className="flex items-center gap-2 text-sm"
+                    >
                         <Checkbox
+                            id="destination-review-only"
                             checked={reviewOnly}
                             onCheckedChange={(value) =>
                                 setReviewOnly(Boolean(value))
@@ -151,7 +165,12 @@ function DestinationSection({ destinations }: { destinations: Destination[] }) {
                     </span>
                 </div>
                 <CatalogTable
-                    headers={['Ubicación', 'Otros nombres', 'Estado', '']}
+                    headers={[
+                        'Ubicación',
+                        'Otros nombres',
+                        'Estado',
+                        'Acciones',
+                    ]}
                     rows={visibleDestinations.map((destination) => [
                         <span key="name">
                             {destination.name}
@@ -267,6 +286,7 @@ function VoucherTypeSection({ voucherTypes }: { voucherTypes: VoucherType[] }) {
                     className="grid gap-2 sm:grid-cols-[120px_1fr_auto]"
                 >
                     <Input
+                        aria-label="Código del tipo de vale"
                         value={form.data.code}
                         onChange={(event) =>
                             form.setData('code', event.target.value)
@@ -274,6 +294,7 @@ function VoucherTypeSection({ voucherTypes }: { voucherTypes: VoucherType[] }) {
                         placeholder="Código"
                     />
                     <Input
+                        aria-label="Nombre del tipo de vale"
                         value={form.data.name}
                         onChange={(event) =>
                             form.setData('name', event.target.value)
@@ -380,6 +401,7 @@ function MaterialSection({
                 >
                     <div>
                         <Input
+                            aria-label="Nombre del material"
                             value={form.data.name}
                             onChange={(e) =>
                                 form.setData('name', e.target.value)
@@ -424,13 +446,18 @@ function MaterialSection({
                 </form>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Input
+                        aria-label="Buscar material"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
                         placeholder="Buscar material"
                         className="sm:max-w-xs"
                     />
-                    <Label className="flex items-center gap-2 text-sm">
+                    <Label
+                        htmlFor="material-review-only"
+                        className="flex items-center gap-2 text-sm"
+                    >
                         <Checkbox
+                            id="material-review-only"
                             checked={reviewOnly}
                             onCheckedChange={(value) =>
                                 setReviewOnly(Boolean(value))
@@ -443,7 +470,13 @@ function MaterialSection({
                     </span>
                 </div>
                 <CatalogTable
-                    headers={['Nombre', 'Unidad', 'Tipos', 'Estado', '']}
+                    headers={[
+                        'Nombre',
+                        'Unidad',
+                        'Tipos',
+                        'Estado',
+                        'Acciones',
+                    ]}
                     rows={visibleMaterials.map((m) => [
                         <span key="n">
                             {m.name}
@@ -520,6 +553,7 @@ function PeopleSection({ people }: { people: Person[] }) {
                     <div className="flex gap-2">
                         <div className="flex-1">
                             <Input
+                                aria-label="Nombre completo de la persona"
                                 value={form.data.name}
                                 onChange={(e) =>
                                     form.setData('name', e.target.value)
@@ -536,8 +570,12 @@ function PeopleSection({ people }: { people: Person[] }) {
                         </Button>
                     </div>
                     <div className="flex flex-wrap gap-5 text-sm">
-                        <Label className="flex items-center gap-2">
+                        <Label
+                            htmlFor="person-can-receive"
+                            className="flex items-center gap-2"
+                        >
                             <Checkbox
+                                id="person-can-receive"
                                 checked={form.data.can_receive_material}
                                 onCheckedChange={(v) =>
                                     form.setData(
@@ -548,8 +586,12 @@ function PeopleSection({ people }: { people: Person[] }) {
                             />
                             Recibe / técnico
                         </Label>
-                        <Label className="flex items-center gap-2">
+                        <Label
+                            htmlFor="person-can-deliver"
+                            className="flex items-center gap-2"
+                        >
                             <Checkbox
+                                id="person-can-deliver"
                                 checked={form.data.can_deliver_material}
                                 onCheckedChange={(v) =>
                                     form.setData(
@@ -560,8 +602,12 @@ function PeopleSection({ people }: { people: Person[] }) {
                             />
                             Entrega material
                         </Label>
-                        <Label className="flex items-center gap-2">
+                        <Label
+                            htmlFor="person-can-authorize"
+                            className="flex items-center gap-2"
+                        >
                             <Checkbox
+                                id="person-can-authorize"
                                 checked={form.data.can_authorize_material}
                                 onCheckedChange={(v) =>
                                     form.setData(
@@ -576,13 +622,18 @@ function PeopleSection({ people }: { people: Person[] }) {
                 </form>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Input
+                        aria-label="Buscar persona"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
                         placeholder="Buscar persona"
                         className="sm:max-w-xs"
                     />
-                    <Label className="flex items-center gap-2 text-sm">
+                    <Label
+                        htmlFor="person-review-only"
+                        className="flex items-center gap-2 text-sm"
+                    >
                         <Checkbox
+                            id="person-review-only"
                             checked={reviewOnly}
                             onCheckedChange={(value) =>
                                 setReviewOnly(Boolean(value))
@@ -595,7 +646,7 @@ function PeopleSection({ people }: { people: Person[] }) {
                     </span>
                 </div>
                 <CatalogTable
-                    headers={['Nombre', 'Funciones', 'Estado', '']}
+                    headers={['Nombre', 'Funciones', 'Estado', 'Acciones']}
                     rows={visiblePeople.map((p) => [
                         <span key="n">
                             {p.name}
@@ -890,11 +941,13 @@ function UnitSection({ units }: { units: Unit[] }) {
                     className="grid gap-2 sm:grid-cols-[1fr_100px_auto]"
                 >
                     <Input
+                        aria-label="Nombre de la unidad"
                         value={form.data.name}
                         onChange={(e) => form.setData('name', e.target.value)}
                         placeholder="Ej. Rollo"
                     />
                     <Input
+                        aria-label="Símbolo de la unidad"
                         value={form.data.symbol}
                         onChange={(e) => form.setData('symbol', e.target.value)}
                         placeholder="Símbolo"
@@ -904,7 +957,7 @@ function UnitSection({ units }: { units: Unit[] }) {
                     </Button>
                 </form>
                 <CatalogTable
-                    headers={['Nombre', 'Símbolo', 'Estado', '']}
+                    headers={['Nombre', 'Símbolo', 'Estado', 'Acciones']}
                     rows={units.map((u) => [
                         u.name,
                         u.symbol,
@@ -942,6 +995,7 @@ function ProgramSection({ programs }: { programs: Program[] }) {
                     className="grid gap-2 sm:grid-cols-[140px_1fr_auto]"
                 >
                     <Input
+                        aria-label="Código del programa"
                         value={program.data.code}
                         onChange={(e) =>
                             program.setData('code', e.target.value)
@@ -949,6 +1003,7 @@ function ProgramSection({ programs }: { programs: Program[] }) {
                         placeholder="SPM-00"
                     />
                     <Input
+                        aria-label="Nombre del programa"
                         value={program.data.name}
                         onChange={(e) =>
                             program.setData('name', e.target.value)
@@ -1087,33 +1142,54 @@ function CatalogTable({
     rows: React.ReactNode[][];
 }) {
     return (
-        <div className="max-h-96 overflow-auto rounded-lg border bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_12px_rgba(26,20,107,0.04)]">
-            <table className="w-full text-sm">
-                <thead className="sticky top-0 border-b bg-surface-subtle text-[11px] font-bold tracking-[0.08em] text-text-secondary uppercase">
-                    <tr>
+        <DataTableSurface label="Resultados del catálogo">
+            <Table
+                className="min-w-[560px]"
+                containerClassName="max-h-96 overflow-auto"
+            >
+                <TableHeader>
+                    <TableRow>
                         {headers.map((h, i) => (
-                            <th key={i} className="px-4 py-3 text-left">
+                            <TableHead
+                                key={i}
+                                className={
+                                    i === headers.length - 1
+                                        ? 'text-right'
+                                        : undefined
+                                }
+                            >
                                 {h}
-                            </th>
+                            </TableHead>
                         ))}
-                    </tr>
-                </thead>
-                <tbody>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
                     {rows.map((row, i) => (
-                        <tr
-                            key={i}
-                            className="border-b transition-colors last:border-0 hover:bg-primary/[0.02]"
-                        >
+                        <TableRow key={i}>
                             {row.map((cell, j) => (
-                                <td key={j} className="px-4 py-4">
+                                <TableCell
+                                    key={j}
+                                    className={
+                                        j === headers.length - 1
+                                            ? 'text-right'
+                                            : undefined
+                                    }
+                                >
                                     {cell}
-                                </td>
+                                </TableCell>
                             ))}
-                        </tr>
+                        </TableRow>
                     ))}
-                </tbody>
-            </table>
-        </div>
+                    {rows.length === 0 && (
+                        <TableEmpty
+                            colSpan={headers.length}
+                            title="Sin resultados"
+                            description="Ajusta la búsqueda o crea un registro nuevo."
+                        />
+                    )}
+                </TableBody>
+            </Table>
+        </DataTableSurface>
     );
 }
 function Toggle({

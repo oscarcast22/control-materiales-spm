@@ -66,6 +66,7 @@ export default function VoucherIndex({
         setForm(emptyFilters);
         router.get('/vouchers');
     };
+    const activeFilters = Object.values(filters).filter(Boolean).length;
 
     return (
         <>
@@ -81,13 +82,13 @@ export default function VoucherIndex({
                             />
                             <QuickApplicationDialog
                                 trigger={
-                                    <Button>
+                                    <Button variant="outline">
                                         <Wrench data-icon="inline-start" />
                                         Registrar aplicación
                                     </Button>
                                 }
                             />
-                            <Button variant="outline" asChild>
+                            <Button asChild>
                                 <Link href="/vouchers/create">
                                     <FilePlus2 data-icon="inline-start" />
                                     Nuevo vale
@@ -97,7 +98,11 @@ export default function VoucherIndex({
                     }
                 />
 
-                <FilterBar>
+                <FilterBar
+                    title="Buscar y filtrar vales"
+                    description="Localiza un documento por folio, persona, material, fecha o estado."
+                    activeFilters={activeFilters}
+                >
                     <form onSubmit={submit} className="flex flex-col gap-3">
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-12">
                             <FormField className="sm:col-span-2 xl:col-span-4">
@@ -283,8 +288,8 @@ export default function VoucherIndex({
                     </form>
                 </FilterBar>
 
-                <DataTableSurface>
-                    <Table>
+                <DataTableSurface label="Listado de vales">
+                    <Table className="min-w-[780px]">
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Folio y fecha</TableHead>

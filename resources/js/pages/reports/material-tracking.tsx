@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useId, useState } from 'react';
+import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
 import { MetricCard } from '@/components/metric-card';
 import { Page, PageHeader } from '@/components/page';
@@ -20,9 +21,16 @@ import { SimpleSelect } from '@/components/simple-select';
 import { StatusBadge } from '@/components/status-badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { FormField, FormLabel } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate, formatQuantity } from '@/lib/format';
 import type {
@@ -137,6 +145,14 @@ export default function MaterialTracking({
             .filter(([, value]) => value)
             .map(([key, value]) => [key, value]),
     ).toString();
+    const activeFilters = [
+        String(filters.from ?? cutoff) === cutoff ? '' : filters.from,
+        filters.to,
+        filters.received_by_id,
+        filters.material_id,
+        filters.voucher_type_id,
+        filters.state,
+    ].filter(Boolean).length;
 
     return (
         <>
@@ -215,7 +231,11 @@ export default function MaterialTracking({
                     </div>
                 </section>
 
-                <FilterBar>
+                <FilterBar
+                    title="Filtrar seguimiento"
+                    description="Delimita el periodo y el contexto antes de comparar cantidades."
+                    activeFilters={activeFilters}
+                >
                     <form
                         onSubmit={submit}
                         className="grid gap-3 md:grid-cols-2 xl:grid-cols-8"
@@ -364,53 +384,58 @@ export default function MaterialTracking({
 
 function MaterialTable({ rows }: { rows: MaterialSummary[] }) {
     return (
-        <TableCard>
-            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-[11px] font-bold tracking-[0.08em] text-text-secondary uppercase">
-                <tr>
-                    <th className="px-5 py-3">Material</th>
-                    <th className="px-4 py-3 text-right">Vales</th>
-                    <th className="px-4 py-3 text-right">Técnicos</th>
-                    <th className="px-4 py-3 text-right">Entregado</th>
-                    <th className="px-4 py-3 text-right">Aplicado</th>
-                    <th className="px-5 py-3 text-right">Pendiente</th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows.map((row) => (
-                    <tr
-                        key={`${row.material.id}-${row.unit.id}`}
-                        className="border-b transition-colors last:border-0 hover:bg-primary/[0.02]"
-                    >
-                        <td className="px-5 py-4 font-medium">
-                            {row.material.name}
-                            <span className="ml-2 text-xs text-muted-foreground">
-                                {row.unit.symbol}
-                            </span>
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                            {row.vouchers_count}
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                            {row.technicians_count}
-                        </td>
-                        <Quantity
-                            value={row.delivered_quantity}
-                            unit={row.unit.symbol}
+        <DataTableSurface label="Resumen de material por unidad">
+            <Table className="min-w-[790px]">
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Material</TableHead>
+                        <TableHead className="text-right">Vales</TableHead>
+                        <TableHead className="text-right">Técnicos</TableHead>
+                        <TableHead className="text-right">Entregado</TableHead>
+                        <TableHead className="text-right">Aplicado</TableHead>
+                        <TableHead className="text-right">Pendiente</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {rows.map((row) => (
+                        <TableRow key={`${row.material.id}-${row.unit.id}`}>
+                            <TableCell className="font-medium">
+                                {row.material.name}
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                    {row.unit.symbol}
+                                </span>
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                                {row.vouchers_count}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                                {row.technicians_count}
+                            </TableCell>
+                            <Quantity
+                                value={row.delivered_quantity}
+                                unit={row.unit.symbol}
+                            />
+                            <Quantity
+                                value={row.used_quantity}
+                                unit={row.unit.symbol}
+                            />
+                            <Quantity
+                                value={row.pending_quantity}
+                                unit={row.unit.symbol}
+                                emphasized
+                            />
+                        </TableRow>
+                    ))}
+                    {rows.length === 0 && (
+                        <TableEmpty
+                            colSpan={6}
+                            title="Sin material para mostrar"
+                            description="No hay partidas que coincidan con los filtros seleccionados."
                         />
-                        <Quantity
-                            value={row.used_quantity}
-                            unit={row.unit.symbol}
-                        />
-                        <Quantity
-                            value={row.pending_quantity}
-                            unit={row.unit.symbol}
-                            emphasized
-                        />
-                    </tr>
-                ))}
-                <EmptyRow show={rows.length === 0} columns={6} />
-            </tbody>
-        </TableCard>
+                    )}
+                </TableBody>
+            </Table>
+        </DataTableSurface>
     );
 }
 
@@ -422,135 +447,139 @@ function TechnicianTable({
     filters: Record<string, string>;
 }) {
     return (
-        <TableCard>
-            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-[11px] font-bold tracking-[0.08em] text-text-secondary uppercase">
-                <tr>
-                    <th className="px-5 py-3">Técnico</th>
-                    <th className="px-4 py-3 text-right">Vales</th>
-                    <th className="px-4 py-3 text-right">Materiales</th>
-                    <th className="px-4 py-3 text-right">Pendientes</th>
-                    <th className="px-4 py-3 text-right">Liquidadas</th>
-                    <th className="px-4 py-3 text-right">Inconsistencias</th>
-                    <th className="px-5 py-3 text-right">Detalle</th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows.map((row) => {
-                    const query = new URLSearchParams({
-                        ...filters,
-                        received_by_id: String(row.technician.id),
-                        tab: 'detail',
-                    }).toString();
+        <DataTableSurface label="Resumen de material por técnico">
+            <Table className="min-w-[850px]">
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Técnico</TableHead>
+                        <TableHead className="text-right">Vales</TableHead>
+                        <TableHead className="text-right">Materiales</TableHead>
+                        <TableHead className="text-right">Pendientes</TableHead>
+                        <TableHead className="text-right">Liquidadas</TableHead>
+                        <TableHead className="text-right">
+                            Inconsistencias
+                        </TableHead>
+                        <TableHead className="text-right">Detalle</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {rows.map((row) => {
+                        const query = new URLSearchParams({
+                            ...filters,
+                            received_by_id: String(row.technician.id),
+                            tab: 'detail',
+                        }).toString();
 
-                    return (
-                        <tr
-                            key={row.technician.id}
-                            className="border-b transition-colors last:border-0 hover:bg-primary/[0.02]"
-                        >
-                            <td className="px-5 py-4 font-medium">
-                                {row.technician.name}
-                            </td>
-                            <td className="px-4 py-4 text-right">
-                                {row.vouchers_count}
-                            </td>
-                            <td className="px-4 py-4 text-right">
-                                {row.materials_count}
-                            </td>
-                            <td className="px-4 py-4 text-right font-semibold text-warning">
-                                {row.pending_items_count}
-                            </td>
-                            <td className="px-4 py-4 text-right">
-                                {row.settled_items_count}
-                            </td>
-                            <td className="px-4 py-4 text-right text-danger">
-                                {row.anomalies_count}
-                            </td>
-                            <td className="px-5 py-4 text-right">
-                                <Link
-                                    href={`/reports/material-tracking?${query}`}
-                                    className="font-medium text-primary underline-offset-4 hover:underline"
-                                >
-                                    Ver partidas
-                                </Link>
-                            </td>
-                        </tr>
-                    );
-                })}
-                <EmptyRow show={rows.length === 0} columns={7} />
-            </tbody>
-        </TableCard>
+                        return (
+                            <TableRow key={row.technician.id}>
+                                <TableCell className="font-medium">
+                                    {row.technician.name}
+                                </TableCell>
+                                <TableCell className="text-right tabular-nums">
+                                    {row.vouchers_count}
+                                </TableCell>
+                                <TableCell className="text-right tabular-nums">
+                                    {row.materials_count}
+                                </TableCell>
+                                <TableCell className="text-right font-semibold text-warning tabular-nums">
+                                    {row.pending_items_count}
+                                </TableCell>
+                                <TableCell className="text-right tabular-nums">
+                                    {row.settled_items_count}
+                                </TableCell>
+                                <TableCell className="text-right text-danger tabular-nums">
+                                    {row.anomalies_count}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Link
+                                        href={`/reports/material-tracking?${query}`}
+                                        className="font-medium text-primary underline-offset-4 hover:underline"
+                                        aria-label={`Ver partidas de ${row.technician.name}`}
+                                    >
+                                        Ver partidas
+                                    </Link>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })}
+                    {rows.length === 0 && (
+                        <TableEmpty
+                            colSpan={7}
+                            title="Sin técnicos para mostrar"
+                            description="No hay partidas que coincidan con los filtros seleccionados."
+                        />
+                    )}
+                </TableBody>
+            </Table>
+        </DataTableSurface>
     );
 }
 
 function DetailTable({ rows }: { rows: TrackingRow[] }) {
     return (
-        <TableCard>
-            <thead className="sticky top-0 border-b bg-surface-subtle text-left text-[11px] font-bold tracking-[0.08em] text-text-secondary uppercase">
-                <tr>
-                    <th className="px-5 py-3">Vale</th>
-                    <th className="px-4 py-3">Técnico</th>
-                    <th className="px-4 py-3">Material</th>
-                    <th className="px-4 py-3 text-right">Entregado</th>
-                    <th className="px-4 py-3 text-right">Aplicado</th>
-                    <th className="px-4 py-3 text-right">Pendiente</th>
-                    <th className="px-5 py-3">Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows.map((row) => (
-                    <tr
-                        key={`${row.voucher_id}-${row.id}`}
-                        className="border-b transition-colors last:border-0 hover:bg-primary/[0.02]"
-                    >
-                        <td className="px-5 py-4">
-                            <Link
-                                href={`/vouchers/${row.voucher_id}`}
-                                className="font-semibold text-primary underline-offset-4 hover:underline"
-                            >
-                                #{row.folio}
-                            </Link>
-                            <p className="text-xs text-muted-foreground">
-                                {row.voucher_type.name} ·{' '}
-                                {formatDate(row.issued_on)}
-                            </p>
-                        </td>
-                        <td className="px-4 py-4">{row.received_by.name}</td>
-                        <td className="px-4 py-4">
-                            {row.description}
-                            <p className="max-w-64 truncate text-xs text-muted-foreground">
-                                {row.destination_summary ?? '—'}
-                            </p>
-                        </td>
-                        <Quantity value={row.quantity} unit={row.unit.symbol} />
-                        <Quantity
-                            value={row.used_quantity}
-                            unit={row.unit.symbol}
+        <DataTableSurface label="Detalle de partidas de material">
+            <Table className="min-w-[920px]">
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Vale</TableHead>
+                        <TableHead>Técnico</TableHead>
+                        <TableHead>Material</TableHead>
+                        <TableHead className="text-right">Entregado</TableHead>
+                        <TableHead className="text-right">Aplicado</TableHead>
+                        <TableHead className="text-right">Pendiente</TableHead>
+                        <TableHead>Estado</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {rows.map((row) => (
+                        <TableRow key={`${row.voucher_id}-${row.id}`}>
+                            <TableCell>
+                                <Link
+                                    href={`/vouchers/${row.voucher_id}`}
+                                    className="font-semibold text-primary underline-offset-4 hover:underline"
+                                >
+                                    #{row.folio}
+                                </Link>
+                                <p className="text-xs text-muted-foreground">
+                                    {row.voucher_type.name} ·{' '}
+                                    {formatDate(row.issued_on)}
+                                </p>
+                            </TableCell>
+                            <TableCell>{row.received_by.name}</TableCell>
+                            <TableCell>
+                                {row.description}
+                                <p className="max-w-64 truncate text-xs text-muted-foreground">
+                                    {row.destination_summary ?? '—'}
+                                </p>
+                            </TableCell>
+                            <Quantity
+                                value={row.quantity}
+                                unit={row.unit.symbol}
+                            />
+                            <Quantity
+                                value={row.used_quantity}
+                                unit={row.unit.symbol}
+                            />
+                            <Quantity
+                                value={row.pending_quantity}
+                                unit={row.unit.symbol}
+                                emphasized
+                            />
+                            <TableCell>
+                                <StatusBadge state={row.balance_state} />
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                    {rows.length === 0 && (
+                        <TableEmpty
+                            colSpan={7}
+                            title="Sin partidas para mostrar"
+                            description="No hay material que coincida con los filtros seleccionados."
                         />
-                        <Quantity
-                            value={row.pending_quantity}
-                            unit={row.unit.symbol}
-                            emphasized
-                        />
-                        <td className="px-5 py-4">
-                            <StatusBadge state={row.balance_state} />
-                        </td>
-                    </tr>
-                ))}
-                <EmptyRow show={rows.length === 0} columns={7} />
-            </tbody>
-        </TableCard>
-    );
-}
-
-function TableCard({ children }: { children: React.ReactNode }) {
-    return (
-        <Card className="overflow-hidden py-0">
-            <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">{children}</table>
-                </div>
-            </CardContent>
-        </Card>
+                    )}
+                </TableBody>
+            </Table>
+        </DataTableSurface>
     );
 }
 
@@ -566,28 +595,11 @@ function Quantity({
     const negative = Number(value) < 0;
 
     return (
-        <td
-            className={`px-4 py-4 text-right tabular-nums ${emphasized ? 'font-semibold text-warning' : ''} ${negative ? 'text-danger' : ''}`}
+        <TableCell
+            className={`text-right tabular-nums ${emphasized ? 'font-semibold text-warning' : ''} ${negative ? 'text-danger' : ''}`}
         >
             {formatQuantity(value)} {unit}
-        </td>
-    );
-}
-
-function EmptyRow({ show, columns }: { show: boolean; columns: number }) {
-    if (!show) {
-        return null;
-    }
-
-    return (
-        <tr>
-            <td
-                colSpan={columns}
-                className="px-5 py-16 text-center text-muted-foreground"
-            >
-                No hay material que coincida con los filtros seleccionados.
-            </td>
-        </tr>
+        </TableCell>
     );
 }
 
