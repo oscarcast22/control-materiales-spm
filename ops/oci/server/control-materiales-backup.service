@@ -1,0 +1,13 @@
+[Unit]
+Description=Respaldo de Control de Materiales SPM
+After=network-online.target postgresql.service
+Wants=network-online.target
+ConditionPathExists=/srv/control-materiales/current/artisan
+
+[Service]
+Type=oneshot
+User=materiales
+Group=materiales
+EnvironmentFile=/etc/control-materiales-backup.env
+ExecStart=/usr/local/sbin/control-materiales-backup daily
+Nice=10

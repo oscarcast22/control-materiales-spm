@@ -93,6 +93,27 @@ Si el histórico se cargó antes que el catálogo curado, no volver a importar e
 
 No deben definirse encabezados de proxy, orígenes de passkeys o dominios de cookies antes de conocer la topología real de despliegue.
 
+## Despliegue en Oracle Cloud
+
+El piloto productivo se automatiza con [`ops/oci/`](../ops/oci/README.md). La topología aprobada usa una sola VM Ubuntu ARM con Nginx, PHP-FPM, PostgreSQL local, una IP reservada y Cloudflare como único proxy HTTP público. PostgreSQL no se expone en la VCN.
+
+El aprovisionador está limitado a la región principal, `VM.Standard.A1.Flex`, 1 OCPU, 4 GB de memoria y 50 GB de arranque. Si no existe capacidad gratuita se detiene; no sustituye la forma por una pagada. Los identificadores de OCI se conservan en un directorio ignorado por Git.
+
+Cada release debe cumplir estas condiciones:
+
+- `main` limpio y exactamente igual a `origin/main`;
+- suite completa, verificaciones frontend y auditorías aprobadas;
+- assets construidos localmente con Node 22.13 o posterior;
+- paquete creado desde `git archive HEAD`, sin `.env`, adjuntos, dumps, `vendor` ni `node_modules`;
+- dependencias PHP instaladas para ARM en el servidor;
+- activación mediante symlink, con respaldo previo en despliegues posteriores.
+
+El primer traslado no ejecuta seeders ni el importador histórico. Se pone el origen local en mantenimiento, se crea un `pg_dump` en formato personalizado, se restaura como el usuario limitado de la aplicación, se ejecutan únicamente migraciones pendientes y se comparan conteos de todas las tablas de dominio y archivos privados. Un resultado distinto bloquea el cambio DNS.
+
+El dominio local pasa a `materiales-dev.utopiadigital.tech` mediante el túnel existente. Producción conserva `materiales.utopiadigital.tech`, pero su registro cambia a un A proxied hacia la IP reservada. El origen presenta un certificado Cloudflare Origin CA y la zona usa Full (strict). La llave del certificado permanece sólo en el VPS y el token de Cloudflare se revoca al terminar.
+
+Después del corte, Oracle es la única fuente productiva. El entorno local deja de ser candidato de rollback en cuanto exista una escritura nueva en producción.
+
 ## Respaldo
 
 Respaldar diariamente como una sola unidad lógica:
@@ -102,6 +123,10 @@ Respaldar diariamente como una sola unidad lógica:
 3. La versión desplegada del código y la referencia segura de sus secretos.
 
 No basta con crear respaldos: probar periódicamente una restauración en un entorno aislado. La restauración debe recuperar primero la base, luego los archivos privados, ejecutar migraciones pendientes y verificar que un adjunto pueda descargarse mediante una cuenta autorizada.
+
+En Oracle, el timer diario genera una unidad con el dump, archivos privados, hashes, commit y manifiesto de conteos. La VM la carga a un bucket privado mediante Instance Principal; no conserva credenciales de usuario OCI. Los respaldos diarios se eliminan a los 30 días y los previos a releases se conservan de forma separada.
+
+La `APP_KEY` productiva se guarda como secreto en OCI Vault con una llave administrada por software. La VM no recibe permiso para leer ese secreto. La restauración aislada automatizada crea una base con prefijo `control_materiales_restore_check_`, valida el dump y elimina exclusivamente esa base temporal.
 
 ## Verificación de una versión
 

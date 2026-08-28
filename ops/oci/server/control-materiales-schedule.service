@@ -1,0 +1,10 @@
+[Unit]
+Description=Planificador de Control de Materiales SPM
+ConditionPathExists=/srv/control-materiales/current/artisan
+
+[Service]
+Type=oneshot
+User=materiales
+Group=www-data
+WorkingDirectory=/srv/control-materiales/current
+ExecStart=/usr/bin/php artisan schedule:run --no-interaction

@@ -1,0 +1,10 @@
+[Unit]
+Description=Ejecuta el planificador Laravel cada minuto
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=1s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
