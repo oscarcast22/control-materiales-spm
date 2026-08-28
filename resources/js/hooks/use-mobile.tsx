@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from 'react';
 
-const MOBILE_BREAKPOINT = 768;
+// The operational views contain dense filters and data tables. Keep the
+// full-width drawer navigation until the content area has room to breathe.
+const MOBILE_BREAKPOINT = 1024;
 
 const mql =
     typeof window === 'undefined'

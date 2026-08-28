@@ -8,10 +8,12 @@ export function AppSidebarHeader({
     breadcrumbs?: BreadcrumbItemType[];
 }) {
     return (
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-surface/95 px-4 transition-[width,height] duration-150 min-[1200px]:px-8 md:px-6">
-            <div className="flex items-center gap-2">
-                <SidebarTrigger className="-ml-1" />
-                <Breadcrumbs breadcrumbs={breadcrumbs} />
+        <header className="flex h-16 shrink-0 items-center gap-2 overflow-hidden border-b bg-surface/95 px-4 transition-[width,height] duration-150 min-[1200px]:px-8 md:px-6">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+                <SidebarTrigger className="-ml-1 shrink-0" />
+                <div className="min-w-0 overflow-hidden">
+                    <Breadcrumbs breadcrumbs={breadcrumbs} />
+                </div>
             </div>
         </header>
     );
