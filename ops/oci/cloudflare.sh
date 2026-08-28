@@ -111,6 +111,18 @@ cutover() {
     log "$PRODUCTION_HOST apunta a la IP reservada de Oracle mediante Cloudflare."
 }
 
+tunnel_cutover() {
+    local tunnel_id payload
+    tunnel_id=${PRODUCTION_TUNNEL_ID:-$(read_state production_tunnel_id || true)}
+    [[ -n $tunnel_id ]] || die 'Falta PRODUCTION_TUNNEL_ID o el estado del túnel productivo.'
+    payload=$(jq -cn \
+        --arg name "$PRODUCTION_HOST" \
+        --arg content "$tunnel_id.cfargotunnel.com" \
+        '{type:"CNAME",name:$name,content:$content,proxied:true,ttl:1}')
+    upsert_record "$PRODUCTION_HOST" "$payload"
+    log "$PRODUCTION_HOST apunta al túnel dedicado que se ejecuta en Oracle."
+}
+
 rollback_dns() {
     local payload
     payload=$(jq -cn \
@@ -125,10 +137,11 @@ case "$ACTION" in
     prepare) prepare_development ;;
     origin-cert) install_origin_certificate ;;
     cutover) cutover ;;
+    tunnel-cutover) tunnel_cutover ;;
     rollback) rollback_dns ;;
     status)
         record_json "$DEVELOPMENT_HOST" | jq '{name,type,content,proxied}'
         record_json "$PRODUCTION_HOST" | jq '{name,type,content,proxied}'
         ;;
-    *) die 'Uso: cloudflare.sh {prepare|origin-cert|cutover|rollback|status}' ;;
+    *) die 'Uso: cloudflare.sh {prepare|origin-cert|cutover|tunnel-cutover|rollback|status}' ;;
 esac

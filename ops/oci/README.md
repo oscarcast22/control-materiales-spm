@@ -46,8 +46,8 @@ Los OCID y la IP resultante se guardan en `ops/oci/.state/`, que está ignorado 
 4. `deploy.sh --first-release`
 5. `migrate-current-data.sh`
 6. `store-app-key.sh`
-7. Crear la segunda cuenta con `php artisan app:create-user` mediante SSH.
-8. `cloudflare.sh cutover`
+7. Confirmar que la cuenta activa existente fue incluida en el manifiesto migrado.
+8. `PRODUCTION_TUNNEL_ID=<id> cloudflare.sh tunnel-cutover`
 9. `status.sh --public`
 
 Antes del corte, generar e instalar el certificado del origen:
@@ -58,6 +58,13 @@ export CF_API_TOKEN
 ops/oci/cloudflare.sh prepare
 ops/oci/cloudflare.sh origin-cert
 ```
+
+Si Cloudflare no tiene una ruta estable hacia la IP pública de Oracle, ejecute un
+túnel dedicado `cloudflared` como servicio del VPS, con origen
+`http://127.0.0.1:80`, y use `tunnel-cutover`. El túnel productivo debe ser
+distinto del túnel local de desarrollo. En ese caso, el registro productivo es
+un CNAME proxied a `<id>.cfargotunnel.com`; la aplicación y sus datos continúan
+alojados íntegramente en Oracle.
 
 Después de validar el primer respaldo diario, comprobar una restauración aislada:
 

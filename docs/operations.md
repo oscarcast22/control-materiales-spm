@@ -110,7 +110,7 @@ Cada release debe cumplir estas condiciones:
 
 El primer traslado no ejecuta seeders ni el importador histórico. Se pone el origen local en mantenimiento, se crea un `pg_dump` en formato personalizado, se restaura como el usuario limitado de la aplicación, se ejecutan únicamente migraciones pendientes y se comparan conteos de todas las tablas de dominio y archivos privados. Un resultado distinto bloquea el cambio DNS.
 
-El dominio local pasa a `materiales-dev.utopiadigital.tech` mediante el túnel existente. Producción conserva `materiales.utopiadigital.tech`, pero su registro cambia a un A proxied hacia la IP reservada. El origen presenta un certificado Cloudflare Origin CA y la zona usa Full (strict). La llave del certificado permanece sólo en el VPS y el token de Cloudflare se revoca al terminar.
+El dominio local pasa a `materiales-dev.utopiadigital.tech` mediante el túnel existente. Producción conserva `materiales.utopiadigital.tech` y usa un túnel Cloudflare dedicado cuyo conector se ejecuta como servicio en el VPS; no comparte el conector local. El registro productivo es un CNAME proxied hacia ese túnel. Nginx sólo recibe el tráfico del conector por loopback y conserva disponible el certificado Cloudflare Origin CA como alternativa de origen. La llave del certificado permanece sólo en el VPS y el token de Cloudflare se revoca al terminar.
 
 Después del corte, Oracle es la única fuente productiva. El entorno local deja de ser candidato de rollback en cuanto exista una escritura nueva en producción.
 
