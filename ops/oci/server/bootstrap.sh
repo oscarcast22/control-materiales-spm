@@ -35,10 +35,15 @@ if ! id materiales >/dev/null 2>&1; then
 fi
 usermod -a -G www-data materiales
 
+install -d -o materiales -g www-data -m 0750 /srv/control-materiales
 install -d -o materiales -g www-data -m 0750 /srv/control-materiales/releases
 install -d -o materiales -g www-data -m 0750 /srv/control-materiales/shared
 install -d -o materiales -g www-data -m 0770 \
+    /srv/control-materiales/shared/storage \
+    /srv/control-materiales/shared/storage/app \
     /srv/control-materiales/shared/storage/app/private \
+    /srv/control-materiales/shared/storage/framework \
+    /srv/control-materiales/shared/storage/framework/cache \
     /srv/control-materiales/shared/storage/framework/cache/data \
     /srv/control-materiales/shared/storage/framework/sessions \
     /srv/control-materiales/shared/storage/framework/views \

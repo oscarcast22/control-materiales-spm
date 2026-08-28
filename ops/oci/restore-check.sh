@@ -49,8 +49,8 @@ tar -C "$WORK_DIR" -xzf "$ARCHIVE"
 pg_restore --list "$WORK_DIR/database.dump" >/dev/null
 
 sudo -u postgres createdb --owner=control_materiales_app "$RESTORE_DB"
-export PGPASSFILE=/srv/control-materiales/shared/.pgpass
-sudo -u materiales pg_restore \
+PGPASSFILE=/srv/control-materiales/shared/.pgpass
+sudo -u materiales env PGPASSFILE="$PGPASSFILE" pg_restore \
     --host=127.0.0.1 \
     --username=control_materiales_app \
     --dbname="$RESTORE_DB" \

@@ -76,7 +76,7 @@ export PGPASSFILE="$SHARED_ROOT/.pgpass"
 
 systemctl stop control-materiales-queue.service 2>/dev/null || true
 sudo -u materiales php "$APP_ROOT/artisan" down --retry=60 || true
-sudo -u materiales pg_restore \
+sudo -u materiales env PGPASSFILE="$PGPASSFILE" pg_restore \
     --host=127.0.0.1 \
     --username=control_materiales_app \
     --dbname=control_materiales_spm \
@@ -96,7 +96,7 @@ find "$SHARED_ROOT/storage/app/private" -type d -exec chmod 0770 {} +
 find "$SHARED_ROOT/storage/app/private" -type f -exec chmod 0660 {} +
 
 sudo -u materiales php "$APP_ROOT/artisan" migrate --force --no-interaction
-sudo -u materiales psql \
+sudo -u materiales env PGPASSFILE="$PGPASSFILE" psql \
     --host=127.0.0.1 \
     --username=control_materiales_app \
     --dbname=control_materiales_spm \
