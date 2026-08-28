@@ -291,6 +291,7 @@ else
     oci_cmd iam policy update \
         --policy-id "$POLICY_ID" \
         --statements "$POLICY_STATEMENTS" \
+        --version-date '' \
         --force >/dev/null
 fi
 
