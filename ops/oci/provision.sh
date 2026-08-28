@@ -291,8 +291,7 @@ else
     oci_cmd iam policy update \
         --policy-id "$POLICY_ID" \
         --statements "$POLICY_STATEMENTS" \
-        --force \
-        --wait-for-state ACTIVE >/dev/null
+        --force >/dev/null
 fi
 
 LIFECYCLE_ITEMS='[{"name":"eliminar-respaldos-diarios-antiguos","action":"DELETE","timeAmount":30,"timeUnit":"DAYS","isEnabled":true,"objectNameFilter":{"inclusionPrefixes":["daily/"]}}]'
