@@ -123,7 +123,7 @@ class ReportController extends Controller
     }
 
     /**
-     * @param  array{from: string, to: string|null, received_by_id: int|null, material_id: int|null, voucher_type_id: int|null, state: string|null, tab: string}  $filters
+     * @param  array{search: string, from: string, to: string|null, received_by_id: int|null, material_id: int|null, voucher_type_id: int|null, state: string|null, tab: string}  $filters
      * @return Builder<Voucher>
      */
     private function trackingVoucherQuery(array $filters): Builder
@@ -135,6 +135,9 @@ class ReportController extends Controller
             ->where('direction', VoucherDirection::Exit->value)
             ->whereDate('issued_on', '>=', $filters['from']);
 
+        if ($filters['search'] !== '') {
+            $query->searchText($filters['search']);
+        }
         if ($filters['to']) {
             $query->whereDate('issued_on', '<=', $filters['to']);
         }
@@ -151,10 +154,11 @@ class ReportController extends Controller
         return $query->orderByDesc('issued_on')->orderByDesc('id');
     }
 
-    /** @return array{from: string, to: string|null, received_by_id: int|null, material_id: int|null, voucher_type_id: int|null, state: string|null, tab: string} */
+    /** @return array{search: string, from: string, to: string|null, received_by_id: int|null, material_id: int|null, voucher_type_id: int|null, state: string|null, tab: string} */
     private function trackingFilters(Request $request): array
     {
         $data = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
             'received_by_id' => ['nullable', 'integer', 'exists:people,id'],
@@ -174,6 +178,7 @@ class ReportController extends Controller
         }
 
         return [
+            'search' => trim((string) ($data['search'] ?? '')),
             'from' => $from->toDateString(),
             'to' => $to?->toDateString(),
             'received_by_id' => isset($data['received_by_id']) ? (int) $data['received_by_id'] : null,

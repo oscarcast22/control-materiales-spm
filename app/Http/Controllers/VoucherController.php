@@ -45,15 +45,7 @@ class VoucherController extends Controller
             ->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'destinations', 'items.material', 'items.unit', 'items.applications']);
 
         if ($search = trim((string) $request->string('search'))) {
-            $needle = '%'.mb_strtolower($search).'%';
-            $query->where(function (Builder $query) use ($needle): void {
-                $query->whereRaw('LOWER(folio) LIKE ?', [$needle])
-                    ->orWhereRaw('LOWER(usage_description) LIKE ?', [$needle])
-                    ->orWhereHas('destinations', fn (Builder $destination) => $destination->whereRaw('LOWER(name) LIKE ?', [$needle]))
-                    ->orWhereRaw('LOWER(loaned_to_name) LIKE ?', [$needle])
-                    ->orWhereHas('receivedBy', fn (Builder $person) => $person->whereRaw('LOWER(name) LIKE ?', [$needle]))
-                    ->orWhereHas('items.material', fn (Builder $material) => $material->whereRaw('LOWER(name) LIKE ?', [$needle]));
-            });
+            $query->searchText($search);
         }
         if ($request->filled('from')) {
             $query->whereDate('issued_on', '>=', $request->date('from'));

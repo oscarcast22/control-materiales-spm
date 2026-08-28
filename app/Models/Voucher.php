@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
+use App\Support\Normalizer;
 use Database\Factories\VoucherFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -73,6 +75,46 @@ class Voucher extends Model
             'returned_on' => 'date:Y-m-d',
             'cancelled_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @param  Builder<Voucher>  $query
+     * @return Builder<Voucher>
+     */
+    public function scopeSearchText(Builder $query, string $search): Builder
+    {
+        $search = trim($search);
+
+        if ($search === '') {
+            return $query;
+        }
+
+        $needle = '%'.mb_strtolower($search).'%';
+        $normalizedNeedle = Normalizer::key($search);
+        $folioNeedle = Normalizer::folio($search);
+
+        return $query->where(function (Builder $searchQuery) use ($needle, $normalizedNeedle, $folioNeedle): void {
+            $searchQuery
+                ->whereRaw('LOWER(vouchers.folio) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(vouchers.usage_description) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(vouchers.loaned_to_name) LIKE ?', [$needle])
+                ->orWhereHas('items', fn (Builder $items) => $items
+                    ->whereRaw('LOWER(voucher_items.description_snapshot) LIKE ?', [$needle]));
+
+            if ($folioNeedle !== '') {
+                $searchQuery->orWhere('vouchers.folio_key', 'like', "%{$folioNeedle}%");
+            }
+
+            if ($normalizedNeedle !== '') {
+                $searchQuery
+                    ->orWhereHas('receivedBy', fn (Builder $person) => $person
+                        ->where('normalized_name', 'like', "%{$normalizedNeedle}%"))
+                    ->orWhereHas('destinations', fn (Builder $destination) => $destination
+                        ->where('normalized_name', 'like', "%{$normalizedNeedle}%"))
+                    ->orWhereHas('items.material', fn (Builder $material) => $material
+                        ->where('normalized_name', 'like', "%{$normalizedNeedle}%"));
+            }
+        });
     }
 
     /** @return BelongsTo<StorageLocation, $this> */
