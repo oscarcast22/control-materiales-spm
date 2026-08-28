@@ -52,9 +52,9 @@ class VoucherTypeScopeTest extends TestCase
                 ->where('vouchers.data.0.folio', '16576'));
     }
 
-    public function test_tracking_and_dashboard_use_the_same_voucher_type_scope(): void
+    public function test_tracking_defaults_to_warehouse_and_allows_all_types_explicitly(): void
     {
-        [$user, $warehouse, $yard] = $this->scopedVouchers();
+        [$user, $warehouse] = $this->scopedVouchers();
 
         $this->actingAs($user)->get(route('reports.material-tracking'))
             ->assertOk()
@@ -69,29 +69,24 @@ class VoucherTypeScopeTest extends TestCase
                 ->where('filters.voucher_type_id', null)
                 ->where('metrics.delivered_vouchers', 2)
                 ->has('rows', 2));
+    }
+
+    public function test_dashboard_always_shows_the_general_summary_for_all_voucher_types(): void
+    {
+        [$user, , $yard] = $this->scopedVouchers();
 
         $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('filters.voucher_type_id', $warehouse->id)
-                ->where('metrics.pending_vouchers', 1)
-                ->has('recent', 1)
-                ->has('voucher_sequence.types', 1)
-                ->where('voucher_sequence.types.0.voucher_type.code', 'warehouse'));
+                ->missing('filters')
+                ->missing('voucherTypes')
+                ->where('metrics.pending_vouchers', 2)
+                ->has('recent', 2)
+                ->has('voucher_sequence.types', 2));
 
         $this->actingAs($user)->get(route('dashboard', ['voucher_type_id' => $yard->id]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('filters.voucher_type_id', $yard->id)
-                ->where('metrics.pending_vouchers', 1)
-                ->has('recent', 1)
-                ->has('voucher_sequence.types', 1)
-                ->where('voucher_sequence.types.0.voucher_type.code', 'yard'));
-
-        $this->actingAs($user)->get(route('dashboard', ['voucher_type_id' => 'all']))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('filters.voucher_type_id', null)
                 ->where('metrics.pending_vouchers', 2)
                 ->has('recent', 2)
                 ->has('voucher_sequence.types', 2));

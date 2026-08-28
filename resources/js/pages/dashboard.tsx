@@ -30,9 +30,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { VoucherModalLink } from '@/components/voucher-dialogs';
-import { useReactiveFilters } from '@/hooks/use-reactive-filters';
 import { formatDate, formatQuantity } from '@/lib/format';
 import type { Voucher, VoucherItem, VoucherType } from '@/types';
 
@@ -65,44 +63,17 @@ type Props = {
             missing: number[];
         }[];
     };
-    filters: { voucher_type_id: number | null };
-    voucherTypes: VoucherType[];
 };
-
-type DashboardFilterState = { voucher_type_id: string };
-
-const dashboardReloadProps = [
-    'metrics',
-    'recent',
-    'oldest_pending',
-    'voucher_sequence',
-    'filters',
-];
-
-const serializeDashboardFilters = (filters: DashboardFilterState) => ({
-    voucher_type_id: filters.voucher_type_id || 'all',
-});
 
 export default function Dashboard({
     metrics,
     recent,
     oldest_pending,
     voucher_sequence,
-    filters,
-    voucherTypes,
 }: Props) {
-    const { filters: form, updateFilter } = useReactiveFilters({
-        initial: {
-            voucher_type_id: String(filters.voucher_type_id ?? ''),
-        },
-        url: '/dashboard',
-        only: dashboardReloadProps,
-        serialize: serializeDashboardFilters,
-    });
     const trackingQuery = new URLSearchParams({
         tab: 'detail',
         state: 'pending',
-        ...serializeDashboardFilters(form),
     }).toString();
 
     return (
@@ -111,48 +82,9 @@ export default function Dashboard({
             <Page width="wide">
                 <PageHeader
                     eyebrow="Vista operativa"
-                    title="Control de materiales"
+                    title="Resumen general"
                     size="display"
-                    description="Identifica primero lo que requiere atención y continúa con la actividad más reciente."
-                    context={
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            <span className="text-xs font-semibold text-text-secondary">
-                                Mostrar vales de
-                            </span>
-                            <ToggleGroup
-                                type="single"
-                                value={form.voucher_type_id || 'all'}
-                                onValueChange={(value) => {
-                                    if (value) {
-                                        updateFilter(
-                                            'voucher_type_id',
-                                            value === 'all' ? '' : value,
-                                        );
-                                    }
-                                }}
-                                variant="outline"
-                                size="lg"
-                                aria-label="Mostrar vales de"
-                                className="w-fit rounded-lg bg-glass-strong"
-                            >
-                                {voucherTypes.map((type) => (
-                                    <ToggleGroupItem
-                                        key={type.id}
-                                        value={String(type.id)}
-                                        className="px-4 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary max-sm:min-h-11"
-                                    >
-                                        {type.name}
-                                    </ToggleGroupItem>
-                                ))}
-                                <ToggleGroupItem
-                                    value="all"
-                                    className="px-4 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary max-sm:min-h-11"
-                                >
-                                    Todos
-                                </ToggleGroupItem>
-                            </ToggleGroup>
-                        </div>
-                    }
+                    description="Panorama conjunto de los vales de Almacén y Patio, con sus pendientes y actividad reciente."
                     actions={
                         <div className="flex flex-wrap items-center gap-3">
                             <Badge

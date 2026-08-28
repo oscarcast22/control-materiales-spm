@@ -33,7 +33,9 @@ PostgreSQL + almacenamiento privado de adjuntos
 
 La pantalla y el XLSX de seguimiento consumen el mismo agregador para evitar resultados divergentes.
 
-Las consultas de vales, seguimiento y resumen comparten el mismo alcance por tipo de vale. El parámetro `voucher_type_id` acepta un identificador activo o `all`; cuando se omite, el sistema usa Almacén (`warehouse`). El frontend conserva este alcance en ordenamiento, paginación, enlaces de detalle y exportación, y actualiza los resultados mediante visitas parciales de Inertia.
+Las consultas de vales y seguimiento comparten el mismo alcance por tipo de vale. El parámetro `voucher_type_id` acepta un identificador activo o `all`; cuando se omite, el sistema usa Almacén (`warehouse`). El frontend conserva este alcance en ordenamiento, paginación, enlaces de detalle y exportación, y actualiza los resultados mediante visitas parciales de Inertia. El resumen no acepta este filtro: siempre agrega Almacén y Patio en un panorama general.
+
+Seguimiento y su exportación aceptan el parámetro textual `search`. La búsqueda localiza vales completos por folio, técnico receptor, destino, descripción de actividad o material y se combina con los demás filtros activos.
 
 ## Relaciones principales
 

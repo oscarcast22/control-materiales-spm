@@ -30,14 +30,12 @@ export function PageHeader({
     title,
     description,
     eyebrow,
-    context,
     actions,
     size = 'headline',
 }: {
     title: string;
     description?: string;
     eyebrow?: string;
-    context?: ReactNode;
     actions?: ReactNode;
     size?: 'headline' | 'display';
 }) {
@@ -67,7 +65,6 @@ export function PageHeader({
                         {description}
                     </p>
                 )}
-                {context && <div className="mt-3">{context}</div>}
             </div>
             {actions && (
                 <div className="flex shrink-0 flex-wrap items-center gap-2">

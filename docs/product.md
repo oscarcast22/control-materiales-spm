@@ -52,7 +52,7 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 - Catálogo buscable de ubicaciones con alta desde el vale; una actividad no geográfica se conserva por separado como texto libre.
 - Seguimiento desde 2026 por material, técnico y detalle.
 - Exportación XLSX con los mismos filtros del seguimiento.
-- Vales, seguimiento y resumen abren con Almacén como contexto predeterminado; Patio o la vista combinada se consultan mediante una selección explícita.
+- Vales y seguimiento abren con Almacén como contexto predeterminado; Patio o la vista combinada se consultan mediante una selección explícita. El resumen siempre presenta el panorama general de Almacén y Patio.
 - Importación trazable y repetible únicamente de agosto de 2026 desde el control actualizado.
 
 ## Fuera de alcance
