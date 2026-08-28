@@ -4,7 +4,6 @@ import {
     FileSpreadsheet,
     LayoutDashboard,
     PackageSearch,
-    PlusCircle,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -26,11 +25,6 @@ const mainNavItems: NavItem[] = [
         title: 'Resumen',
         href: '/dashboard',
         icon: LayoutDashboard,
-    },
-    {
-        title: 'Nuevo vale',
-        href: '/vouchers/create',
-        icon: PlusCircle,
     },
     {
         title: 'Vales',

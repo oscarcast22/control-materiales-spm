@@ -11,6 +11,6 @@ enum VoucherStatus: string
     /** @return list<string> */
     public static function operationalValues(): array
     {
-        return [self::Active->value, self::Loaned->value];
+        return [self::Active->value];
     }
 }

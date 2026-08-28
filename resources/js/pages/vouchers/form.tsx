@@ -56,6 +56,7 @@ type Line = {
     quantity: string;
 };
 type FormData = {
+    _dialog: boolean;
     voucher_type_id: string;
     folio: string;
     direction: 'entry' | 'exit';
@@ -72,7 +73,7 @@ type FormData = {
     items: Line[];
     attachments: File[];
 };
-type Props = {
+export type VoucherFormProps = {
     voucher: Voucher | null;
     materials: Material[];
     units: Unit[];
@@ -83,6 +84,9 @@ type Props = {
     programs: Program[];
     actions: Action[];
     destinations: Destination[];
+    embedded?: boolean;
+    onSuccess?: () => void;
+    onDirtyChange?: (dirty: boolean) => void;
 };
 
 const blankLine = (): Line => ({
@@ -102,7 +106,10 @@ export default function VoucherForm({
     programs,
     actions,
     destinations,
-}: Props) {
+    embedded = false,
+    onSuccess,
+    onDirtyChange,
+}: VoucherFormProps) {
     const formElement = useRef<HTMLFormElement>(null);
     const [unitOverrides, setUnitOverrides] = useState<boolean[]>(
         () => voucher?.items.map(() => false) ?? [false],
@@ -161,6 +168,7 @@ export default function VoucherForm({
         (action) => String(action.program_id) === defaultProgramId,
     );
     const form = useForm<FormData>({
+        _dialog: embedded,
         voucher_type_id: initialVoucherTypeId,
         folio: voucher?.folio ?? '',
         direction: voucher?.direction ?? 'exit',
@@ -254,6 +262,10 @@ export default function VoucherForm({
                 String(voucherType.id) === form.data.voucher_type_id,
         )?.code === 'warehouse';
     const errorSignature = Object.keys(form.errors).sort().join('|');
+
+    useEffect(() => {
+        onDirtyChange?.(form.isDirty);
+    }, [form.isDirty, onDirtyChange]);
 
     useEffect(() => {
         if (!errorSignature) {
@@ -373,7 +385,11 @@ export default function VoucherForm({
     };
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        const options = { forceFormData: true, preserveScroll: true };
+        const options = {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess,
+        };
 
         if (voucher) {
             form.put(`/vouchers/${voucher.id}`, options);
@@ -384,13 +400,21 @@ export default function VoucherForm({
 
     return (
         <>
-            <Head
-                title={voucher ? `Editar vale ${voucher.folio}` : 'Nuevo vale'}
-            />
+            {!embedded && (
+                <Head
+                    title={
+                        voucher ? `Editar vale ${voucher.folio}` : 'Nuevo vale'
+                    }
+                />
+            )}
             <form
                 ref={formElement}
                 onSubmit={submit}
-                className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-6 px-4 py-6 min-[1200px]:px-8 md:px-6"
+                className={
+                    embedded
+                        ? 'flex w-full flex-col gap-6 px-1 py-1'
+                        : 'mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-6 px-4 py-6 min-[1200px]:px-8 md:px-6'
+                }
             >
                 <PageHeader
                     title={voucher ? 'Editar vale' : 'Capturar vale'}
@@ -401,18 +425,20 @@ export default function VoucherForm({
                     }
                     actions={
                         <>
-                            <Button variant="ghost" asChild>
-                                <Link
-                                    href={
-                                        voucher
-                                            ? `/vouchers/${voucher.id}`
-                                            : '/vouchers'
-                                    }
-                                >
-                                    <ArrowLeft data-icon="inline-start" />
-                                    Volver
-                                </Link>
-                            </Button>
+                            {!embedded && (
+                                <Button variant="ghost" asChild>
+                                    <Link
+                                        href={
+                                            voucher
+                                                ? `/vouchers/${voucher.id}`
+                                                : '/vouchers'
+                                        }
+                                    >
+                                        <ArrowLeft data-icon="inline-start" />
+                                        Volver
+                                    </Link>
+                                </Button>
+                            )}
                             <Button
                                 disabled={
                                     form.processing ||

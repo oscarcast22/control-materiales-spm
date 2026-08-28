@@ -6,11 +6,8 @@ import {
     FileText,
     Pencil,
     Printer,
-    RotateCcw,
-    Send,
     Wrench,
 } from 'lucide-react';
-import { useState } from 'react';
 import { ConfirmActionDialog } from '@/components/confirm-action-dialog';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { Page } from '@/components/page';
@@ -20,18 +17,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
 import { IconButton } from '@/components/ui/icon-button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Table,
     TableBody,
@@ -40,60 +26,49 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { VoucherModalLink } from '@/components/voucher-dialogs';
 import { formatBytes, formatDate, formatQuantity } from '@/lib/format';
 import type { MaterialApplication, Voucher, VoucherItem } from '@/types';
 
-export default function VoucherShow({ voucher }: { voucher: Voucher }) {
-    const [loanDialogOpen, setLoanDialogOpen] = useState(false);
-    const [loanedToName, setLoanedToName] = useState('');
+export default function VoucherShow({
+    voucher,
+    embedded = false,
+    onEdit,
+    onRefresh,
+}: {
+    voucher: Voucher;
+    embedded?: boolean;
+    onEdit?: () => void;
+    onRefresh?: () => void;
+}) {
     const canApply =
         voucher.direction === 'exit' &&
-        voucher.status !== 'cancelled' &&
+        voucher.status === 'active' &&
         voucher.items.some((item) => Number(item.pending_quantity) > 0);
-    const loan = () => {
-        const name = loanedToName.trim();
-
-        if (!name) {
-            return;
-        }
-
-        router.post(
-            `/vouchers/${voucher.id}/loan`,
-            { loaned_to_name: name },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setLoanDialogOpen(false);
-                    setLoanedToName('');
-                },
-            },
-        );
-    };
 
     return (
         <>
-            <Head title={`Vale ${voucher.folio}`} />
+            {!embedded && <Head title={`Vale ${voucher.folio}`} />}
             <Page width="wide">
                 <div className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex items-start gap-3">
-                        <IconButton
-                            label="Volver a vales"
-                            variant="ghost"
-                            asChild
-                        >
-                            <Link href="/vouchers">
-                                <ArrowLeft />
-                            </Link>
-                        </IconButton>
+                        {!embedded && (
+                            <IconButton
+                                label="Volver a vales"
+                                variant="ghost"
+                                asChild
+                            >
+                                <Link href="/vouchers">
+                                    <ArrowLeft />
+                                </Link>
+                            </IconButton>
+                        )}
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <h1 className="text-[1.625rem] leading-8 font-bold tracking-[-0.02em] md:text-[2rem] md:leading-10">
                                     Vale {voucher.folio}
                                 </h1>
                                 <StatusBadge state={voucher.balance_state} />
-                                {voucher.status === 'loaned' && (
-                                    <Badge variant="secondary">Prestado</Badge>
-                                )}
                                 {voucher.needs_review && (
                                     <Badge variant="warning">
                                         Requiere revisión
@@ -121,109 +96,43 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                 Imprimir
                             </a>
                         </Button>
-                        {voucher.status === 'active' && (
-                            <>
-                                <Button variant="outline" asChild>
-                                    <Link href={`/vouchers/${voucher.id}/edit`}>
-                                        <Pencil data-icon="inline-start" />
-                                        Editar
-                                    </Link>
-                                </Button>
-                                <Dialog
-                                    open={loanDialogOpen}
-                                    onOpenChange={setLoanDialogOpen}
+                        {embedded ? (
+                            <Button variant="outline" onClick={onEdit}>
+                                <Pencil data-icon="inline-start" />
+                                Editar
+                            </Button>
+                        ) : (
+                            <Button variant="outline" asChild>
+                                <VoucherModalLink
+                                    mode="edit"
+                                    voucherId={voucher.id}
                                 >
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline">
-                                            <Send data-icon="inline-start" />
-                                            Marcar prestado
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>
-                                                Marcar vale como prestado
-                                            </DialogTitle>
-                                            <DialogDescription>
-                                                Registra quién se lleva el vale
-                                                físico. El material y su saldo
-                                                no cambian.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="grid gap-2 py-2">
-                                            <Label htmlFor="loaned-to-name">
-                                                Prestado a
-                                            </Label>
-                                            <Input
-                                                id="loaned-to-name"
-                                                value={loanedToName}
-                                                onChange={(event) =>
-                                                    setLoanedToName(
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                placeholder="Nombre de la persona"
-                                                autoComplete="off"
-                                            />
-                                        </div>
-                                        <DialogFooter>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() =>
-                                                    setLoanDialogOpen(false)
-                                                }
-                                            >
-                                                Cancelar
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                onClick={loan}
-                                                disabled={!loanedToName.trim()}
-                                            >
-                                                Confirmar préstamo
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                                <ConfirmActionDialog
-                                    trigger={
-                                        <Button variant="destructive">
-                                            Cancelar
-                                        </Button>
-                                    }
-                                    title="Cancelar vale"
-                                    description="La cancelación conserva el folio y deja una traza auditable. No se puede deshacer desde esta pantalla."
-                                    confirmLabel="Cancelar vale"
-                                    destructive
-                                    reasonLabel="Motivo de cancelación"
-                                    reasonPlaceholder="Explica por qué se cancela este vale"
-                                    onConfirm={(reason) =>
-                                        router.post(
-                                            `/vouchers/${voucher.id}/cancel`,
-                                            { reason },
-                                            { preserveScroll: true },
-                                        )
-                                    }
-                                />
-                            </>
+                                    <Pencil data-icon="inline-start" />
+                                    Editar
+                                </VoucherModalLink>
+                            </Button>
                         )}
-                        {voucher.status === 'loaned' && (
+                        {voucher.status === 'active' && (
                             <ConfirmActionDialog
                                 trigger={
-                                    <Button variant="outline">
-                                        <RotateCcw data-icon="inline-start" />
-                                        Registrar devolución
+                                    <Button variant="destructive">
+                                        Cancelar
                                     </Button>
                                 }
-                                title="Registrar devolución"
-                                description="Confirma que el documento físico ya fue devuelto. El seguimiento del material no cambia."
-                                confirmLabel="Registrar devolución"
-                                onConfirm={() =>
+                                title="Cancelar vale"
+                                description="La cancelación conserva el folio y deja una traza auditable. No se puede deshacer desde esta pantalla."
+                                confirmLabel="Cancelar vale"
+                                destructive
+                                reasonLabel="Motivo de cancelación"
+                                reasonPlaceholder="Explica por qué se cancela este vale"
+                                onConfirm={(reason) =>
                                     router.post(
-                                        `/vouchers/${voucher.id}/return`,
-                                        {},
-                                        { preserveScroll: true },
+                                        `/vouchers/${voucher.id}/cancel`,
+                                        { reason, _dialog: embedded },
+                                        {
+                                            preserveScroll: true,
+                                            onSuccess: onRefresh,
+                                        },
                                     )
                                 }
                             />
@@ -241,15 +150,17 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                     <Alert variant="info">
                         <AlertDescription>
                             <p className="font-medium text-foreground">
-                                Vale físico prestado a {voucher.loaned_to_name}
+                                {voucher.loaned_to_name
+                                    ? `Vale prestado a ${voucher.loaned_to_name}`
+                                    : 'Vale registrado como prestado'}
                             </p>
                             <p>
                                 Registrado el{' '}
                                 {voucher.loaned_on
                                     ? formatDate(voucher.loaned_on)
                                     : '—'}
-                                . El seguimiento del material continúa sin
-                                cambios.
+                                . Este folio sólo conserva la continuidad de la
+                                numeración y no genera seguimiento de material.
                             </p>
                         </AlertDescription>
                     </Alert>
@@ -286,8 +197,11 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                         onConfirm={() =>
                                             router.post(
                                                 `/vouchers/${voucher.id}/review`,
-                                                {},
-                                                { preserveScroll: true },
+                                                { _dialog: embedded },
+                                                {
+                                                    preserveScroll: true,
+                                                    onSuccess: onRefresh,
+                                                },
                                             )
                                         }
                                     />
@@ -377,6 +291,7 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                                 {canApply && (
                                     <QuickApplicationDialog
                                         voucher={voucher}
+                                        onSuccess={onRefresh}
                                         trigger={
                                             <Button>
                                                 <Wrench data-icon="inline-start" />
@@ -392,7 +307,7 @@ export default function VoucherShow({ voucher }: { voucher: Voucher }) {
                         <MaterialCard
                             key={item.id}
                             item={item}
-                            active={voucher.status !== 'cancelled'}
+                            active={voucher.status === 'active'}
                             direction={voucher.direction}
                         />
                     ))}

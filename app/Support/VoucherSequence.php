@@ -13,7 +13,7 @@ final class VoucherSequence
      *   types: list<array{voucher_type: array{id: int, name: string, code: string}, start: int, last: int|null, missing_count: int, missing: list<int>}>
      * }
      */
-    public function summary(): array
+    public function summary(?int $voucherTypeId = null): array
     {
         /** @var array<string, int> $starts */
         $starts = config('material-control.voucher_sequence_starts', []);
@@ -29,6 +29,7 @@ final class VoucherSequence
 
         $locations = StorageLocation::query()
             ->whereIn('code', array_keys($starts))
+            ->when($voucherTypeId !== null, fn ($query) => $query->whereKey($voucherTypeId))
             ->with(['vouchers:id,storage_location_id,folio'])
             ->orderBy('name')
             ->get();

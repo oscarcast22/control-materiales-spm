@@ -30,6 +30,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { VoucherModalLink } from '@/components/voucher-dialogs';
+import { useReactiveFilters } from '@/hooks/use-reactive-filters';
 import { formatDate, formatQuantity } from '@/lib/format';
 import type { Voucher, VoucherItem, VoucherType } from '@/types';
 
@@ -62,14 +65,46 @@ type Props = {
             missing: number[];
         }[];
     };
+    filters: { voucher_type_id: number | null };
+    voucherTypes: VoucherType[];
 };
+
+type DashboardFilterState = { voucher_type_id: string };
+
+const dashboardReloadProps = [
+    'metrics',
+    'recent',
+    'oldest_pending',
+    'voucher_sequence',
+    'filters',
+];
+
+const serializeDashboardFilters = (filters: DashboardFilterState) => ({
+    voucher_type_id: filters.voucher_type_id || 'all',
+});
 
 export default function Dashboard({
     metrics,
     recent,
     oldest_pending,
     voucher_sequence,
+    filters,
+    voucherTypes,
 }: Props) {
+    const { filters: form, updateFilter } = useReactiveFilters({
+        initial: {
+            voucher_type_id: String(filters.voucher_type_id ?? ''),
+        },
+        url: '/dashboard',
+        only: dashboardReloadProps,
+        serialize: serializeDashboardFilters,
+    });
+    const trackingQuery = new URLSearchParams({
+        tab: 'detail',
+        state: 'pending',
+        ...serializeDashboardFilters(form),
+    }).toString();
+
     return (
         <>
             <Head title="Resumen" />
@@ -79,6 +114,45 @@ export default function Dashboard({
                     title="Control de materiales"
                     size="display"
                     description="Identifica primero lo que requiere atención y continúa con la actividad más reciente."
+                    context={
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <span className="text-xs font-semibold text-text-secondary">
+                                Mostrar vales de
+                            </span>
+                            <ToggleGroup
+                                type="single"
+                                value={form.voucher_type_id || 'all'}
+                                onValueChange={(value) => {
+                                    if (value) {
+                                        updateFilter(
+                                            'voucher_type_id',
+                                            value === 'all' ? '' : value,
+                                        );
+                                    }
+                                }}
+                                variant="outline"
+                                size="lg"
+                                aria-label="Mostrar vales de"
+                                className="w-fit rounded-lg bg-glass-strong"
+                            >
+                                {voucherTypes.map((type) => (
+                                    <ToggleGroupItem
+                                        key={type.id}
+                                        value={String(type.id)}
+                                        className="px-4 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary max-sm:min-h-11"
+                                    >
+                                        {type.name}
+                                    </ToggleGroupItem>
+                                ))}
+                                <ToggleGroupItem
+                                    value="all"
+                                    className="px-4 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary max-sm:min-h-11"
+                                >
+                                    Todos
+                                </ToggleGroupItem>
+                            </ToggleGroup>
+                        </div>
+                    }
                     actions={
                         <div className="flex flex-wrap items-center gap-3">
                             <Badge
@@ -88,10 +162,10 @@ export default function Dashboard({
                                 Seguimiento · 2026
                             </Badge>
                             <Button asChild>
-                                <Link href="/vouchers/create">
+                                <VoucherModalLink mode="create">
                                     <Plus data-icon="inline-start" />
                                     Capturar vale
-                                </Link>
+                                </VoucherModalLink>
                             </Button>
                         </div>
                     }
@@ -109,8 +183,8 @@ export default function Dashboard({
                         <AlertDescription>
                             <p>
                                 Revisa la numeración antes de archivar los vales
-                                físicos. Los cancelados también cuentan como
-                                folios presentes.
+                                físicos. Los cancelados y prestados también
+                                cuentan como folios presentes.
                             </p>
                             <Collapsible className="mt-2">
                                 <CollapsibleTrigger asChild>
@@ -208,7 +282,9 @@ export default function Dashboard({
                             description="Partidas abiertas ordenadas por antigüedad."
                             action={
                                 <Button variant="ghost" size="sm" asChild>
-                                    <Link href="/reports/material-tracking?tab=detail&state=pending">
+                                    <Link
+                                        href={`/reports/material-tracking?${trackingQuery}`}
+                                    >
                                         Ver seguimiento
                                         <ArrowRight data-icon="inline-end" />
                                     </Link>
@@ -234,12 +310,15 @@ export default function Dashboard({
                                                 key={`${row.voucher_id}-${row.id}`}
                                             >
                                                 <TableCell>
-                                                    <Link
+                                                    <VoucherModalLink
+                                                        mode="detail"
+                                                        voucherId={
+                                                            row.voucher_id
+                                                        }
                                                         className="font-semibold text-primary underline-offset-4 hover:underline"
-                                                        href={`/vouchers/${row.voucher_id}`}
                                                     >
                                                         Vale {row.folio}
-                                                    </Link>
+                                                    </VoucherModalLink>
                                                     <p className="mt-0.5 text-xs text-muted-foreground">
                                                         {row.voucher_type.name}{' '}
                                                         ·{' '}
@@ -284,9 +363,10 @@ export default function Dashboard({
                         />
                         <div className="glass-panel-strong mt-3 overflow-hidden rounded-2xl border">
                             {recent.map((voucher) => (
-                                <Link
+                                <VoucherModalLink
                                     key={voucher.id}
-                                    href={`/vouchers/${voucher.id}`}
+                                    mode="detail"
+                                    voucherId={voucher.id}
                                     className="group flex min-h-16 items-center justify-between gap-4 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-hover/70 focus-visible:bg-hover focus-visible:ring-3 focus-visible:ring-ring/25 focus-visible:outline-none focus-visible:ring-inset"
                                 >
                                     <div className="min-w-0">
@@ -307,7 +387,7 @@ export default function Dashboard({
                                     <StatusBadge
                                         state={voucher.balance_state}
                                     />
-                                </Link>
+                                </VoucherModalLink>
                             ))}
                             {recent.length === 0 && (
                                 <div className="flex min-h-48 flex-col items-center justify-center px-5 py-8 text-center">

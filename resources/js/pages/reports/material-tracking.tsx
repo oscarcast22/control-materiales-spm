@@ -1,27 +1,16 @@
-import { Head, Link, router } from '@inertiajs/react';
-import {
-    AlertTriangle,
-    CheckCircle2,
-    ClipboardCheck,
-    Download,
-    Filter,
-    PackageOpen,
-    Truck,
-    Users,
-    X,
-} from 'lucide-react';
-import type { FormEvent } from 'react';
-import { useId, useState } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import { ChevronRight, Download, X } from 'lucide-react';
+import type { MouseEvent } from 'react';
+import { Fragment, useId, useState } from 'react';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
-import { MetricCard } from '@/components/metric-card';
-import { Page, PageHeader, SectionHeader } from '@/components/page';
+import { Page, PageHeader } from '@/components/page';
 import { SearchableSelect } from '@/components/searchable-select';
 import { SimpleSelect } from '@/components/simple-select';
-import { StatusBadge } from '@/components/status-badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { SortableTableHead } from '@/components/sortable-table-head';
 import { Button } from '@/components/ui/button';
 import { FormField, FormLabel } from '@/components/ui/form-field';
+import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import {
     Table,
@@ -32,7 +21,10 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { VoucherModalLink } from '@/components/voucher-dialogs';
+import { useReactiveFilters } from '@/hooks/use-reactive-filters';
 import { formatDate, formatQuantity } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import type {
     ChoiceOption,
     Material,
@@ -49,6 +41,19 @@ type TrackingRow = Omit<VoucherItem, 'applications'> & {
     received_by: Named;
     voucher_type: VoucherType;
     destination_summary: string | null;
+};
+
+type VoucherTrackingSummary = {
+    voucher_id: number;
+    folio: string;
+    issued_on: string;
+    received_by: Named;
+    voucher_type: VoucherType;
+    destination_summary: string | null;
+    delivered_total: number;
+    used_total: number;
+    pending_total: number;
+    items: TrackingRow[];
 };
 
 type MaterialSummary = {
@@ -91,6 +96,29 @@ type Props = {
     voucherTypes: VoucherType[];
 };
 
+type TrackingFilterState = {
+    from: string;
+    to: string;
+    received_by_id: string;
+    material_id: string;
+    voucher_type_id: string;
+    state: string;
+    tab: Tab;
+};
+
+const trackingReloadProps = [
+    'metrics',
+    'by_material',
+    'by_technician',
+    'rows',
+    'filters',
+];
+
+const serializeTrackingFilters = (filters: TrackingFilterState) => ({
+    ...filters,
+    voucher_type_id: filters.voucher_type_id || 'all',
+});
+
 export default function MaterialTracking({
     metrics,
     by_material,
@@ -102,56 +130,56 @@ export default function MaterialTracking({
     materials,
     voucherTypes,
 }: Props) {
-    const [form, setForm] = useState({
+    const warehouseTypeId = String(
+        voucherTypes.find((type) => type.code === 'warehouse')?.id ?? '',
+    );
+    const initialFilters: TrackingFilterState = {
         from: String(filters.from ?? cutoff),
         to: String(filters.to ?? ''),
         received_by_id: String(filters.received_by_id ?? ''),
         material_id: String(filters.material_id ?? ''),
         voucher_type_id: String(filters.voucher_type_id ?? ''),
         state: String(filters.state ?? ''),
-        tab: filters.tab ?? 'material',
+        tab: filters.tab ?? 'detail',
+    };
+    const {
+        filters: form,
+        replaceFilters,
+        updateFilter,
+    } = useReactiveFilters({
+        initial: initialFilters,
+        url: '/reports/material-tracking',
+        only: trackingReloadProps,
+        serialize: serializeTrackingFilters,
     });
-
-    const navigate = (next: typeof form) => {
-        router.get('/reports/material-tracking', next, {
-            preserveState: true,
-            replace: true,
-        });
-    };
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
-        navigate(form);
-    };
     const clearFilters = () => {
         const next = {
             from: cutoff,
             to: '',
             received_by_id: '',
             material_id: '',
-            voucher_type_id: '',
+            voucher_type_id: warehouseTypeId,
             state: '',
             tab: form.tab,
         };
-        setForm(next);
-        navigate(next);
+        replaceFilters(next);
     };
     const changeTab = (tab: Tab) => {
         const next = { ...form, tab };
-        setForm(next);
-        navigate(next);
+        replaceFilters(next);
     };
     const query = new URLSearchParams(
-        Object.entries(form)
+        Object.entries(serializeTrackingFilters(form))
             .filter(([, value]) => value)
             .map(([key, value]) => [key, value]),
     ).toString();
     const activeFilters = [
-        String(filters.from ?? cutoff) === cutoff ? '' : filters.from,
-        filters.to,
-        filters.received_by_id,
-        filters.material_id,
-        filters.voucher_type_id,
-        filters.state,
+        form.from === cutoff ? '' : form.from,
+        form.to,
+        form.received_by_id,
+        form.material_id,
+        form.voucher_type_id === warehouseTypeId ? '' : 'voucher_type',
+        form.state,
     ].filter(Boolean).length;
 
     return (
@@ -172,90 +200,22 @@ export default function MaterialTracking({
                     }
                 />
 
-                <Alert variant="info">
-                    <AlertTriangle aria-hidden="true" />
-                    <AlertTitle>
-                        No representa existencias de almacén
-                    </AlertTitle>
-                    <AlertDescription>
-                        El pendiente es material que el técnico todavía debe
-                        aplicar en un trabajo. Las cantidades sólo se suman
-                        cuando corresponden al mismo material y unidad.
-                    </AlertDescription>
-                </Alert>
-
-                <section
-                    aria-label="Métricas del seguimiento"
-                    className="flex flex-col gap-4"
-                >
-                    <SectionHeader
-                        title="Panorama del periodo"
-                        description="Señales operativas de los vales incluidos en los filtros actuales."
-                    />
-                    <div className="grid gap-3 md:grid-cols-3">
-                        <MetricCard
-                            label="Vales pendientes"
-                            value={metrics.pending_vouchers}
-                            icon={ClipboardCheck}
-                            tone="warning"
-                            emphasis="primary"
-                        />
-                        <MetricCard
-                            label="Partidas pendientes"
-                            value={metrics.pending_items}
-                            icon={PackageOpen}
-                            tone="warning"
-                            emphasis="primary"
-                        />
-                        <MetricCard
-                            label="Inconsistencias"
-                            value={metrics.anomalies}
-                            icon={AlertTriangle}
-                            tone="danger"
-                            emphasis="primary"
-                        />
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                        <MetricCard
-                            label="Vales entregados"
-                            value={metrics.delivered_vouchers}
-                            icon={Truck}
-                        />
-                        <MetricCard
-                            label="Vales liquidados"
-                            value={metrics.settled_vouchers}
-                            icon={CheckCircle2}
-                            tone="success"
-                        />
-                        <MetricCard
-                            label="Técnicos con pendientes"
-                            value={metrics.technicians_with_pending}
-                            icon={Users}
-                        />
-                    </div>
-                </section>
-
                 <FilterBar
                     title="Filtrar seguimiento"
-                    description="Delimita el periodo y el contexto antes de comparar cantidades."
+                    description="Delimita el periodo y el contexto antes de comparar cantidades. Los cambios se aplican automáticamente."
                     activeFilters={activeFilters}
                 >
-                    <form
-                        onSubmit={submit}
-                        className="grid gap-3 md:grid-cols-2 xl:grid-cols-8"
-                    >
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-8">
                         <FormField>
                             <FormLabel htmlFor="tracking-from">Desde</FormLabel>
                             <Input
                                 id="tracking-from"
                                 type="date"
                                 min={cutoff}
+                                max={form.to || undefined}
                                 value={form.from}
                                 onChange={(event) =>
-                                    setForm({
-                                        ...form,
-                                        from: event.target.value,
-                                    })
+                                    updateFilter('from', event.target.value)
                                 }
                             />
                         </FormField>
@@ -264,13 +224,10 @@ export default function MaterialTracking({
                             <Input
                                 id="tracking-to"
                                 type="date"
-                                min={cutoff}
+                                min={form.from || cutoff}
                                 value={form.to}
                                 onChange={(event) =>
-                                    setForm({
-                                        ...form,
-                                        to: event.target.value,
-                                    })
+                                    updateFilter('to', event.target.value)
                                 }
                             />
                         </FormField>
@@ -278,7 +235,7 @@ export default function MaterialTracking({
                             label="Técnico"
                             value={form.received_by_id}
                             onChange={(value) =>
-                                setForm({ ...form, received_by_id: value })
+                                updateFilter('received_by_id', value)
                             }
                             empty="Todos los técnicos"
                             searchable
@@ -293,7 +250,7 @@ export default function MaterialTracking({
                             label="Material"
                             value={form.material_id}
                             onChange={(value) =>
-                                setForm({ ...form, material_id: value })
+                                updateFilter('material_id', value)
                             }
                             empty="Todos los materiales"
                             searchable
@@ -315,10 +272,7 @@ export default function MaterialTracking({
                             label="Tipo de vale"
                             value={form.voucher_type_id}
                             onChange={(value) =>
-                                setForm({
-                                    ...form,
-                                    voucher_type_id: value,
-                                })
+                                updateFilter('voucher_type_id', value)
                             }
                             empty="Todos los tipos"
                             options={voucherTypes.map((type) => ({
@@ -329,9 +283,7 @@ export default function MaterialTracking({
                         <FilterSelect
                             label="Estado"
                             value={form.state}
-                            onChange={(value) =>
-                                setForm({ ...form, state: value })
-                            }
+                            onChange={(value) => updateFilter('state', value)}
                             empty="Todos los estados"
                             options={[
                                 { value: 'pending', label: 'Pendiente' },
@@ -342,7 +294,7 @@ export default function MaterialTracking({
                                 },
                             ]}
                         />
-                        <div className="flex items-end gap-2 md:col-span-2">
+                        <div className="flex items-end justify-end gap-2 md:col-span-2">
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -351,13 +303,11 @@ export default function MaterialTracking({
                                 <X data-icon="inline-start" />
                                 Limpiar
                             </Button>
-                            <Button>
-                                <Filter data-icon="inline-start" />
-                                Aplicar filtros
-                            </Button>
                         </div>
-                    </form>
+                    </div>
                 </FilterBar>
+
+                <TrackingMetrics metrics={metrics} />
 
                 <Tabs
                     value={form.tab}
@@ -365,20 +315,23 @@ export default function MaterialTracking({
                     className="gap-4"
                 >
                     <TabsList aria-label="Vista del seguimiento">
+                        <TabsTrigger value="detail">Por vale</TabsTrigger>
                         <TabsTrigger value="material">Por material</TabsTrigger>
                         <TabsTrigger value="technician">
                             Por técnico
                         </TabsTrigger>
-                        <TabsTrigger value="detail">Detalle</TabsTrigger>
                     </TabsList>
+                    <TabsContent value="detail">
+                        <DetailTable
+                            key={rows.map((row) => row.id).join(':')}
+                            rows={rows}
+                        />
+                    </TabsContent>
                     <TabsContent value="material">
                         <MaterialTable rows={by_material} />
                     </TabsContent>
                     <TabsContent value="technician">
                         <TechnicianTable rows={by_technician} filters={form} />
-                    </TabsContent>
-                    <TabsContent value="detail">
-                        <DetailTable rows={rows} />
                     </TabsContent>
                 </Tabs>
             </Page>
@@ -386,22 +339,104 @@ export default function MaterialTracking({
     );
 }
 
+function TrackingMetrics({ metrics }: { metrics: Props['metrics'] }) {
+    const values = [
+        {
+            label: 'Vales incluidos',
+            value: metrics.delivered_vouchers,
+        },
+        {
+            label: 'Vales liquidados',
+            value: metrics.settled_vouchers,
+        },
+        {
+            label: 'Técnicos con pendiente',
+            value: metrics.technicians_with_pending,
+        },
+    ];
+
+    return (
+        <section
+            aria-label="Resumen de los filtros actuales"
+            className="overflow-hidden rounded-xl border bg-glass/75 shadow-[inset_0_1px_0_rgb(255_255_255/0.48),0_6px_18px_rgb(31_64_104/0.045)] backdrop-blur-lg"
+        >
+            <dl className="grid sm:grid-cols-3">
+                {values.map((metric, index) => (
+                    <div
+                        key={metric.label}
+                        className={cn(
+                            'flex items-center justify-between gap-4 px-4 py-3 sm:block sm:px-5',
+                            index < values.length - 1 &&
+                                'border-b sm:border-r sm:border-b-0',
+                        )}
+                    >
+                        <dt className="text-[10px] leading-4 font-bold tracking-[0.1em] text-muted-foreground uppercase">
+                            {metric.label}
+                        </dt>
+                        <dd className="text-2xl leading-none font-semibold tabular-nums sm:mt-1.5">
+                            {metric.value}
+                        </dd>
+                    </div>
+                ))}
+            </dl>
+        </section>
+    );
+}
+
 function MaterialTable({ rows }: { rows: MaterialSummary[] }) {
+    const sorted = useTableSort(rows, 'material', 'asc', {
+        material: (row) => row.material.name,
+        vouchers: (row) => row.vouchers_count,
+        technicians: (row) => row.technicians_count,
+        delivered: (row) => Number(row.delivered_quantity),
+        used: (row) => Number(row.used_quantity),
+        pending: (row) => Number(row.pending_quantity),
+    });
+
     return (
         <DataTableSurface label="Resumen de material por unidad">
             <Table className="min-w-[790px]">
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Material</TableHead>
-                        <TableHead className="text-right">Vales</TableHead>
-                        <TableHead className="text-right">Técnicos</TableHead>
-                        <TableHead className="text-right">Entregado</TableHead>
-                        <TableHead className="text-right">Aplicado</TableHead>
-                        <TableHead className="text-right">Pendiente</TableHead>
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="material"
+                            label="Material"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="vouchers"
+                            label="Vales"
+                            align="right"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="technicians"
+                            label="Técnicos"
+                            align="right"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="delivered"
+                            label="Entregado"
+                            align="right"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="used"
+                            label="Aplicado"
+                            align="right"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="pending"
+                            label="Pendiente"
+                            align="right"
+                        />
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {rows.map((row) => (
+                    {sorted.rows.map((row) => (
                         <TableRow key={`${row.material.id}-${row.unit.id}`}>
                             <TableCell className="max-w-[22rem] font-medium whitespace-normal">
                                 {row.material.name}
@@ -448,28 +483,64 @@ function TechnicianTable({
     filters,
 }: {
     rows: TechnicianSummary[];
-    filters: Record<string, string>;
+    filters: TrackingFilterState;
 }) {
+    const sorted = useTableSort(rows, 'pending', 'desc', {
+        technician: (row) => row.technician.name,
+        vouchers: (row) => row.vouchers_count,
+        materials: (row) => row.materials_count,
+        pending: (row) => row.pending_items_count,
+        settled: (row) => row.settled_items_count,
+        anomalies: (row) => row.anomalies_count,
+    });
+
     return (
         <DataTableSurface label="Resumen de material por técnico">
             <Table className="min-w-[850px]">
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Técnico</TableHead>
-                        <TableHead className="text-right">Vales</TableHead>
-                        <TableHead className="text-right">Materiales</TableHead>
-                        <TableHead className="text-right">Pendientes</TableHead>
-                        <TableHead className="text-right">Liquidadas</TableHead>
-                        <TableHead className="text-right">
-                            Inconsistencias
-                        </TableHead>
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="technician"
+                            label="Técnico"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="vouchers"
+                            label="Vales"
+                            align="right"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="materials"
+                            label="Materiales"
+                            align="right"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="pending"
+                            label="Pendientes"
+                            align="right"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="settled"
+                            label="Liquidadas"
+                            align="right"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="anomalies"
+                            label="Inconsistencias"
+                            align="right"
+                        />
                         <TableHead className="text-right">Detalle</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {rows.map((row) => {
+                    {sorted.rows.map((row) => {
                         const query = new URLSearchParams({
-                            ...filters,
+                            ...serializeTrackingFilters(filters),
                             received_by_id: String(row.technician.id),
                             tab: 'detail',
                         }).toString();
@@ -498,9 +569,9 @@ function TechnicianTable({
                                     <Link
                                         href={`/reports/material-tracking?${query}`}
                                         className="font-medium text-primary underline-offset-4 hover:underline"
-                                        aria-label={`Ver partidas de ${row.technician.name}`}
+                                        aria-label={`Ver vales de ${row.technician.name}`}
                                     >
-                                        Ver partidas
+                                        Ver vales
                                     </Link>
                                 </TableCell>
                             </TableRow>
@@ -520,70 +591,402 @@ function TechnicianTable({
 }
 
 function DetailTable({ rows }: { rows: TrackingRow[] }) {
+    const summaries = groupTrackingRows(rows);
+    const sorted = useTableSort(summaries, 'date', 'desc', {
+        folio: (row) => row.folio,
+        date: (row) => row.issued_on,
+        technician: (row) => row.received_by.name,
+        delivered: (row) => row.delivered_total,
+        used: (row) => row.used_total,
+        pending: (row) => row.pending_total,
+    });
+    const [expandedVouchers, setExpandedVouchers] = useState<Set<number>>(
+        () => new Set(),
+    );
+
+    const toggleVoucher = (voucherId: number) => {
+        setExpandedVouchers((current) => {
+            const next = new Set(current);
+
+            if (next.has(voucherId)) {
+                next.delete(voucherId);
+            } else {
+                next.add(voucherId);
+            }
+
+            return next;
+        });
+    };
+
+    const toggleFromRow = (
+        event: MouseEvent<HTMLTableRowElement>,
+        voucherId: number,
+    ) => {
+        if ((event.target as HTMLElement).closest('a,button')) {
+            return;
+        }
+
+        toggleVoucher(voucherId);
+    };
+
     return (
-        <DataTableSurface label="Detalle de partidas de material">
-            <Table className="min-w-[920px]">
+        <DataTableSurface label="Seguimiento por vale">
+            <Table className="min-w-[1040px]">
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Vale</TableHead>
-                        <TableHead>Técnico</TableHead>
-                        <TableHead>Material</TableHead>
-                        <TableHead className="text-right">Entregado</TableHead>
-                        <TableHead className="text-right">Aplicado</TableHead>
-                        <TableHead className="text-right">Pendiente</TableHead>
-                        <TableHead>Estado</TableHead>
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="folio"
+                            label="Vale"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="date"
+                            label="Fecha"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="technician"
+                            label="Técnico"
+                        />
+                        <TableHead>Destino</TableHead>
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="delivered"
+                            label="Entregado"
+                            align="right"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="used"
+                            label="Aplicado"
+                            align="right"
+                        />
+                        <TrackingSortHead
+                            sort={sorted}
+                            column="pending"
+                            label="Pendiente"
+                            align="right"
+                        />
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {rows.map((row) => (
-                        <TableRow key={`${row.voucher_id}-${row.id}`}>
-                            <TableCell>
-                                <Link
-                                    href={`/vouchers/${row.voucher_id}`}
-                                    className="font-semibold text-primary underline-offset-4 hover:underline"
+                    {sorted.rows.map((row) => {
+                        const expanded = expandedVouchers.has(row.voucher_id);
+                        const detailId = `tracking-voucher-${row.voucher_id}-detail`;
+
+                        return (
+                            <Fragment key={row.voucher_id}>
+                                <TableRow
+                                    className="cursor-pointer"
+                                    onClick={(event) =>
+                                        toggleFromRow(event, row.voucher_id)
+                                    }
                                 >
-                                    #{row.folio}
-                                </Link>
-                                <p className="text-xs text-muted-foreground">
-                                    {row.voucher_type.name} ·{' '}
-                                    {formatDate(row.issued_on)}
-                                </p>
-                            </TableCell>
-                            <TableCell>{row.received_by.name}</TableCell>
-                            <TableCell>
-                                {row.description}
-                                <p className="max-w-64 truncate text-xs text-muted-foreground">
-                                    {row.destination_summary ?? '—'}
-                                </p>
-                            </TableCell>
-                            <Quantity
-                                value={row.quantity}
-                                unit={row.unit.symbol}
-                            />
-                            <Quantity
-                                value={row.used_quantity}
-                                unit={row.unit.symbol}
-                            />
-                            <Quantity
-                                value={row.pending_quantity}
-                                unit={row.unit.symbol}
-                                emphasized
-                            />
-                            <TableCell>
-                                <StatusBadge state={row.balance_state} />
-                            </TableCell>
-                        </TableRow>
-                    ))}
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <IconButton
+                                                type="button"
+                                                variant="ghost"
+                                                label={`${expanded ? 'Ocultar' : 'Mostrar'} materiales del vale ${row.folio}`}
+                                                aria-expanded={expanded}
+                                                aria-controls={detailId}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    toggleVoucher(
+                                                        row.voucher_id,
+                                                    );
+                                                }}
+                                                className="-ml-2 shrink-0 text-muted-foreground hover:text-primary"
+                                            >
+                                                <ChevronRight
+                                                    aria-hidden="true"
+                                                    strokeWidth={1.5}
+                                                    className={cn(
+                                                        'size-4 transition-transform duration-200 ease-out motion-reduce:transition-none',
+                                                        expanded && 'rotate-90',
+                                                    )}
+                                                />
+                                            </IconButton>
+                                            <div>
+                                                <VoucherModalLink
+                                                    mode="detail"
+                                                    voucherId={row.voucher_id}
+                                                    className="font-semibold text-primary underline-offset-4 hover:underline"
+                                                >
+                                                    #{row.folio}
+                                                </VoucherModalLink>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {row.voucher_type.name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        {formatDate(row.issued_on)}
+                                    </TableCell>
+                                    <TableCell>
+                                        {row.received_by.name}
+                                    </TableCell>
+                                    <TableCell className="max-w-72 whitespace-normal">
+                                        {row.destination_summary ?? '—'}
+                                    </TableCell>
+                                    <AbstractQuantity
+                                        value={row.delivered_total}
+                                    />
+                                    <AbstractQuantity value={row.used_total} />
+                                    <AbstractQuantity
+                                        value={row.pending_total}
+                                        emphasized
+                                    />
+                                </TableRow>
+                                <TableRow
+                                    aria-hidden={!expanded}
+                                    className="border-0 hover:bg-transparent"
+                                >
+                                    <TableCell
+                                        colSpan={7}
+                                        className="p-0 whitespace-normal"
+                                    >
+                                        <div
+                                            id={detailId}
+                                            className={cn(
+                                                'grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none',
+                                                expanded
+                                                    ? 'grid-rows-[1fr] opacity-100'
+                                                    : 'pointer-events-none grid-rows-[0fr] opacity-0',
+                                            )}
+                                        >
+                                            <div className="min-h-0 overflow-hidden">
+                                                <VoucherMaterialBreakdown
+                                                    folio={row.folio}
+                                                    rows={row.items}
+                                                />
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            </Fragment>
+                        );
+                    })}
                     {rows.length === 0 && (
                         <TableEmpty
                             colSpan={7}
-                            title="Sin partidas para mostrar"
-                            description="No hay material que coincida con los filtros seleccionados."
+                            title="Sin vales para mostrar"
+                            description="No hay vales con material que coincida con los filtros seleccionados."
                         />
                     )}
                 </TableBody>
             </Table>
         </DataTableSurface>
+    );
+}
+
+function VoucherMaterialBreakdown({
+    folio,
+    rows,
+}: {
+    folio: string;
+    rows: TrackingRow[];
+}) {
+    return (
+        <div className="px-4 pt-3 pb-5 pl-16">
+            <div className="overflow-hidden rounded-xl border bg-surface-muted/55">
+                <div className="border-b px-4 py-3">
+                    <p className="text-sm font-semibold">
+                        Materiales del vale {folio}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                        Cantidades y unidades de las partidas que coinciden con
+                        los filtros actuales.
+                    </p>
+                </div>
+                <Table
+                    className="min-w-[680px]"
+                    containerClassName="overflow-visible"
+                >
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Material</TableHead>
+                            <TableHead>Unidad</TableHead>
+                            <TableHead className="text-right">
+                                Entregado
+                            </TableHead>
+                            <TableHead className="text-right">
+                                Aplicado
+                            </TableHead>
+                            <TableHead className="text-right">
+                                Pendiente
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {rows.map((row) => (
+                            <TableRow key={row.id}>
+                                <TableCell className="max-w-md font-medium whitespace-normal">
+                                    {row.description}
+                                </TableCell>
+                                <TableCell>{row.unit.symbol}</TableCell>
+                                <BreakdownQuantity value={row.quantity} />
+                                <BreakdownQuantity value={row.used_quantity} />
+                                <BreakdownQuantity
+                                    value={row.pending_quantity}
+                                    emphasized
+                                />
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        </div>
+    );
+}
+
+function BreakdownQuantity({
+    value,
+    emphasized = false,
+}: {
+    value: string;
+    emphasized?: boolean;
+}) {
+    const negative = Number(value) < 0;
+
+    return (
+        <TableCell
+            className={cn(
+                'text-right tabular-nums',
+                emphasized && 'font-semibold text-warning',
+                negative && 'text-danger',
+            )}
+        >
+            {formatQuantity(value)}
+        </TableCell>
+    );
+}
+
+function AbstractQuantity({
+    value,
+    emphasized = false,
+}: {
+    value: number;
+    emphasized?: boolean;
+}) {
+    const negative = value < 0;
+    const label = Math.abs(value) === 1 ? 'material' : 'materiales';
+
+    return (
+        <TableCell
+            className={cn(
+                'text-right tabular-nums',
+                emphasized && 'font-semibold text-warning',
+                negative && 'text-danger',
+            )}
+        >
+            {formatQuantity(value)}{' '}
+            <span className="text-xs font-normal text-muted-foreground">
+                {label}
+            </span>
+        </TableCell>
+    );
+}
+
+function groupTrackingRows(rows: TrackingRow[]): VoucherTrackingSummary[] {
+    const grouped = new Map<number, VoucherTrackingSummary>();
+
+    for (const row of rows) {
+        const current = grouped.get(row.voucher_id);
+
+        if (current) {
+            current.delivered_total += Number(row.quantity);
+            current.used_total += Number(row.used_quantity);
+            current.pending_total += Number(row.pending_quantity);
+            current.items.push(row);
+            continue;
+        }
+
+        grouped.set(row.voucher_id, {
+            voucher_id: row.voucher_id,
+            folio: row.folio,
+            issued_on: row.issued_on,
+            received_by: row.received_by,
+            voucher_type: row.voucher_type,
+            destination_summary: row.destination_summary,
+            delivered_total: Number(row.quantity),
+            used_total: Number(row.used_quantity),
+            pending_total: Number(row.pending_quantity),
+            items: [row],
+        });
+    }
+
+    return [...grouped.values()];
+}
+
+type SortDirection = 'asc' | 'desc';
+type SortValue = string | number;
+type SortControls = {
+    column: string;
+    direction: SortDirection;
+    change: (column: string) => void;
+};
+
+function useTableSort<T>(
+    source: T[],
+    initialColumn: string,
+    initialDirection: SortDirection,
+    selectors: Record<string, (row: T) => SortValue>,
+): SortControls & { rows: T[] } {
+    const [sort, setSort] = useState({
+        column: initialColumn,
+        direction: initialDirection,
+    });
+    const selector = selectors[sort.column] ?? selectors[initialColumn];
+    const rows = [...source].sort((left, right) => {
+        const leftValue = selector(left);
+        const rightValue = selector(right);
+        const comparison =
+            typeof leftValue === 'number' && typeof rightValue === 'number'
+                ? leftValue - rightValue
+                : String(leftValue).localeCompare(String(rightValue), 'es-MX', {
+                      numeric: true,
+                      sensitivity: 'base',
+                  });
+
+        return sort.direction === 'asc' ? comparison : -comparison;
+    });
+
+    return {
+        rows,
+        ...sort,
+        change: (column) =>
+            setSort((current) => ({
+                column,
+                direction:
+                    current.column === column && current.direction === 'asc'
+                        ? 'desc'
+                        : 'asc',
+            })),
+    };
+}
+
+function TrackingSortHead({
+    sort,
+    column,
+    label,
+    align = 'left',
+}: {
+    sort: SortControls;
+    column: string;
+    label: string;
+    align?: 'left' | 'right';
+}) {
+    return (
+        <SortableTableHead
+            label={label}
+            active={sort.column === column}
+            direction={sort.direction}
+            onSort={() => sort.change(column)}
+            align={align}
+        />
     );
 }
 

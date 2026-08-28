@@ -18,8 +18,10 @@ use App\Models\VoucherAttachment;
 use App\Models\VoucherItem;
 use App\Support\Normalizer;
 use App\Support\VoucherData;
+use App\Support\VoucherTypeScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -34,10 +36,13 @@ use Inertia\Response;
 
 class VoucherController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, VoucherTypeScope $voucherTypeScope): Response
     {
         Gate::authorize('viewAny', Voucher::class);
-        $query = Voucher::query()->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'destinations', 'items.material', 'items.unit', 'items.applications']);
+        $voucherTypeId = $voucherTypeScope->resolve($request);
+        $query = Voucher::query()
+            ->withCount('items')
+            ->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'destinations', 'items.material', 'items.unit', 'items.applications']);
 
         if ($search = trim((string) $request->string('search'))) {
             $needle = '%'.mb_strtolower($search).'%';
@@ -59,8 +64,8 @@ class VoucherController extends Controller
         if ($request->filled('received_by_id')) {
             $query->where('received_by_id', $request->integer('received_by_id'));
         }
-        if ($request->filled('voucher_type_id')) {
-            $query->where('storage_location_id', $request->integer('voucher_type_id'));
+        if ($voucherTypeId !== null) {
+            $query->where('storage_location_id', $voucherTypeId);
         }
         if ($request->filled('direction')) {
             $query->where('direction', $request->string('direction')->value());
@@ -82,22 +87,37 @@ class VoucherController extends Controller
             });
         }
 
-        $vouchers = $query->orderByDesc('issued_on')->orderByDesc('id')->paginate(20)->withQueryString();
+        $sort = in_array($request->string('sort')->value(), ['issued_on', 'folio', 'voucher_type', 'received_by', 'items_count'], true)
+            ? $request->string('sort')->value()
+            : 'issued_on';
+        $sortDirection = $request->string('sort_direction')->value() === 'asc' ? 'asc' : 'desc';
+        $this->applyVoucherOrder($query, $sort, $sortDirection);
+
+        $vouchers = $query->orderBy('vouchers.id', $sortDirection)->paginate(20)->withQueryString();
         $vouchers->through(fn (Voucher $voucher): array => VoucherData::make($voucher));
 
         return Inertia::render('vouchers/index', [
             'vouchers' => $vouchers,
-            'filters' => $request->only(['search', 'from', 'to', 'received_by_id', 'voucher_type_id', 'direction', 'status']),
-            'receivers' => Person::query()->where('can_receive_material', true)->orderBy('name')->get(['id', 'name']),
-            'voucherTypes' => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'tracking_started_on']),
+            'filters' => [
+                ...$request->only(['search', 'from', 'to', 'received_by_id', 'direction', 'status']),
+                'voucher_type_id' => $voucherTypeId,
+                'sort' => $sort,
+                'sort_direction' => $sortDirection,
+            ],
+            'receivers' => fn () => Person::query()->where('can_receive_material', true)->orderBy('name')->get(['id', 'name']),
+            'voucherTypes' => fn () => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'tracking_started_on']),
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response|JsonResponse
     {
         Gate::authorize('create', Voucher::class);
 
-        return Inertia::render('vouchers/form', ['voucher' => null, ...$this->catalogData()]);
+        $data = ['voucher' => null, ...$this->catalogData()];
+
+        return $request->expectsJson()
+            ? response()->json($data)
+            : Inertia::render('vouchers/form', $data);
     }
 
     public function store(Request $request): RedirectResponse
@@ -124,7 +144,7 @@ class VoucherController extends Controller
 
         $this->storeAttachments($voucher, $request);
 
-        return redirect()->route('vouchers.show', $voucher)->with('success', "Vale {$voucher->folio} capturado correctamente.");
+        return $this->mutationResponse($request, $voucher, "Vale {$voucher->folio} capturado correctamente.");
     }
 
     public function storeCancelled(Request $request): RedirectResponse
@@ -158,28 +178,76 @@ class VoucherController extends Controller
             return $voucher;
         });
 
-        return redirect()->route('vouchers.show', $voucher)->with('success', "Folio {$voucher->folio} registrado como cancelado.");
+        return $this->mutationResponse($request, $voucher, "Folio {$voucher->folio} registrado como cancelado.");
     }
 
-    public function show(Voucher $voucher): Response
+    public function storeLoaned(Request $request): RedirectResponse
+    {
+        Gate::authorize('create', Voucher::class);
+        $data = $request->validate([
+            'voucher_type_id' => ['required', 'integer', Rule::exists('storage_locations', 'id')->where('is_active', true)],
+            'folio' => ['required', 'string', 'max:50'],
+            'issued_on' => ['required', 'date'],
+            'loaned_to_name' => ['nullable', 'string', 'max:255'],
+        ]);
+        $data['folio'] = trim($data['folio']);
+        $this->ensureUniqueFolio($data['folio'], (int) $data['voucher_type_id']);
+
+        $voucher = DB::transaction(function () use ($data, $request): Voucher {
+            $voucher = Voucher::create([
+                'storage_location_id' => $data['voucher_type_id'],
+                'folio' => $data['folio'],
+                'folio_key' => Normalizer::folio($data['folio']),
+                'issued_on' => $data['issued_on'],
+                'status' => VoucherStatus::Loaned,
+                'loaned_to_name' => filled($data['loaned_to_name'] ?? null)
+                    ? trim((string) $data['loaned_to_name'])
+                    : null,
+                'loaned_on' => $data['issued_on'],
+                'created_by' => $request->user()?->id,
+                'updated_by' => $request->user()?->id,
+            ]);
+            AuditEvent::record($voucher, 'created_loaned', null, $voucher->toArray());
+
+            return $voucher;
+        });
+
+        return $this->mutationResponse($request, $voucher, "Folio {$voucher->folio} registrado como prestado.");
+    }
+
+    public function show(Request $request, Voucher $voucher): Response|JsonResponse
     {
         Gate::authorize('view', $voucher);
+        $data = ['voucher' => VoucherData::make($voucher, true)];
 
-        return Inertia::render('vouchers/show', ['voucher' => VoucherData::make($voucher, true)]);
+        return $request->expectsJson()
+            ? response()->json($data)
+            : Inertia::render('vouchers/show', $data);
     }
 
-    public function edit(Voucher $voucher): Response
+    public function edit(Request $request, Voucher $voucher): Response|JsonResponse
     {
         Gate::authorize('update', $voucher);
-        abort_if($voucher->status === VoucherStatus::Cancelled, 422, 'Un vale cancelado no se puede editar.');
+        $data = $voucher->status === VoucherStatus::Active
+            ? ['voucher' => VoucherData::make($voucher, true), ...$this->catalogData($voucher)]
+            : ['voucher' => VoucherData::make($voucher, true), 'voucherTypes' => $this->voucherTypesForCorrection($voucher)];
 
-        return Inertia::render('vouchers/form', ['voucher' => VoucherData::make($voucher, true), ...$this->catalogData($voucher)]);
+        if ($request->expectsJson()) {
+            return response()->json($data);
+        }
+
+        return Inertia::render(
+            $voucher->status === VoucherStatus::Active ? 'vouchers/form' : 'vouchers/reference-form',
+            $data,
+        );
     }
 
     public function update(Request $request, Voucher $voucher): RedirectResponse
     {
         Gate::authorize('update', $voucher);
-        abort_if($voucher->status === VoucherStatus::Cancelled, 422, 'Un vale cancelado no se puede editar.');
+        if ($voucher->status !== VoucherStatus::Active) {
+            return $this->updateMinimalVoucher($request, $voucher);
+        }
         $data = $this->validateVoucher($request, $voucher);
         $this->ensureUniqueFolio($data['folio'], (int) $data['storage_location_id'], $voucher);
 
@@ -206,12 +274,13 @@ class VoucherController extends Controller
 
         $this->storeAttachments($voucher, $request);
 
-        return redirect()->route('vouchers.show', $voucher)->with('success', 'Vale actualizado correctamente.');
+        return $this->mutationResponse($request, $voucher, 'Vale actualizado correctamente.');
     }
 
     public function cancel(Request $request, Voucher $voucher): RedirectResponse
     {
         Gate::authorize('update', $voucher);
+        abort_unless($voucher->status === VoucherStatus::Active, 422, 'Sólo un vale activo se puede cancelar.');
         $validated = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:1000']]);
 
         DB::transaction(function () use ($voucher, $validated, $request): void {
@@ -231,62 +300,7 @@ class VoucherController extends Controller
             AuditEvent::record($locked, 'cancelled', $before, $locked->fresh()->toArray());
         });
 
-        return redirect()->route('vouchers.show', $voucher)->with('success', 'Vale cancelado.');
-    }
-
-    public function loan(Request $request, Voucher $voucher): RedirectResponse
-    {
-        Gate::authorize('update', $voucher);
-        abort_unless($voucher->status === VoucherStatus::Active, 422, 'Sólo un vale activo se puede marcar como prestado.');
-        $data = $request->validate([
-            'loaned_to_name' => ['required', 'string', 'max:255'],
-        ]);
-
-        DB::transaction(function () use ($voucher, $data, $request): void {
-            $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
-            $before = $locked->toArray();
-            $locked->update([
-                'status' => VoucherStatus::Loaned,
-                'loaned_to_name' => trim($data['loaned_to_name']),
-                'loaned_on' => now()->toDateString(),
-                'returned_on' => null,
-                'updated_by' => $request->user()?->id,
-            ]);
-            AuditEvent::record($locked, 'loaned', $before, $locked->fresh()->toArray());
-        });
-
-        return back()->with('success', 'El vale quedó marcado como prestado.');
-    }
-
-    public function returnLoan(Request $request, Voucher $voucher): RedirectResponse
-    {
-        Gate::authorize('update', $voucher);
-        abort_unless($voucher->status === VoucherStatus::Loaned, 422, 'Este vale no está marcado como prestado.');
-
-        if (
-            $voucher->direction === null
-            || $voucher->received_by_id === null
-            || $voucher->delivered_by_id === null
-            || ($voucher->destinations()->doesntExist() && trim((string) $voucher->usage_description) === '')
-            || ! $voucher->items()->exists()
-        ) {
-            throw ValidationException::withMessages([
-                'loaned_to_name' => 'Completa el movimiento, las personas, el destino y los materiales antes de marcar el vale como devuelto.',
-            ]);
-        }
-
-        DB::transaction(function () use ($voucher, $request): void {
-            $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
-            $before = $locked->toArray();
-            $locked->update([
-                'status' => VoucherStatus::Active,
-                'returned_on' => now()->toDateString(),
-                'updated_by' => $request->user()?->id,
-            ]);
-            AuditEvent::record($locked, 'returned', $before, $locked->fresh()->toArray());
-        });
-
-        return back()->with('success', 'El vale quedó marcado como devuelto.');
+        return $this->mutationResponse($request, $voucher, 'Vale cancelado.');
     }
 
     public function review(Request $request, Voucher $voucher): RedirectResponse
@@ -303,7 +317,7 @@ class VoucherController extends Controller
             AuditEvent::record($locked, 'reviewed', $before, $locked->fresh()->toArray());
         });
 
-        return redirect()->route('vouchers.show', $voucher)->with('success', 'La revisión del vale quedó registrada.');
+        return $this->mutationResponse($request, $voucher, 'La revisión del vale quedó registrada.');
     }
 
     public function print(Voucher $voucher): View
@@ -311,6 +325,104 @@ class VoucherController extends Controller
         Gate::authorize('view', $voucher);
 
         return view('vouchers.print', ['voucher' => VoucherData::make($voucher, true)]);
+    }
+
+    private function updateMinimalVoucher(Request $request, Voucher $voucher): RedirectResponse
+    {
+        $data = $request->validate([
+            'voucher_type_id' => ['required', 'integer', Rule::exists('storage_locations', 'id')->where(function ($query) use ($voucher): void {
+                $query->where('is_active', true)->orWhere('id', $voucher->storage_location_id);
+            })],
+            'folio' => ['required', 'string', 'max:50'],
+            'issued_on' => ['required', 'date'],
+            'loaned_to_name' => $voucher->status === VoucherStatus::Loaned
+                ? ['nullable', 'string', 'max:255']
+                : ['prohibited'],
+        ]);
+        $data['folio'] = trim($data['folio']);
+        $this->ensureUniqueFolio($data['folio'], (int) $data['voucher_type_id'], $voucher);
+
+        DB::transaction(function () use ($voucher, $data, $request): void {
+            $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
+            abort_if($locked->status === VoucherStatus::Active, 409, 'El estado del vale cambió; vuelve a abrir la edición.');
+            $before = $locked->toArray();
+            $values = [
+                'storage_location_id' => (int) $data['voucher_type_id'],
+                'folio' => $data['folio'],
+                'folio_key' => Normalizer::folio($data['folio']),
+                'issued_on' => $data['issued_on'],
+                'updated_by' => $request->user()?->id,
+            ];
+            if ($locked->status === VoucherStatus::Loaned) {
+                $values['loaned_to_name'] = filled($data['loaned_to_name'] ?? null)
+                    ? trim((string) $data['loaned_to_name'])
+                    : null;
+                $values['loaned_on'] = $data['issued_on'];
+            }
+            $locked->update($values);
+            AuditEvent::record($locked, 'updated_minimal', $before, $locked->fresh()->toArray());
+        });
+
+        return $this->mutationResponse($request, $voucher, "Folio {$data['folio']} corregido correctamente.");
+    }
+
+    /** @return Collection<int, StorageLocation> */
+    private function voucherTypesForCorrection(Voucher $voucher): Collection
+    {
+        return StorageLocation::query()
+            ->where('is_active', true)
+            ->orWhere('id', $voucher->storage_location_id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'code', 'tracking_started_on']);
+    }
+
+    /**
+     * @param  Builder<Voucher>  $query
+     * @param  'asc'|'desc'  $direction
+     */
+    private function applyVoucherOrder(Builder $query, string $sort, string $direction): void
+    {
+        if ($sort === 'folio') {
+            if (DB::getDriverName() === 'pgsql') {
+                $query->selectRaw("CASE WHEN folio_key ~ '^[0-9]+$' THEN 0 ELSE 1 END AS folio_is_non_numeric")
+                    ->selectRaw("CASE WHEN folio_key ~ '^[0-9]+$' THEN CAST(folio_key AS NUMERIC) END AS folio_numeric_value");
+            } else {
+                $query->selectRaw("CASE WHEN folio_key <> '' AND folio_key NOT GLOB '*[^0-9]*' THEN 0 ELSE 1 END AS folio_is_non_numeric")
+                    ->selectRaw("CASE WHEN folio_key <> '' AND folio_key NOT GLOB '*[^0-9]*' THEN CAST(folio_key AS INTEGER) END AS folio_numeric_value");
+            }
+            $query->orderBy('folio_is_non_numeric', $direction)
+                ->orderBy('folio_numeric_value', $direction)
+                ->orderBy('folio_key', $direction);
+
+            return;
+        }
+
+        if ($sort === 'voucher_type') {
+            $query->orderBy(
+                StorageLocation::query()->select('name')->whereColumn('storage_locations.id', 'vouchers.storage_location_id'),
+                $direction,
+            );
+
+            return;
+        }
+
+        if ($sort === 'received_by') {
+            $query->orderBy(
+                Person::query()->select('name')->whereColumn('people.id', 'vouchers.received_by_id'),
+                $direction,
+            );
+
+            return;
+        }
+
+        $query->orderBy($sort === 'items_count' ? 'items_count' : 'issued_on', $direction);
+    }
+
+    private function mutationResponse(Request $request, Voucher $voucher, string $message): RedirectResponse
+    {
+        return $request->boolean('_dialog')
+            ? back()->with('success', $message)
+            : redirect()->route('vouchers.show', $voucher)->with('success', $message);
     }
 
     /** @return array<string, mixed> */

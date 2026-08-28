@@ -91,13 +91,13 @@ export type Voucher = {
     status: 'active' | 'loaned' | 'cancelled';
     loaned_to_name?: string | null;
     loaned_on?: string | null;
-    returned_on?: string | null;
     balance_state:
         | 'pending'
         | 'settled'
         | 'anomaly'
         | 'received'
         | 'cancelled'
+        | 'loaned'
         | 'not_applicable';
     needs_review: boolean;
     review_reasons: string[];

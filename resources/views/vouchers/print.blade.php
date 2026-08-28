@@ -29,10 +29,11 @@
             <div><strong>Programa:</strong> {{ $voucher['program']['code'] ?? '—' }}</div>
             <div><strong>Acción:</strong> {{ $voucher['action']['code'] ?? '—' }}</div>
         @endif
-        @if ($voucher['status'] === 'loaned')<div style="grid-column: 1 / -1"><strong>Prestado a:</strong> {{ $voucher['loaned_to_name'] }} desde {{ $voucher['loaned_on'] }}</div>@endif
+        @if ($voucher['status'] === 'loaned')<div style="grid-column: 1 / -1"><strong>Prestado a:</strong> {{ $voucher['loaned_to_name'] ?: 'No especificado' }}</div>@endif
         <div style="grid-column: 1 / -1"><strong>Ubicación:</strong> {{ collect($voucher['destinations'])->pluck('name')->implode(', ') ?: '—' }}</div>
         @if ($voucher['usage_description'])<div style="grid-column: 1 / -1"><strong>Uso o actividad:</strong> {{ $voucher['usage_description'] }}</div>@endif
     </div>
+    @if ($voucher['direction'])
     <h2>Material {{ $voucher['direction'] === 'entry' ? 'recibido' : 'entregado y comprobación' }}</h2>
     <table>
         <thead><tr><th>Material</th><th>Unidad</th><th class="number">{{ $voucher['direction'] === 'entry' ? 'Recibido' : 'Entregado' }}</th>@if ($voucher['direction'] === 'exit')<th class="number">Aplicado</th><th class="number">Pendiente</th>@endif</tr></thead>
@@ -49,6 +50,10 @@
         @endforeach
         </tbody>
     </table>
+    @else
+    <h2>Registro de continuidad</h2>
+    <p class="muted">Este folio no representa entrega ni recepción de material.</p>
+    @endif
     @if ($voucher['notes'])<h2>Observaciones</h2><p>{{ $voucher['notes'] }}</p>@endif
 </body>
 </html>

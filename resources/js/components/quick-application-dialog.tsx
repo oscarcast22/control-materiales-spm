@@ -58,9 +58,11 @@ const asOption = (voucher: Voucher): VoucherOption => ({
 export function QuickApplicationDialog({
     trigger,
     voucher,
+    onSuccess,
 }: {
     trigger: ReactNode;
     voucher?: Voucher;
+    onSuccess?: () => void;
 }) {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -190,7 +192,10 @@ export function QuickApplicationDialog({
         form.post('/material-applications', {
             forceFormData: true,
             preserveScroll: true,
-            onSuccess: close,
+            onSuccess: () => {
+                close();
+                onSuccess?.();
+            },
         });
     };
 
@@ -246,8 +251,8 @@ export function QuickApplicationDialog({
                                 />
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                Sólo aparecen vales de salida activos o
-                                prestados con material pendiente.
+                                Sólo aparecen vales de salida activos con
+                                material pendiente.
                             </p>
                         </div>
 

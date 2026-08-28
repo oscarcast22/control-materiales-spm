@@ -1,4 +1,12 @@
-import { AlertTriangle, Check, Clock3, Inbox, Minus, X } from 'lucide-react';
+import {
+    AlertTriangle,
+    Check,
+    Clock3,
+    Inbox,
+    Minus,
+    Send,
+    X,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const states = {
@@ -10,6 +18,7 @@ const states = {
         icon: AlertTriangle,
     },
     cancelled: { label: 'Cancelado', variant: 'secondary', icon: X },
+    loaned: { label: 'Prestado', variant: 'secondary', icon: Send },
     received: { label: 'Entrada recibida', variant: 'info', icon: Inbox },
     not_applicable: {
         label: 'Sin saldo operativo',

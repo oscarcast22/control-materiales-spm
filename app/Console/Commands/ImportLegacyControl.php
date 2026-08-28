@@ -135,9 +135,6 @@ class ImportLegacyControl extends Command
                 if (trim((string) $row['folio']) === '') {
                     $issues[] = 'missing_folio';
                 }
-                if (trim((string) $row['receiver']) === '') {
-                    $issues[] = 'missing_loan_holder';
-                }
                 $voucher = $issues === [] ? [
                     'storage_location_id' => $this->voucherTypeId($row),
                     'folio' => trim((string) $row['folio']),
@@ -145,13 +142,15 @@ class ImportLegacyControl extends Command
                     'issued_on' => $row['date'],
                     'received_by_id' => null,
                     'delivered_by_id' => null,
-                    'authorized_by_id' => $authorizerId,
+                    'authorized_by_id' => null,
                     'program_id' => null,
                     'action_id' => null,
                     'usage_description' => null,
                     'destination_ids' => [],
                     'status' => VoucherStatus::Loaned,
-                    'loaned_to_name' => trim((string) $row['receiver']),
+                    'loaned_to_name' => filled(trim((string) $row['receiver']))
+                        ? trim((string) $row['receiver'])
+                        : null,
                     'loaned_on' => $row['date'],
                     'items' => [],
                 ] : null;

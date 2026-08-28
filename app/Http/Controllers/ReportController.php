@@ -10,6 +10,7 @@ use App\Models\StorageLocation;
 use App\Models\Voucher;
 use App\Support\MaterialTracking;
 use App\Support\VoucherData;
+use App\Support\VoucherTypeScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -23,6 +24,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends Controller
 {
+    public function __construct(private VoucherTypeScope $voucherTypeScope) {}
+
     public function tracking(Request $request): Response
     {
         Gate::authorize('view-reports');
@@ -33,12 +36,12 @@ class ReportController extends Controller
             ...$tracking,
             'filters' => $filters,
             'cutoff' => MaterialTracking::START_DATE,
-            'receivers' => Person::query()->where('can_receive_material', true)->orderBy('name')->get(['id', 'name']),
-            'materials' => Material::query()
+            'receivers' => fn () => Person::query()->where('can_receive_material', true)->orderBy('name')->get(['id', 'name']),
+            'materials' => fn () => Material::query()
                 ->with('defaultUnit:id,name,symbol')
                 ->orderBy('name')
                 ->get(['id', 'name', 'default_unit_id']),
-            'voucherTypes' => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'voucherTypes' => fn () => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'tracking_started_on']),
         ]);
     }
 
@@ -156,7 +159,6 @@ class ReportController extends Controller
             'to' => ['nullable', 'date'],
             'received_by_id' => ['nullable', 'integer', 'exists:people,id'],
             'material_id' => ['nullable', 'integer', 'exists:materials,id'],
-            'voucher_type_id' => ['nullable', 'integer', 'exists:storage_locations,id'],
             'state' => ['nullable', Rule::in(['pending', 'settled', 'anomaly'])],
             'tab' => ['nullable', Rule::in(['material', 'technician', 'detail'])],
         ]);
@@ -176,9 +178,9 @@ class ReportController extends Controller
             'to' => $to?->toDateString(),
             'received_by_id' => isset($data['received_by_id']) ? (int) $data['received_by_id'] : null,
             'material_id' => isset($data['material_id']) ? (int) $data['material_id'] : null,
-            'voucher_type_id' => isset($data['voucher_type_id']) ? (int) $data['voucher_type_id'] : null,
+            'voucher_type_id' => $this->voucherTypeScope->resolve($request),
             'state' => $data['state'] ?? null,
-            'tab' => $data['tab'] ?? 'material',
+            'tab' => $data['tab'] ?? 'detail',
         ];
     }
 

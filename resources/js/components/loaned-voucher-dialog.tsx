@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
-import { Ban } from 'lucide-react';
-import { useState } from 'react';
+import { Send } from 'lucide-react';
 import type { FormEvent } from 'react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { SimpleSelect } from '@/components/simple-select';
 import { Button } from '@/components/ui/button';
@@ -14,12 +14,11 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Field, FieldLabel } from '@/components/ui/field';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import type { VoucherType } from '@/types';
 
-export function CancelledVoucherDialog({
+export function LoanedVoucherDialog({
     voucherTypes,
 }: {
     voucherTypes: VoucherType[];
@@ -30,15 +29,15 @@ export function CancelledVoucherDialog({
         voucher_type_id: String(voucherTypes[0]?.id ?? ''),
         folio: '',
         issued_on: new Date().toISOString().slice(0, 10),
-        cancellation_reason: '',
+        loaned_to_name: '',
     });
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        form.post('/vouchers/cancelled', {
+        form.post('/vouchers/loaned', {
             preserveScroll: true,
             onSuccess: () => {
                 setOpen(false);
-                form.reset('folio', 'cancellation_reason');
+                form.reset('folio', 'loaned_to_name');
             },
         });
     };
@@ -47,45 +46,54 @@ export function CancelledVoucherDialog({
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="outline">
-                    <Ban data-icon="inline-start" />
-                    Registrar cancelado
+                    <Send data-icon="inline-start" />
+                    Registrar prestado
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <form onSubmit={submit} className="flex flex-col gap-5">
                     <DialogHeader>
-                        <DialogTitle>Registrar folio cancelado</DialogTitle>
+                        <DialogTitle>Registrar folio prestado</DialogTitle>
                         <DialogDescription>
-                            Conserva la continuidad de la serie sin pedir
-                            personas, destino ni materiales.
+                            Conserva la continuidad de la serie. Este registro
+                            no tendrá técnico, destino ni materiales.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <Field>
-                            <FieldLabel htmlFor="cancelled-voucher-type">
+                    <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                        <Field
+                            data-invalid={
+                                Boolean(form.errors.voucher_type_id) ||
+                                undefined
+                            }
+                        >
+                            <FieldLabel htmlFor="loaned-voucher-type">
                                 Tipo de vale
                             </FieldLabel>
                             <SimpleSelect
-                                id="cancelled-voucher-type"
+                                id="loaned-voucher-type"
                                 value={form.data.voucher_type_id}
                                 onValueChange={(value) =>
                                     form.setData('voucher_type_id', value)
                                 }
-                                options={voucherTypes.map((voucherType) => ({
-                                    value: String(voucherType.id),
-                                    label: voucherType.name,
+                                options={voucherTypes.map((type) => ({
+                                    value: String(type.id),
+                                    label: type.name,
                                 }))}
                                 placeholder="Seleccionar tipo"
                                 invalid={Boolean(form.errors.voucher_type_id)}
                             />
                             <InputError message={form.errors.voucher_type_id} />
                         </Field>
-                        <Field>
-                            <FieldLabel htmlFor="cancelled-voucher-folio">
+                        <Field
+                            data-invalid={
+                                Boolean(form.errors.folio) || undefined
+                            }
+                        >
+                            <FieldLabel htmlFor="loaned-voucher-folio">
                                 Folio
                             </FieldLabel>
                             <Input
-                                id="cancelled-voucher-folio"
+                                id="loaned-voucher-folio"
                                 value={form.data.folio}
                                 onChange={(event) =>
                                     form.setData('folio', event.target.value)
@@ -97,12 +105,16 @@ export function CancelledVoucherDialog({
                             />
                             <InputError message={form.errors.folio} />
                         </Field>
-                        <Field>
-                            <FieldLabel htmlFor="cancelled-voucher-date">
+                        <Field
+                            data-invalid={
+                                Boolean(form.errors.issued_on) || undefined
+                            }
+                        >
+                            <FieldLabel htmlFor="loaned-voucher-date">
                                 Fecha
                             </FieldLabel>
                             <Input
-                                id="cancelled-voucher-date"
+                                id="loaned-voucher-date"
                                 type="date"
                                 value={form.data.issued_on}
                                 onChange={(event) =>
@@ -117,29 +129,42 @@ export function CancelledVoucherDialog({
                             />
                             <InputError message={form.errors.issued_on} />
                         </Field>
-                        <Field className="sm:col-span-2">
-                            <FieldLabel htmlFor="cancelled-voucher-reason">
-                                Motivo (opcional)
+                        <Field
+                            data-invalid={
+                                Boolean(form.errors.loaned_to_name) || undefined
+                            }
+                        >
+                            <FieldLabel htmlFor="loaned-voucher-name">
+                                Prestado a (opcional)
                             </FieldLabel>
-                            <Textarea
-                                id="cancelled-voucher-reason"
-                                value={form.data.cancellation_reason}
+                            <Input
+                                id="loaned-voucher-name"
+                                value={form.data.loaned_to_name}
                                 onChange={(event) =>
                                     form.setData(
-                                        'cancellation_reason',
+                                        'loaned_to_name',
                                         event.target.value,
                                     )
                                 }
-                                placeholder="Si se deja vacío, se registrará que el folio se conserva por continuidad."
+                                placeholder="Nombre libre"
+                                autoComplete="off"
+                                aria-invalid={
+                                    Boolean(form.errors.loaned_to_name) ||
+                                    undefined
+                                }
                             />
-                            <InputError
-                                message={form.errors.cancellation_reason}
-                            />
+                            <InputError message={form.errors.loaned_to_name} />
                         </Field>
-                    </div>
+                    </FieldGroup>
                     <DialogFooter>
-                        <Button type="submit" disabled={form.processing}>
-                            Registrar folio
+                        <Button
+                            type="submit"
+                            disabled={form.processing}
+                            aria-busy={form.processing}
+                        >
+                            {form.processing
+                                ? 'Registrando…'
+                                : 'Registrar folio'}
                         </Button>
                     </DialogFooter>
                 </form>

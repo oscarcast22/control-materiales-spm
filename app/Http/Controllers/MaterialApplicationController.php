@@ -83,7 +83,7 @@ class MaterialApplicationController extends Controller
                 $voucher = Voucher::query()->with('destinations')->lockForUpdate()->findOrFail((int) $data['voucher_id']);
                 if ($voucher->direction !== VoucherDirection::Exit || ! in_array($voucher->status->value, VoucherStatus::operationalValues(), true)) {
                     throw ValidationException::withMessages([
-                        'voucher_id' => 'Sólo se pueden registrar aplicaciones en vales de salida activos o prestados.',
+                        'voucher_id' => 'Sólo se pueden registrar aplicaciones en vales de salida activos.',
                     ]);
                 }
 

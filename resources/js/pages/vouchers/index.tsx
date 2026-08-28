@@ -1,15 +1,16 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { FilePlus2, Filter, Search, Wrench, X } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { FilePlus2, Search, Wrench, X } from 'lucide-react';
 import type { FormEvent } from 'react';
-import { useState } from 'react';
 import { CancelledVoucherDialog } from '@/components/cancelled-voucher-dialog';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
+import { LoanedVoucherDialog } from '@/components/loaned-voucher-dialog';
 import { Page, PageHeader } from '@/components/page';
 import { Pagination } from '@/components/pagination';
 import { QuickApplicationDialog } from '@/components/quick-application-dialog';
 import { SearchableSelect } from '@/components/searchable-select';
 import { SimpleSelect } from '@/components/simple-select';
+import { SortableTableHead } from '@/components/sortable-table-head';
 import { StatusBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    VoucherModalLink,
+    useVoucherDialogs,
+} from '@/components/voucher-dialogs';
+import { useReactiveFilters } from '@/hooks/use-reactive-filters';
 import { formatDate } from '@/lib/format';
 import type { Named, Paginated, Voucher, VoucherType } from '@/types';
 
@@ -30,17 +36,37 @@ type Props = {
     vouchers: Paginated<Voucher>;
     receivers: Named[];
     voucherTypes: VoucherType[];
-    filters: Record<string, string | number | undefined>;
+    filters: Record<string, string | number | null | undefined>;
 };
 
-const emptyFilters = {
+type VoucherFilterState = {
+    search: string;
+    from: string;
+    to: string;
+    received_by_id: string;
+    voucher_type_id: string;
+    direction: string;
+    status: string;
+    sort: string;
+    sort_direction: string;
+};
+
+const voucherReloadProps = ['vouchers', 'filters'];
+
+const serializeVoucherFilters = (filters: VoucherFilterState) => ({
+    ...filters,
+    voucher_type_id: filters.voucher_type_id || 'all',
+});
+
+const baseFilters = {
     search: '',
     from: '',
     to: '',
     received_by_id: '',
-    voucher_type_id: '',
     direction: '',
     status: '',
+    sort: 'issued_on',
+    sort_direction: 'desc',
 };
 
 export default function VoucherIndex({
@@ -49,7 +75,14 @@ export default function VoucherIndex({
     voucherTypes,
     filters,
 }: Props) {
-    const [form, setForm] = useState({
+    const warehouseTypeId = String(
+        voucherTypes.find((type) => type.code === 'warehouse')?.id ?? '',
+    );
+    const defaultFilters: VoucherFilterState = {
+        ...baseFilters,
+        voucher_type_id: warehouseTypeId,
+    };
+    const initialFilters: VoucherFilterState = {
         search: String(filters.search ?? ''),
         from: String(filters.from ?? ''),
         to: String(filters.to ?? ''),
@@ -57,16 +90,49 @@ export default function VoucherIndex({
         voucher_type_id: String(filters.voucher_type_id ?? ''),
         direction: String(filters.direction ?? ''),
         status: String(filters.status ?? ''),
+        sort: String(filters.sort ?? 'issued_on'),
+        sort_direction: String(filters.sort_direction ?? 'desc'),
+    };
+    const {
+        filters: form,
+        flush,
+        replaceFilters,
+        updateFilter,
+    } = useReactiveFilters({
+        initial: initialFilters,
+        url: '/vouchers',
+        only: voucherReloadProps,
+        serialize: serializeVoucherFilters,
     });
+    const dialogs = useVoucherDialogs();
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        router.get('/vouchers', form, { preserveState: true, replace: true });
+        flush();
     };
     const clear = () => {
-        setForm(emptyFilters);
-        router.get('/vouchers');
+        replaceFilters(defaultFilters);
     };
-    const activeFilters = Object.values(filters).filter(Boolean).length;
+    const activeFilters = [
+        form.search,
+        form.from,
+        form.to,
+        form.received_by_id,
+        form.voucher_type_id === warehouseTypeId ? '' : 'voucher_type',
+        form.direction,
+        form.status,
+    ].filter(Boolean).length;
+    const changeSort = (sort: string) => {
+        const sort_direction =
+            form.sort === sort
+                ? form.sort_direction === 'asc'
+                    ? 'desc'
+                    : 'asc'
+                : sort === 'issued_on'
+                  ? 'desc'
+                  : 'asc';
+        const next = { ...form, sort, sort_direction };
+        replaceFilters(next);
+    };
 
     return (
         <>
@@ -80,6 +146,7 @@ export default function VoucherIndex({
                             <CancelledVoucherDialog
                                 voucherTypes={voucherTypes}
                             />
+                            <LoanedVoucherDialog voucherTypes={voucherTypes} />
                             <QuickApplicationDialog
                                 trigger={
                                     <Button variant="outline">
@@ -89,10 +156,10 @@ export default function VoucherIndex({
                                 }
                             />
                             <Button asChild>
-                                <Link href="/vouchers/create">
+                                <VoucherModalLink mode="create">
                                     <FilePlus2 data-icon="inline-start" />
                                     Nuevo vale
-                                </Link>
+                                </VoucherModalLink>
                             </Button>
                         </>
                     }
@@ -100,7 +167,7 @@ export default function VoucherIndex({
 
                 <FilterBar
                     title="Buscar y filtrar vales"
-                    description="Localiza un documento por folio, persona, material, fecha o estado."
+                    description="Localiza un documento por folio, persona, material, fecha o estado. Los cambios se aplican automáticamente."
                     activeFilters={activeFilters}
                 >
                     <form onSubmit={submit} className="flex flex-col gap-3">
@@ -119,10 +186,11 @@ export default function VoucherIndex({
                                         className="pl-9"
                                         value={form.search}
                                         onChange={(event) =>
-                                            setForm({
-                                                ...form,
-                                                search: event.target.value,
-                                            })
+                                            updateFilter(
+                                                'search',
+                                                event.target.value,
+                                                true,
+                                            )
                                         }
                                         placeholder="Folio, destino, técnico o material"
                                     />
@@ -136,11 +204,9 @@ export default function VoucherIndex({
                                     id="voucher-from"
                                     type="date"
                                     value={form.from}
+                                    max={form.to || undefined}
                                     onChange={(event) =>
-                                        setForm({
-                                            ...form,
-                                            from: event.target.value,
-                                        })
+                                        updateFilter('from', event.target.value)
                                     }
                                 />
                             </FormField>
@@ -152,11 +218,9 @@ export default function VoucherIndex({
                                     id="voucher-to"
                                     type="date"
                                     value={form.to}
+                                    min={form.from || undefined}
                                     onChange={(event) =>
-                                        setForm({
-                                            ...form,
-                                            to: event.target.value,
-                                        })
+                                        updateFilter('to', event.target.value)
                                     }
                                 />
                             </FormField>
@@ -168,10 +232,7 @@ export default function VoucherIndex({
                                     id="voucher-technician"
                                     value={form.received_by_id}
                                     onValueChange={(value) =>
-                                        setForm({
-                                            ...form,
-                                            received_by_id: value,
-                                        })
+                                        updateFilter('received_by_id', value)
                                     }
                                     options={receivers.map((person) => ({
                                         value: String(person.id),
@@ -191,10 +252,7 @@ export default function VoucherIndex({
                                     id="voucher-type"
                                     value={form.voucher_type_id}
                                     onValueChange={(value) =>
-                                        setForm({
-                                            ...form,
-                                            voucher_type_id: value,
-                                        })
+                                        updateFilter('voucher_type_id', value)
                                     }
                                     options={voucherTypes.map((type) => ({
                                         value: String(type.id),
@@ -214,10 +272,7 @@ export default function VoucherIndex({
                                     id="voucher-direction"
                                     value={form.direction}
                                     onValueChange={(value) =>
-                                        setForm({
-                                            ...form,
-                                            direction: value,
-                                        })
+                                        updateFilter('direction', value)
                                     }
                                     options={[
                                         { value: 'entry', label: 'Entradas' },
@@ -235,10 +290,7 @@ export default function VoucherIndex({
                                     id="voucher-status"
                                     value={form.status}
                                     onValueChange={(value) =>
-                                        setForm({
-                                            ...form,
-                                            status: value,
-                                        })
+                                        updateFilter('status', value)
                                     }
                                     options={[
                                         {
@@ -279,25 +331,57 @@ export default function VoucherIndex({
                                     <X data-icon="inline-start" />
                                     Limpiar
                                 </Button>
-                                <Button type="submit">
-                                    <Filter data-icon="inline-start" />
-                                    Aplicar filtros
-                                </Button>
                             </div>
                         </div>
                     </form>
                 </FilterBar>
 
                 <DataTableSurface label="Listado de vales">
-                    <Table className="min-w-[780px]">
+                    <Table className="min-w-[980px]">
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Folio y fecha</TableHead>
-                                <TableHead>Recibió</TableHead>
+                                <SortableTableHead
+                                    label="Folio"
+                                    active={form.sort === 'folio'}
+                                    direction={
+                                        form.sort_direction as 'asc' | 'desc'
+                                    }
+                                    onSort={() => changeSort('folio')}
+                                />
+                                <SortableTableHead
+                                    label="Fecha"
+                                    active={form.sort === 'issued_on'}
+                                    direction={
+                                        form.sort_direction as 'asc' | 'desc'
+                                    }
+                                    onSort={() => changeSort('issued_on')}
+                                />
+                                <SortableTableHead
+                                    label="Tipo y movimiento"
+                                    active={form.sort === 'voucher_type'}
+                                    direction={
+                                        form.sort_direction as 'asc' | 'desc'
+                                    }
+                                    onSort={() => changeSort('voucher_type')}
+                                />
+                                <SortableTableHead
+                                    label="Recibió"
+                                    active={form.sort === 'received_by'}
+                                    direction={
+                                        form.sort_direction as 'asc' | 'desc'
+                                    }
+                                    onSort={() => changeSort('received_by')}
+                                />
                                 <TableHead>Destino</TableHead>
-                                <TableHead className="text-right">
-                                    Partidas
-                                </TableHead>
+                                <SortableTableHead
+                                    label="Partidas"
+                                    active={form.sort === 'items_count'}
+                                    direction={
+                                        form.sort_direction as 'asc' | 'desc'
+                                    }
+                                    onSort={() => changeSort('items_count')}
+                                    align="right"
+                                />
                                 <TableHead>Estado</TableHead>
                                 <TableHead>
                                     <span className="sr-only">Acciones</span>
@@ -306,19 +390,43 @@ export default function VoucherIndex({
                         </TableHeader>
                         <TableBody>
                             {vouchers.data.map((voucher) => (
-                                <TableRow key={voucher.id}>
+                                <TableRow
+                                    key={voucher.id}
+                                    className="cursor-pointer"
+                                    onClick={(event) => {
+                                        if (
+                                            !(
+                                                event.target as HTMLElement
+                                            ).closest(
+                                                'a,button,input,select,textarea',
+                                            )
+                                        ) {
+                                            dialogs.openDetail(voucher.id);
+                                        }
+                                    }}
+                                >
                                     <TableCell>
-                                        <p className="font-semibold">
+                                        <VoucherModalLink
+                                            mode="detail"
+                                            voucherId={voucher.id}
+                                            className="font-semibold text-primary underline-offset-4 hover:underline"
+                                        >
                                             Vale {voucher.folio}
+                                        </VoucherModalLink>
+                                    </TableCell>
+                                    <TableCell>
+                                        {formatDate(voucher.issued_on)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <p className="font-medium">
+                                            {voucher.voucher_type.name}
                                         </p>
                                         <p className="mt-0.5 text-xs text-muted-foreground">
-                                            {voucher.voucher_type.name} ·{' '}
                                             {voucher.direction === 'entry'
                                                 ? 'Entrada'
                                                 : voucher.direction === 'exit'
                                                   ? 'Salida'
-                                                  : 'Sin movimiento'}{' '}
-                                            · {formatDate(voucher.issued_on)}
+                                                  : 'Sin movimiento'}
                                         </p>
                                     </TableCell>
                                     <TableCell>
@@ -335,11 +443,6 @@ export default function VoucherIndex({
                                             <StatusBadge
                                                 state={voucher.balance_state}
                                             />
-                                            {voucher.status === 'loaned' && (
-                                                <Badge variant="secondary">
-                                                    Prestado
-                                                </Badge>
-                                            )}
                                             {voucher.needs_review && (
                                                 <Badge variant="warning">
                                                     Requiere revisión
@@ -353,21 +456,22 @@ export default function VoucherIndex({
                                             size="sm"
                                             asChild
                                         >
-                                            <Link
-                                                href={`/vouchers/${voucher.id}`}
+                                            <VoucherModalLink
+                                                mode="edit"
+                                                voucherId={voucher.id}
                                             >
-                                                Ver detalle
+                                                Editar
                                                 <span className="sr-only">
                                                     vale {voucher.folio}
                                                 </span>
-                                            </Link>
+                                            </VoucherModalLink>
                                         </Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
                             {vouchers.data.length === 0 && (
                                 <TableEmpty
-                                    colSpan={6}
+                                    colSpan={8}
                                     title="No se encontraron vales"
                                     description="Ajusta los filtros o captura un nuevo vale para comenzar."
                                 />

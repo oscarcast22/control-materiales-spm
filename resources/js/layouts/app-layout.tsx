@@ -1,6 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import { VoucherDialogsProvider } from '@/components/voucher-dialogs';
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -26,7 +27,7 @@ export default function AppLayout({
 
     return (
         <AppLayoutTemplate breadcrumbs={breadcrumbs}>
-            {children}
+            <VoucherDialogsProvider>{children}</VoucherDialogsProvider>
         </AppLayoutTemplate>
     );
 }

@@ -39,6 +39,8 @@ final class VoucherData
         $items = $voucher->items->map(fn (VoucherItem $item): array => self::item($item, $detailed, $isEntry))->values();
         $balanceState = $voucher->status === VoucherStatus::Cancelled
             ? 'cancelled'
+            : ($voucher->status === VoucherStatus::Loaned
+            ? 'loaned'
             : ($voucher->direction === null || $items->isEmpty()
             ? 'not_applicable'
             : ($isEntry ? 'received'
@@ -46,7 +48,7 @@ final class VoucherData
                 ? 'anomaly'
                 : ($items->isNotEmpty() && $items->every(fn (array $item): bool => (float) $item['pending_quantity'] === 0.0)
                     ? 'settled'
-                    : 'pending'))));
+                    : 'pending')))));
 
         return [
             'id' => $voucher->id,
@@ -71,7 +73,6 @@ final class VoucherData
             'status' => $voucher->status->value,
             'loaned_to_name' => $voucher->loaned_to_name,
             'loaned_on' => $voucher->loaned_on?->format('Y-m-d'),
-            'returned_on' => $voucher->returned_on?->format('Y-m-d'),
             'balance_state' => $balanceState,
             'needs_review' => $voucher->needs_review,
             'review_reasons' => $voucher->review_reasons ?? [],
