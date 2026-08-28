@@ -274,10 +274,12 @@ POLICY_STATEMENTS=$(jq -cn \
     --arg group "$BACKUP_DYNAMIC_GROUP" \
     --arg compartment "$COMPARTMENT_ID" \
     --arg bucket "$BACKUP_BUCKET" \
+    --arg object_storage_service "objectstorage-$HOME_REGION" \
     '[
         "Allow dynamic-group " + $group + " to read buckets in compartment id " + $compartment,
         "Allow dynamic-group " + $group + " to manage objects in compartment id " + $compartment + " where target.bucket.name = '\''" + $bucket + "'\''",
-        "Allow dynamic-group " + $group + " to read objectstorage-namespaces in tenancy"
+        "Allow dynamic-group " + $group + " to read objectstorage-namespaces in tenancy",
+        "Allow service " + $object_storage_service + " to manage object-family in compartment id " + $compartment + " where any {request.permission='\''BUCKET_INSPECT'\'', request.permission='\''BUCKET_READ'\'', request.permission='\''OBJECT_INSPECT'\'', request.permission='\''OBJECT_UPDATE_TIER'\'', request.permission='\''OBJECT_DELETE'\'', request.permission='\''OBJECT_VERSION_DELETE'\''}"
     ]')
 
 if [[ -z $POLICY_ID || $POLICY_ID == null ]]; then
@@ -294,6 +296,10 @@ else
         --version-date '' \
         --force >/dev/null
 fi
+
+# Las actualizaciones de políticas IAM suelen tardar unos segundos en aplicarse
+# al principal regional de Object Storage.
+sleep 15
 
 LIFECYCLE_ITEMS='[{"name":"eliminar-respaldos-diarios-antiguos","action":"DELETE","timeAmount":30,"timeUnit":"DAYS","isEnabled":true,"objectNameFilter":{"inclusionPrefixes":["daily/"]}}]'
 oci_cmd os object-lifecycle-policy put \
