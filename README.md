@@ -9,8 +9,9 @@ Aplicación interna para capturar vales de salida de almacén y comprobar qué m
 - [`docs/architecture.md`](docs/architecture.md): componentes, relaciones de datos e invariantes.
 - [`docs/data-import.md`](docs/data-import.md): fuentes históricas, transformación y reconciliación.
 - [`docs/operations.md`](docs/operations.md): seguridad, instalación, respaldo y checklist de producción.
+- [`docs/infrastructure.md`](docs/infrastructure.md): infraestructura productiva, despliegue desde `main`, verificación y recuperación.
 
-El proyecto se encuentra en refinamiento local y todavía no se ha desplegado ni entregado a usuarios.
+La aplicación está desplegada en producción en `https://materiales.utopiadigital.tech`. El desarrollo se realiza únicamente en localhost; no existe un túnel público de desarrollo.
 
 ## Alcance actual
 
@@ -81,7 +82,7 @@ Cada renglón se valida como una unidad. Un vale activo con datos o catálogos s
 ## Cómo se calculan los saldos
 
 - El pendiente de una salida es la cantidad entregada menos lo documentado como aplicado.
-- El seguimiento incluye vales de salida activos o prestados emitidos desde el 1 de enero de 2026; las entradas y los vales cancelados no generan responsabilidad para un técnico.
+- El seguimiento incluye únicamente vales de salida activos emitidos desde el 1 de enero de 2026; las entradas y los vales prestados o cancelados no generan responsabilidad para un técnico.
 - Una cifra positiva es material que todavía debe documentarse como aplicado en un trabajo.
 - Una cifra negativa indica que se comprobó más de lo entregado y se muestra como inconsistencia.
 - Las cantidades se agregan exclusivamente por material y unidad; no se genera un total que mezcle piezas, metros u otros artículos.

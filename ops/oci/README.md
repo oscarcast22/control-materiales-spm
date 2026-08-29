@@ -2,7 +2,11 @@
 
 Estos scripts aprovisionan y despliegan el piloto productivo de Control de Materiales SPM. No contienen secretos ni crean recursos pagados deliberadamente.
 
-## Requisitos locales
+La arquitectura desplegada y el workflow operativo vigente se explican en
+[`docs/infrastructure.md`](../../docs/infrastructure.md). Este README conserva
+los requisitos de bootstrap y la referencia breve de los scripts.
+
+## Requisitos para el primer aprovisionamiento
 
 - Bash, `jq`, `git`, `ssh`, `rsync`, PostgreSQL client, Composer y Node 22.13 o posterior.
 - OCI CLI autenticado en la región principal de la cuenta.
@@ -40,6 +44,10 @@ Los OCID y la IP resultante se guardan en `ops/oci/.state/`, que está ignorado 
 
 ## Orden del primer despliegue
 
+Este procedimiento ya fue completado. Se conserva únicamente para recuperación
+o creación autorizada de un entorno independiente; no debe repetirse para
+publicar cambios de aplicación.
+
 1. `provision.sh`
 2. `configure-server.sh`
 3. `cloudflare.sh prepare`
@@ -73,3 +81,26 @@ ops/oci/restore-check.sh
 ```
 
 No ejecutar el corte si `main` no está limpio, las verificaciones no pasan o el manifiesto del respaldo no coincide con la restauración.
+
+## Actualizaciones desde `main`
+
+Un despliegue normal no requiere OCI CLI ni token de Cloudflare. Requiere el
+estado local de `ops/oci/.state/`, la llave SSH autorizada y que la IP de
+administración siga permitida.
+
+```bash
+git switch main
+git pull --ff-only origin main
+git status --short
+ops/oci/deploy.sh
+ops/oci/status.sh --public
+```
+
+El estado de Git debe estar limpio. `deploy.sh` ejecuta pruebas, verificaciones
+frontend, build y auditorías; crea un respaldo previo, instala un release
+inmutable, ejecuta sólo migraciones pendientes y cambia el symlink activo.
+
+No usar `--first-release` y no ejecutar `migrate-current-data.sh`, seeders ni la
+importación histórica durante una actualización. La explicación completa,
+incluidos rollback, cambios de IP y respaldo, está en
+[`docs/infrastructure.md`](../../docs/infrastructure.md).

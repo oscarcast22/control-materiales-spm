@@ -2,7 +2,9 @@
 
 ## Estado actual
 
-El sistema está en desarrollo local y todavía no se ha entregado a usuarios. `APP_ENV=local`, `APP_DEBUG=true` y HTTP son apropiados únicamente para este entorno. No copiar esa configuración a un servidor.
+El sistema está activo en producción en `https://materiales.utopiadigital.tech`. Producción usa `APP_ENV=production`, `APP_DEBUG=false` y HTTPS. El entorno local conserva su propia base y configuración de desarrollo, funciona sólo mediante localhost y no debe recibir capturas productivas.
+
+La topología, el inventario de recursos y el workflow vigente para publicar cambios desde `main` están documentados en [`docs/infrastructure.md`](infrastructure.md).
 
 Los controles ya presentes incluyen:
 
@@ -16,7 +18,7 @@ Los controles ya presentes incluyen:
 - prohibición de comandos destructivos de base en el entorno de producción;
 - pruebas, análisis estático y auditorías de dependencias automatizables.
 
-Esto es adecuado para desarrollo y un futuro piloto controlado. No constituye por sí solo un despliegue seguro en Internet.
+Estos controles se complementan en producción con la red, los servicios y los respaldos descritos en la guía de infraestructura. Cualquier cambio de exposición, usuarios o alcance requiere una nueva revisión de riesgos.
 
 ## Instalación local
 
@@ -38,7 +40,12 @@ Nelson Treto y Fco. Fierro quedan habilitados inicialmente sólo para entregar m
 
 Configure previamente PostgreSQL en `.env`. El comando de usuarios crea una cuenta activa y verificada. No pase la contraseña mediante `--password` en una terminal compartida porque puede quedar en el historial o lista de procesos; utilice el prompt oculto.
 
-## Primera carga de datos en producción
+## Primera carga de datos en un entorno nuevo
+
+Este apartado documenta una instalación nueva e independiente. No debe
+ejecutarse contra la producción vigente, que ya contiene datos operativos. Para
+actualizar producción desde `main`, seguir exclusivamente
+[`docs/infrastructure.md`](infrastructure.md#workflow-habitual-desde-main).
 
 Con `APP_ENV=production`, después de configurar PostgreSQL y disponer de un respaldo si la base ya existe, cargar primero el esquema y el catálogo versionado:
 
@@ -95,7 +102,7 @@ No deben definirse encabezados de proxy, orígenes de passkeys o dominios de coo
 
 ## Despliegue en Oracle Cloud
 
-El piloto productivo se automatiza con [`ops/oci/`](../ops/oci/README.md). La topología aprobada usa una sola VM Ubuntu ARM con Nginx, PHP-FPM, PostgreSQL local, una IP reservada y Cloudflare como único proxy HTTP público. PostgreSQL no se expone en la VCN.
+La producción se automatiza con [`ops/oci/`](../ops/oci/README.md). La topología aprobada usa una sola VM Ubuntu ARM con Nginx, PHP-FPM, PostgreSQL local, una IP reservada y un túnel Cloudflare dedicado ejecutado en el VPS. PostgreSQL no se expone en la VCN.
 
 El aprovisionador está limitado a la región principal, `VM.Standard.A1.Flex`, 1 OCPU, 4 GB de memoria y 50 GB de arranque. Si no existe capacidad gratuita se detiene; no sustituye la forma por una pagada. Los identificadores de OCI se conservan en un directorio ignorado por Git.
 
@@ -110,9 +117,11 @@ Cada release debe cumplir estas condiciones:
 
 El primer traslado no ejecuta seeders ni el importador histórico. Se pone el origen local en mantenimiento, se crea un `pg_dump` en formato personalizado, se restaura como el usuario limitado de la aplicación, se ejecutan únicamente migraciones pendientes y se comparan conteos de todas las tablas de dominio y archivos privados. Un resultado distinto bloquea el cambio DNS.
 
-El dominio local pasa a `materiales-dev.utopiadigital.tech` mediante el túnel existente. Producción conserva `materiales.utopiadigital.tech` y usa un túnel Cloudflare dedicado cuyo conector se ejecuta como servicio en el VPS; no comparte el conector local. El registro productivo es un CNAME proxied hacia ese túnel. Nginx sólo recibe el tráfico del conector por loopback y conserva disponible el certificado Cloudflare Origin CA como alternativa de origen. La llave del certificado permanece sólo en el VPS y el token de Cloudflare se revoca al terminar.
+Producción usa `materiales.utopiadigital.tech` y un túnel Cloudflare dedicado cuyo conector se ejecuta como servicio en el VPS. El registro productivo es un CNAME proxied hacia ese túnel. El antiguo túnel local fue eliminado; desarrollo se usa únicamente en localhost. Nginx recibe el tráfico del conector por loopback y conserva disponible el certificado Cloudflare Origin CA como alternativa de origen.
 
 Después del corte, Oracle es la única fuente productiva. El entorno local deja de ser candidato de rollback en cuanto exista una escritura nueva en producción.
+
+El inventario completo, los servicios systemd, la estructura de releases y el procedimiento cotidiano de despliegue se mantienen en [`docs/infrastructure.md`](infrastructure.md). No ejecutar `migrate-current-data.sh` durante una actualización normal.
 
 ## Respaldo
 
@@ -155,7 +164,7 @@ Registrar la versión del commit, fecha, resultado de migraciones, respaldo prev
 - Una sola clase de usuario activo puede modificar toda la información operativa.
 - La auditoría no tiene todavía una pantalla administrativa ni almacenamiento inmutable externo.
 - Los adjuntos no pasan por antivirus; sólo se restringen extensión, MIME y tamaño.
-- No hay monitoreo ni despliegue automatizado porque todavía no existe un entorno de producción.
+- El despliegue es manual desde una computadora administrativa; todavía no existe CI/CD ni monitoreo externo con alertas.
 - El inventario físico no se calcula ni se presenta.
 
-Estos riesgos son aceptables durante el refinamiento local. Deben revisarse cuando cambien la audiencia o la exposición de red.
+Estos riesgos se aceptan para el piloto productivo actual. Deben revisarse cuando cambien la audiencia, el volumen, la criticidad o la exposición de red.

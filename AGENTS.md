@@ -12,6 +12,7 @@ Antes de modificar reglas de negocio lea:
 - [`docs/architecture.md`](docs/architecture.md)
 - [`docs/data-import.md`](docs/data-import.md)
 - [`docs/operations.md`](docs/operations.md)
+- [`docs/infrastructure.md`](docs/infrastructure.md), antes de cambiar infraestructura o despliegues
 
 ## Reglas que no deben romperse
 
@@ -38,6 +39,7 @@ Antes de modificar reglas de negocio lea:
 - Catálogos iniciales: `database/data/*.json`.
 - Importación histórica: `app/Console/Commands/ImportLegacyControl.php` y sus clases de soporte.
 - Contratos del frontend: `resources/js/types/`.
+- Infraestructura y despliegue: `ops/oci/`.
 
 Los Excel originales no son archivos de ejecución de la aplicación ni deben copiarse al repositorio. Sólo se usa `Captura de vales 2025 (1).xlsx` durante la importación controlada de agosto de 2026.
 
