@@ -28,7 +28,7 @@ La aplicación está desplegada en producción en `https://materiales.utopiadigi
 
 ## Requisitos
 
-- PHP 8.3 o superior con extensiones habituales de Laravel y `zip`.
+- PHP 8.4 o superior con extensiones habituales de Laravel y `zip`.
 - Composer 2.
 - Node.js 22 o superior y npm.
 - PostgreSQL 15 o superior.
