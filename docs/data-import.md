@@ -42,6 +42,22 @@ php artisan legacy:import-control "/ruta/Captura de vales 2025 (1).xlsx"
 
 No ejecutar el importador desde un seeder. La escritura real es transaccional y la huella del archivo evita cargar dos veces el mismo contenido.
 
+## Sincronización de una base ya importada
+
+Si una base recibió el histórico antes que el catálogo curado, no volver a importar el libro. Para revisar cuántos materiales y partidas históricas vinculadas mediante `legacy_import_rows` siguen usando la unidad `s/e`, ejecutar:
+
+```bash
+php artisan catalog:sync-material-units
+```
+
+La ejecución sin opciones es una simulación y no escribe. Después de revisar el resumen y disponer de un respaldo, aplicar con:
+
+```bash
+php artisan catalog:sync-material-units --apply
+```
+
+La sincronización sólo sustituye `s/e` cuando el catálogo versionado define una unidad curada. Conserva unidades corregidas previamente, no cambia cantidades, aplicaciones ni saldos y registra auditoría por cada material o partida actualizados. Las partidas sin una traza histórica asociada no forman parte de este procedimiento.
+
 ## Reglas de transformación
 
 - Cada renglón de agosto representa un vale y se importa de forma atómica.

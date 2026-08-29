@@ -48,7 +48,7 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 - Registro mínimo y corrección auditada de folios prestados.
 - Varias partidas por vale y adjuntos privados JPG, PNG, WebP o PDF.
 - Captura rápida de varias aplicaciones del mismo vale, con evidencia opcional y anulación auditada.
-- Catálogos editables y alias. Sus nombres canónicos se reflejan en todos los vales relacionados; materiales y unidades también normalizan las partidas existentes sin convertir cantidades. Almacén y Patio son tipos estructurales fijos y no se administran desde la interfaz. La fusión auditada de duplicados permanece como contingencia técnica y no se expone en la interfaz.
+- Catálogos editables y alias, organizados en Personas, Materiales, Ubicaciones y una sección conjunta de Programas y acciones. Las unidades se administran dentro de Materiales; Almacén y Patio son tipos estructurales fijos y no se administran desde la interfaz. Los nombres canónicos se reflejan en todos los vales relacionados, y materiales y unidades también normalizan las partidas existentes sin convertir cantidades. La fusión auditada de duplicados permanece como contingencia técnica y no se expone en la interfaz.
 - Catálogo buscable de ubicaciones con alta desde el vale; una actividad no geográfica se conserva por separado como texto libre.
 - Seguimiento desde 2026 por material, técnico y detalle.
 - Exportación XLSX con los mismos filtros del seguimiento.
@@ -73,3 +73,7 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 - Diseñar primero para escritorio, con funcionamiento correcto en tablet y móvil.
 - Aplicar los filtros de consulta al cambiar cada campo; la búsqueda textual espera brevemente a que la usuaria termine de escribir y no requiere un botón de confirmación.
 - Los estados vacíos deben explicar qué falta capturar; nunca insinuar que existe inventario cero.
+- En el resumen, priorizar los tres indicadores accionables: vales con saldo pendiente, materiales por comprobar y técnicos con pendientes. “Materiales por comprobar” cuenta partidas pendientes; no suma cantidades ni representa materiales únicos. Los vales liquidados se muestran como referencia secundaria y las inconsistencias o revisiones sólo ocupan espacio cuando existen.
+- El control de tema de la barra lateral alterna directamente entre claro y oscuro. La opción de seguir el tema del sistema permanece disponible en Apariencia.
+- Las interacciones pueden transicionar color, borde y sombra de forma breve, pero no deben desplazar, escalar ni producir un efecto de rebote al presionar botones, filtros o selectores.
+- Al expandir o contraer la barra lateral, conservar la alineación óptica de iconos y controles y el mismo ritmo vertical para evitar saltos durante la transición.

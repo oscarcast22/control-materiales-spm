@@ -28,6 +28,7 @@ PostgreSQL + almacenamiento privado de adjuntos
 - `VoucherSequence`: detecta huecos numéricos por tipo a partir de los inicios configurados. Las trazas inválidas pueden extender el último folio observado, pero nunca cuentan como folios presentes.
 - `VoucherData`: construye el contrato de presentación de un vale y calcula los estados de sus partidas.
 - `MaterialTracking`: aplica el corte de 2026 y agrega partidas por material/unidad o por técnico.
+- `CatalogIndexData`: valida la sección y los filtros de Catálogos, limita las consultas a los datos visibles y construye su navegación y paginación.
 - `LegacyControlWorkbook`: lee únicamente las hojas de Almacén y Patio y selecciona agosto de 2026.
 - `ImportLegacyControl`: valida, prepara y escribe la importación histórica dentro de una transacción.
 
@@ -36,6 +37,8 @@ La pantalla y el XLSX de seguimiento consumen el mismo agregador para evitar res
 Las consultas de vales y seguimiento comparten el mismo alcance por tipo de vale. El parámetro `voucher_type_id` acepta un identificador activo o `all`; cuando se omite, el sistema usa Almacén (`warehouse`). El frontend conserva este alcance en ordenamiento, paginación, enlaces de detalle y exportación, y actualiza los resultados mediante visitas parciales de Inertia. El resumen no acepta este filtro: siempre agrega Almacén y Patio en un panorama general.
 
 Seguimiento y su exportación aceptan el parámetro textual `search`. La búsqueda localiza vales completos por folio, técnico receptor, destino, descripción de actividad o material y se combina con los demás filtros activos.
+
+Catálogos acepta `section=people|materials|destinations|programs` y abre Personas cuando el parámetro falta o es inválido. Personas, Materiales y Ubicaciones se consultan en páginas de 25 registros; Programas y acciones se presentan juntos. `search`, `status` y `review` se aplican en el servidor, con `role` exclusivo de Personas y `voucher_type_id` exclusivo de Materiales. La búsqueda de nombres usa claves normalizadas y alias. Los cambios de filtro y página reemplazan únicamente las props `catalog` y `filters` mediante visitas parciales de Inertia; las unidades, tipos de vale y opciones de programa sólo se cargan para la sección que los necesita.
 
 ## Relaciones principales
 
@@ -96,6 +99,8 @@ erDiagram
 - Una aplicación anulada deja de afectar las sumas, pero permanece auditable.
 - Una partida con aplicaciones vigentes no puede cambiar de material, cantidad ni eliminarse; primero se anulan las aplicaciones con motivo.
 - La unidad de cada partida siempre deriva de la unidad predeterminada del material. Corregir el nombre o la unidad canónica del material se propaga a todos sus vales, conserva la cantidad numérica y deja auditoría.
+- Los códigos de programas y acciones son inmutables después de su creación; sólo puede corregirse su nombre descriptivo.
+- No se puede desactivar una unidad usada por materiales activos, la última persona activa para una función necesaria ni un programa con acciones activas. Primero deben resolverse esas dependencias.
 - Un vale con movimientos vigentes no puede cancelarse.
 - Un cancelado mínimo puede crearse sin movimiento, personas, destino ni partidas para conservar la serie física.
 - Un prestado mínimo sólo conserva tipo, folio, fecha y un nombre libre opcional; nunca se deriva de un vale operativo ni admite partidas.

@@ -40,6 +40,12 @@ Nelson Treto y Fco. Fierro quedan habilitados inicialmente sólo para entregar m
 
 Configure previamente PostgreSQL en `.env`. El comando de usuarios crea una cuenta activa y verificada. No pase la contraseña mediante `--password` en una terminal compartida porque puede quedar en el historial o lista de procesos; utilice el prompt oculto.
 
+## Canonicalización de partidas al actualizar
+
+La migración `2026_08_28_191433_canonicalize_voucher_item_catalog_values` alinea la descripción y la unidad de cada partida existente con el material canónico actual. No convierte ni modifica la cantidad numérica, las aplicaciones o los saldos. Cada cambio genera un evento `canonicalized` con usuario nulo porque lo ejecuta el despliegue, no una sesión interactiva.
+
+La migración es deliberadamente irreversible porque los valores arbitrarios anteriores no pueden reconstruirse con seguridad. Antes de ejecutarla sobre una base con datos, crear y verificar un respaldo completo. Este paso es distinto de `catalog:sync-material-units`: la migración normaliza cualquier partida que no coincida con su material actual, mientras que el comando sólo corrige unidades `s/e` curadas en materiales y partidas trazadas de la importación histórica.
+
 ## Primera carga de datos en un entorno nuevo
 
 Este apartado documenta una instalación nueva e independiente. No debe
