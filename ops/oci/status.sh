@@ -18,7 +18,7 @@ ssh "${SSH_ARGS[@]}" "$TARGET" 'sudo bash -s' <<'REMOTE'
 set -Eeuo pipefail
 
 echo 'Servicios'
-systemctl is-active nginx php8.4-fpm postgresql control-materiales-queue.service control-materiales-schedule.timer control-materiales-backup.timer
+systemctl is-active nginx php8.4-fpm postgresql control-materiales-queue.service control-materiales-schedule.timer control-materiales-backup.timer cloudflared.service
 echo
 echo 'Release'
 readlink -f /srv/control-materiales/current
