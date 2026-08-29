@@ -22,6 +22,7 @@ RESTORE_ID=$(date -u +%Y%m%d%H%M%S)
 RESTORE_DB="control_materiales_restore_check_$RESTORE_ID"
 WORK_DIR=$(mktemp -d /srv/control-materiales/shared/backups/.restore.XXXXXX)
 ARCHIVE="$WORK_DIR/backup.tar.gz"
+chown materiales:materiales "$WORK_DIR"
 
 cleanup() {
     sudo -u postgres dropdb --if-exists "$RESTORE_DB" >/dev/null 2>&1 || true
