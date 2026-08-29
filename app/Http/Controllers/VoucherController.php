@@ -12,7 +12,6 @@ use App\Models\Material;
 use App\Models\Person;
 use App\Models\Program;
 use App\Models\StorageLocation;
-use App\Models\Unit;
 use App\Models\Voucher;
 use App\Models\VoucherAttachment;
 use App\Models\VoucherItem;
@@ -435,7 +434,6 @@ class VoucherController extends Controller
 
         return [
             'materials' => Material::query()->with(['defaultUnit', 'voucherTypes:id,name,code'])->where('is_active', true)->orderBy('name')->get(),
-            'units' => Unit::query()->where('is_active', true)->orderBy('name')->get(),
             'voucherTypes' => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(),
             'receivers' => $this->peopleForRole('can_receive_material', $voucher?->received_by_id),
             'deliverers' => $this->peopleForRole('can_deliver_material', $voucher?->delivered_by_id),
@@ -493,7 +491,7 @@ class VoucherController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.id' => [$updating ? 'nullable' : 'prohibited', 'integer'],
             'items.*.material_id' => ['required', Rule::exists('materials', 'id')->where('is_active', true)],
-            'items.*.unit_id' => ['required', Rule::exists('units', 'id')->where('is_active', true)],
+            'items.*.unit_id' => ['prohibited'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,3', 'max:999999999.999'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
@@ -651,13 +649,23 @@ class VoucherController extends Controller
                 ? VoucherItem::query()->where('voucher_id', $voucher->id)->lockForUpdate()->findOrFail((int) $row['id'])
                 : new VoucherItem;
             $accounted = $item->exists ? (float) $item->applications()->whereNull('voided_at')->sum('quantity') : 0.0;
+            if ($accounted > 0.0 && $item->material_id !== $material->id) {
+                throw ValidationException::withMessages([
+                    'items' => "No se puede cambiar {$item->description_snapshot} porque ya tiene material aplicado. Anula primero las aplicaciones para corregirlo.",
+                ]);
+            }
+            if ($accounted > 0.0 && abs((float) $row['quantity'] - (float) $item->quantity) > 0.0001) {
+                throw ValidationException::withMessages([
+                    'items' => "No se puede cambiar la cantidad de {$material->name} porque ya tiene material aplicado. Anula primero las aplicaciones para corregirla.",
+                ]);
+            }
             if ((float) $row['quantity'] + 0.0001 < $accounted) {
                 throw ValidationException::withMessages(['items' => "La cantidad de {$material->name} no puede ser menor a {$accounted}, que ya está comprobado."]);
             }
             $before = $item->exists ? $item->toArray() : null;
             $item->fill([
                 'material_id' => $material->id,
-                'unit_id' => $row['unit_id'],
+                'unit_id' => $material->default_unit_id,
                 'description_snapshot' => $material->name,
                 'quantity' => $row['quantity'],
                 'created_by' => $item->created_by ?? $request->user()?->id,

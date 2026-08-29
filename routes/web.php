@@ -36,10 +36,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('catalogs/destinations', [CatalogController::class, 'storeDestination'])->name('catalogs.destinations.store');
     Route::put('catalogs/destinations/{destination}', [CatalogController::class, 'updateDestination'])->name('catalogs.destinations.update');
     Route::post('catalogs/units', [CatalogController::class, 'storeUnit'])->name('catalogs.units.store');
+    Route::put('catalogs/units/{unit}', [CatalogController::class, 'updateUnit'])->name('catalogs.units.update');
     Route::post('catalogs/programs', [CatalogController::class, 'storeProgram'])->name('catalogs.programs.store');
+    Route::put('catalogs/programs/{program}', [CatalogController::class, 'updateProgram'])->name('catalogs.programs.update');
     Route::post('catalogs/actions', [CatalogController::class, 'storeAction'])->name('catalogs.actions.store');
-    Route::post('catalogs/voucher-types', [CatalogController::class, 'storeVoucherType'])->name('catalogs.voucher-types.store');
-    Route::put('catalogs/voucher-types/{voucherType}', [CatalogController::class, 'updateVoucherType'])->name('catalogs.voucher-types.update');
+    Route::put('catalogs/actions/{action}', [CatalogController::class, 'updateAction'])->name('catalogs.actions.update');
     Route::post('catalogs/{type}/{id}/toggle', [CatalogController::class, 'toggle'])->name('catalogs.toggle');
     Route::post('catalogs/{type}/{source}/merge', [CatalogController::class, 'merge'])->name('catalogs.merge');
 

@@ -11,11 +11,10 @@ use App\Models\MaterialAlias;
 use App\Models\Person;
 use App\Models\PersonAlias;
 use App\Models\Program;
-use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
-use App\Support\MaterialTracking;
+use App\Support\CatalogIndexData;
 use App\Support\Normalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
@@ -29,19 +28,11 @@ use Inertia\Response;
 
 class CatalogController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request, CatalogIndexData $catalogIndexData): Response
     {
         Gate::authorize('manage-catalogs');
 
-        return Inertia::render('catalogs/index', [
-            'materials' => Material::query()->with(['defaultUnit', 'voucherTypes:id,name,code'])->withCount('aliases')->orderBy('name')->get(),
-            'people' => Person::query()->withCount('aliases')->orderBy('name')->get(),
-            'units' => Unit::query()->orderBy('name')->get(),
-            'programs' => Program::query()->orderBy('code')->get(),
-            'actions' => Action::query()->with('program:id,code')->orderBy('code')->get(),
-            'voucherTypes' => StorageLocation::query()->orderBy('name')->get(),
-            'destinations' => Destination::query()->withCount('aliases')->orderBy('name')->get(),
-        ]);
+        return Inertia::render('catalogs/index', $catalogIndexData->make($request));
     }
 
     public function storeDestination(Request $request): RedirectResponse
@@ -154,28 +145,49 @@ class CatalogController extends Controller
             throw ValidationException::withMessages(['name' => 'Ese nombre pertenece a otro material. Usa un nombre diferente o solicita la corrección del catálogo.']);
         }
 
-        DB::transaction(function () use ($material, $data, $key): void {
+        DB::transaction(function () use ($material, $data, $key, $request): void {
+            $locked = Material::query()->lockForUpdate()->findOrFail($material->id);
             $before = [
-                ...$material->toArray(),
-                'voucher_type_ids' => $material->voucherTypes()->pluck('storage_locations.id')->all(),
+                ...$locked->toArray(),
+                'voucher_type_ids' => $locked->voucherTypes()->pluck('storage_locations.id')->all(),
             ];
             MaterialAlias::firstOrCreate(
-                ['normalized_alias' => $material->normalized_name],
-                ['material_id' => $material->id, 'alias' => $material->name],
+                ['normalized_alias' => $locked->normalized_name],
+                ['material_id' => $locked->id, 'alias' => $locked->name],
             );
-            $material->update([
+            $locked->update([
                 'name' => $data['name'],
                 'default_unit_id' => $data['default_unit_id'],
                 'normalized_name' => $key,
                 'needs_review' => false,
             ]);
-            $material->voucherTypes()->sync($data['voucher_type_ids']);
+            $locked->voucherTypes()->sync($data['voucher_type_ids']);
             MaterialAlias::firstOrCreate(
                 ['normalized_alias' => $key],
-                ['material_id' => $material->id, 'alias' => $data['name']],
+                ['material_id' => $locked->id, 'alias' => $data['name']],
             );
-            AuditEvent::record($material, 'reviewed', $before, [
-                ...$material->fresh()->toArray(),
+
+            VoucherItem::query()
+                ->where('material_id', $locked->id)
+                ->lockForUpdate()
+                ->get()
+                ->each(function (VoucherItem $item) use ($locked, $request): void {
+                    if ($item->description_snapshot === $locked->name
+                        && $item->unit_id === $locked->default_unit_id) {
+                        return;
+                    }
+
+                    $itemBefore = $item->toArray();
+                    $item->update([
+                        'description_snapshot' => $locked->name,
+                        'unit_id' => $locked->default_unit_id,
+                        'updated_by' => $request->user()?->id,
+                    ]);
+                    AuditEvent::record($item, 'canonicalized', $itemBefore, $item->fresh()->toArray());
+                });
+
+            AuditEvent::record($locked, 'reviewed', $before, [
+                ...$locked->fresh()->toArray(),
                 'voucher_type_ids' => $data['voucher_type_ids'],
             ]);
         });
@@ -262,6 +274,21 @@ class CatalogController extends Controller
         return back()->with('success', 'Unidad agregada.');
     }
 
+    public function updateUnit(Request $request, Unit $unit): RedirectResponse
+    {
+        Gate::authorize('manage-catalogs');
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'symbol' => ['required', 'string', 'max:20', Rule::unique('units', 'symbol')->ignore($unit)],
+        ]);
+
+        $before = $unit->toArray();
+        $unit->update($data);
+        AuditEvent::record($unit, 'updated', $before, $unit->fresh()->toArray());
+
+        return back()->with('success', 'Unidad actualizada en todos los vales relacionados.');
+    }
+
     public function storeProgram(Request $request): RedirectResponse
     {
         Gate::authorize('manage-catalogs');
@@ -274,6 +301,23 @@ class CatalogController extends Controller
         AuditEvent::record($model, 'created', null, $model->toArray());
 
         return back()->with('success', 'Programa agregado.');
+    }
+
+    public function updateProgram(Request $request, Program $program): RedirectResponse
+    {
+        Gate::authorize('manage-catalogs');
+        $data = $request->validate([
+            'name' => ['nullable', 'string', 'max:255'],
+            'code' => ['prohibited'],
+        ]);
+
+        $before = $program->toArray();
+        $program->update([
+            'name' => filled($data['name'] ?? null) ? trim((string) $data['name']) : null,
+        ]);
+        AuditEvent::record($program, 'updated', $before, $program->fresh()->toArray());
+
+        return back()->with('success', 'Programa actualizado.');
     }
 
     public function storeAction(Request $request): RedirectResponse
@@ -297,33 +341,22 @@ class CatalogController extends Controller
         return back()->with('success', 'Acción agregada.');
     }
 
-    public function storeVoucherType(Request $request): RedirectResponse
+    public function updateAction(Request $request, Action $action): RedirectResponse
     {
         Gate::authorize('manage-catalogs');
         $data = $request->validate([
-            'code' => ['required', 'alpha_dash:ascii', 'max:40', Rule::unique('storage_locations', 'code')],
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'code' => ['prohibited'],
+            'program_id' => ['prohibited'],
         ]);
-        $model = StorageLocation::create([
-            ...$data,
-            'tracking_started_on' => MaterialTracking::START_DATE,
+
+        $before = $action->toArray();
+        $action->update([
+            'name' => filled($data['name'] ?? null) ? trim((string) $data['name']) : null,
         ]);
-        AuditEvent::record($model, 'created', null, $model->toArray());
+        AuditEvent::record($action, 'updated', $before, $action->fresh()->toArray());
 
-        return back()->with('success', 'Tipo de vale agregado.');
-    }
-
-    public function updateVoucherType(Request $request, StorageLocation $voucherType): RedirectResponse
-    {
-        Gate::authorize('manage-catalogs');
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-        ]);
-        $before = $voucherType->toArray();
-        $voucherType->update($data);
-        AuditEvent::record($voucherType, 'updated', $before, $voucherType->fresh()->toArray());
-
-        return back()->with('success', 'Tipo de vale actualizado.');
+        return back()->with('success', 'Acción actualizada.');
     }
 
     public function toggle(string $type, int $id): RedirectResponse
@@ -335,17 +368,60 @@ class CatalogController extends Controller
             'units' => Unit::class,
             'programs' => Program::class,
             'actions' => Action::class,
-            'voucher-types' => StorageLocation::class,
             'destinations' => Destination::class,
             default => abort(404),
         };
         /** @var Model $model */
         $model = $class::query()->findOrFail($id);
+        if ((bool) $model->getAttribute('is_active')) {
+            $this->ensureCanDeactivate($model);
+        }
         $before = $model->toArray();
         $model->update(['is_active' => ! $model->getAttribute('is_active')]);
         AuditEvent::record($model, 'status_changed', $before, $model->fresh()->toArray());
 
         return back()->with('success', 'Estado actualizado.');
+    }
+
+    private function ensureCanDeactivate(Model $model): void
+    {
+        if ($model instanceof Unit) {
+            $materials = $model->materials()->where('is_active', true)->count();
+            if ($materials > 0) {
+                throw ValidationException::withMessages([
+                    'status' => "Esta unidad se usa en {$materials} materiales activos. Cambia primero la unidad de esos materiales.",
+                ]);
+            }
+        }
+
+        if ($model instanceof Person) {
+            $requiredRoles = collect([
+                'can_receive_material' => 'recibir material',
+                'can_deliver_material' => 'entregar material',
+                'can_authorize_material' => 'autorizar material',
+            ])->filter(fn (string $label, string $column): bool => (bool) $model->getAttribute($column))
+                ->filter(fn (string $label, string $column): bool => Person::query()
+                    ->where('is_active', true)
+                    ->where($column, true)
+                    ->whereKeyNot($model->getKey())
+                    ->doesntExist())
+                ->values();
+
+            if ($requiredRoles->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'status' => 'No se puede desactivar porque es la última persona disponible para '.$requiredRoles->join(', ', ' y ').'.',
+                ]);
+            }
+        }
+
+        if ($model instanceof Program) {
+            $actions = $model->actions()->where('is_active', true)->count();
+            if ($actions > 0) {
+                throw ValidationException::withMessages([
+                    'status' => "Este programa todavía tiene {$actions} acciones activas. Desactívalas primero.",
+                ]);
+            }
+        }
     }
 
     public function merge(Request $request, string $type, int $source): RedirectResponse

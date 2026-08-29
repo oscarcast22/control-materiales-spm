@@ -14,7 +14,7 @@ La usuaria principal captura y revisa información administrativa. No controla e
 ## Flujo principal
 
 1. Se captura un vale con tipo, folio, fecha, movimiento, técnico, persona que entrega, una o varias ubicaciones, una descripción opcional de uso o actividad y una o más partidas. Programa y acción son datos opcionales exclusivos del vale de Almacén; el vale de Patio no los solicita ni los conserva. La hora no se transcribe: el sistema conserva automáticamente cuándo se creó el registro.
-2. Cada partida conserva el nombre del material, unidad y cantidad entregada en ese momento.
+2. Cada partida conserva la cantidad entregada y referencia el material y la unidad canónicos del catálogo. Corregir esos catálogos actualiza cómo se muestran todos los vales relacionados; no convierte cantidades.
 3. Posteriormente se registran una o varias **aplicaciones** con fecha, cantidad, referencia opcional y evidencia privada opcional.
 4. La aplicación recalcula el saldo. Un vale queda liquidado cuando todas sus partidas llegan exactamente a cero.
 5. Una aplicación incorrecta se anula con motivo; no se elimina del historial.
@@ -48,7 +48,7 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 - Registro mínimo y corrección auditada de folios prestados.
 - Varias partidas por vale y adjuntos privados JPG, PNG, WebP o PDF.
 - Captura rápida de varias aplicaciones del mismo vale, con evidencia opcional y anulación auditada.
-- Catálogos editables y alias. La fusión auditada de duplicados permanece como contingencia técnica y no se expone en la interfaz.
+- Catálogos editables y alias. Sus nombres canónicos se reflejan en todos los vales relacionados; materiales y unidades también normalizan las partidas existentes sin convertir cantidades. Almacén y Patio son tipos estructurales fijos y no se administran desde la interfaz. La fusión auditada de duplicados permanece como contingencia técnica y no se expone en la interfaz.
 - Catálogo buscable de ubicaciones con alta desde el vale; una actividad no geográfica se conserva por separado como texto libre.
 - Seguimiento desde 2026 por material, técnico y detalle.
 - Exportación XLSX con los mismos filtros del seguimiento.

@@ -44,7 +44,6 @@ import type {
     Material,
     Named,
     Program,
-    Unit,
     Voucher,
     VoucherType,
 } from '@/types';
@@ -52,8 +51,8 @@ import type {
 type Line = {
     id?: number;
     material_id: string;
-    unit_id: string;
     quantity: string;
+    has_applications?: boolean;
 };
 type FormData = {
     _dialog: boolean;
@@ -76,7 +75,6 @@ type FormData = {
 export type VoucherFormProps = {
     voucher: Voucher | null;
     materials: Material[];
-    units: Unit[];
     receivers: Named[];
     deliverers: Named[];
     voucherTypes: VoucherType[];
@@ -91,14 +89,12 @@ export type VoucherFormProps = {
 
 const blankLine = (): Line => ({
     material_id: '',
-    unit_id: '',
     quantity: '',
 });
 
 export default function VoucherForm({
     voucher,
     materials,
-    units,
     receivers,
     deliverers,
     voucherTypes,
@@ -111,9 +107,6 @@ export default function VoucherForm({
     onDirtyChange,
 }: VoucherFormProps) {
     const formElement = useRef<HTMLFormElement>(null);
-    const [unitOverrides, setUnitOverrides] = useState<boolean[]>(
-        () => voucher?.items.map(() => false) ?? [false],
-    );
     const [showUsageDescription, setShowUsageDescription] = useState(
         Boolean(voucher?.usage_description),
     );
@@ -124,19 +117,6 @@ export default function VoucherForm({
                 label: voucherType.name,
             })),
         [voucherTypes],
-    );
-    const unitById = useMemo(
-        () => new Map(units.map((unit) => [unit.id, unit])),
-        [units],
-    );
-    const unitOptions = useMemo<ChoiceOption[]>(
-        () =>
-            units.map((unit) => ({
-                value: String(unit.id),
-                label: `${unit.name} (${unit.symbol})`,
-                searchTerms: [unit.symbol],
-            })),
-        [units],
     );
     const receiverOptions = useMemo(
         () => peopleOptions(receivers),
@@ -204,8 +184,8 @@ export default function VoucherForm({
         items: voucher?.items.map((item) => ({
             id: item.id,
             material_id: String(item.material.id),
-            unit_id: String(item.unit.id),
             quantity: item.quantity,
+            has_applications: Number(item.used_quantity) > 0,
         })) ?? [blankLine()],
         attachments: [],
     });
@@ -219,17 +199,18 @@ export default function VoucherForm({
                             form.data.voucher_type_id,
                     ),
                 )
-                .map((material) => {
-                    const unit = unitById.get(material.default_unit_id);
-
-                    return {
-                        value: String(material.id),
-                        label: material.name,
-                        meta: unit?.symbol ?? 's/e',
-                        searchTerms: unit ? [unit.name, unit.symbol] : [],
-                    };
-                }),
-        [form.data.voucher_type_id, materials, unitById],
+                .map((material) => ({
+                    value: String(material.id),
+                    label: material.name,
+                    meta: material.default_unit?.symbol ?? 's/e',
+                    searchTerms: material.default_unit
+                        ? [
+                              material.default_unit.name,
+                              material.default_unit.symbol,
+                          ]
+                        : [],
+                })),
+        [form.data.voucher_type_id, materials],
     );
     const programOptions = useMemo<ChoiceOption[]>(
         () =>
@@ -300,14 +281,9 @@ export default function VoucherForm({
             ),
         );
     const selectMaterial = (index: number, materialId: string) => {
-        const material = materials.find((m) => String(m.id) === materialId);
         changeLine(index, {
             material_id: materialId,
-            unit_id: material ? String(material.default_unit_id) : '',
         });
-        setUnitOverrides((current) =>
-            current.map((enabled, i) => (i === index ? false : enabled)),
-        );
         window.setTimeout(
             () => document.getElementById(`item-${index}-quantity`)?.focus(),
             0,
@@ -341,7 +317,7 @@ export default function VoucherForm({
             if (line.material_id && !allowed.has(line.material_id)) {
                 removed++;
 
-                return { ...line, material_id: '', unit_id: '', quantity: '' };
+                return { ...line, material_id: '', quantity: '' };
             }
 
             return line;
@@ -358,7 +334,6 @@ export default function VoucherForm({
         }));
 
         if (removed > 0) {
-            setUnitOverrides((current) => current.map(() => false));
             toast.info(
                 removed === 1
                     ? 'Se limpió un material que no pertenece al nuevo tipo de vale.'
@@ -369,7 +344,6 @@ export default function VoucherForm({
     const addLine = () => {
         const nextIndex = form.data.items.length;
         form.setData('items', [...form.data.items, blankLine()]);
-        setUnitOverrides((current) => [...current, false]);
         window.setTimeout(
             () =>
                 document.getElementById(`item-${nextIndex}-material`)?.focus(),
@@ -381,7 +355,6 @@ export default function VoucherForm({
             'items',
             form.data.items.filter((_, i) => i !== index),
         );
-        setUnitOverrides((current) => current.filter((_, i) => i !== index));
     };
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -928,8 +901,8 @@ export default function VoucherForm({
                                 </Badge>
                             </CardTitle>
                             <CardDescription>
-                                La unidad se asigna desde el catálogo y queda
-                                guardada con el renglón.
+                                Cada material usa su unidad canónica del
+                                catálogo.
                             </CardDescription>
                         </div>
                         <Button
@@ -953,13 +926,12 @@ export default function VoucherForm({
                                 </Alert>
                             )}
                             {form.data.items.map((line, index) => {
+                                const hasApplications = Boolean(
+                                    line.has_applications,
+                                );
                                 const materialError =
                                     form.errors[
                                         `items.${index}.material_id` as keyof typeof form.errors
-                                    ];
-                                const unitError =
-                                    form.errors[
-                                        `items.${index}.unit_id` as keyof typeof form.errors
                                     ];
                                 const quantityError =
                                     form.errors[
@@ -995,6 +967,7 @@ export default function VoucherForm({
                                                 searchPlaceholder="Buscar material…"
                                                 emptyMessage="No encontramos ese material."
                                                 options={materialOptions}
+                                                disabled={hasApplications}
                                                 invalid={Boolean(materialError)}
                                                 describedBy={errorDescriptionId(
                                                     materialId,
@@ -1002,30 +975,9 @@ export default function VoucherForm({
                                                 )}
                                             />
                                         </VoucherField>
-                                        <UnitField
-                                            index={index}
-                                            line={line}
+                                        <CanonicalUnitField
+                                            materialId={line.material_id}
                                             materials={materials}
-                                            units={units}
-                                            unitOptions={unitOptions}
-                                            override={
-                                                unitOverrides[index] ?? false
-                                            }
-                                            error={unitError}
-                                            onChange={(unitId) =>
-                                                changeLine(index, {
-                                                    unit_id: unitId,
-                                                })
-                                            }
-                                            onOverrideChange={(enabled) =>
-                                                setUnitOverrides((current) =>
-                                                    current.map((value, i) =>
-                                                        i === index
-                                                            ? enabled
-                                                            : value,
-                                                    ),
-                                                )
-                                            }
                                         />
                                         <VoucherField
                                             id={quantityId}
@@ -1036,6 +988,7 @@ export default function VoucherForm({
                                                 id={quantityId}
                                                 inputMode="decimal"
                                                 value={line.quantity}
+                                                readOnly={hasApplications}
                                                 onChange={(e) =>
                                                     changeLine(index, {
                                                         quantity:
@@ -1058,7 +1011,8 @@ export default function VoucherForm({
                                             variant="ghost"
                                             size="icon"
                                             disabled={
-                                                form.data.items.length === 1
+                                                form.data.items.length === 1 ||
+                                                hasApplications
                                             }
                                             onClick={() => removeLine(index)}
                                             className="justify-self-end lg:col-span-2 xl:col-span-1 xl:justify-self-auto"
@@ -1068,6 +1022,13 @@ export default function VoucherForm({
                                                 Eliminar material {index + 1}
                                             </span>
                                         </Button>
+                                        {hasApplications && (
+                                            <p className="text-sm text-muted-foreground lg:col-span-2 xl:col-span-4">
+                                                Esta partida ya tiene material
+                                                aplicado. Anula primero sus
+                                                aplicaciones para cambiarla.
+                                            </p>
+                                        )}
                                     </fieldset>
                                 );
                             })}
@@ -1177,121 +1138,24 @@ export default function VoucherForm({
     );
 }
 
-function UnitField({
-    index,
-    line,
+function CanonicalUnitField({
+    materialId,
     materials,
-    units,
-    unitOptions,
-    override,
-    error,
-    onChange,
-    onOverrideChange,
 }: {
-    index: number;
-    line: Line;
+    materialId: string;
     materials: Material[];
-    units: Unit[];
-    unitOptions: ChoiceOption[];
-    override: boolean;
-    error?: string;
-    onChange: (unitId: string) => void;
-    onOverrideChange: (enabled: boolean) => void;
 }) {
-    const material = materials.find(
-        (item) => String(item.id) === line.material_id,
-    );
-    const currentUnit = units.find((unit) => String(unit.id) === line.unit_id);
-    const defaultUnit = units.find(
-        (unit) => unit.id === material?.default_unit_id,
-    );
-    const showSelector =
-        Boolean(material) &&
-        (override || !currentUnit || currentUnit.symbol === 's/e');
-    const fieldId = `item-${index}-unit`;
-    const labelId = `${fieldId}-label`;
-    let description: string | undefined;
-
-    if (showSelector && defaultUnit?.symbol === 's/e') {
-        description =
-            'Este material no tiene una unidad habitual. Selecciona la indicada en el vale.';
-    } else if (
-        showSelector &&
-        !override &&
-        currentUnit?.symbol === 's/e' &&
-        defaultUnit?.symbol !== 's/e'
-    ) {
-        description =
-            'La unidad guardada está sin especificar. Selecciona la indicada en el vale.';
-    } else if (showSelector && override && defaultUnit?.symbol !== 's/e') {
-        description = 'La excepción sólo se guardará en este vale.';
-    }
+    const material = materials.find((item) => String(item.id) === materialId);
+    const unit = material?.default_unit;
 
     return (
-        <Field invalid={Boolean(error)} data-disabled={!material || undefined}>
-            <div className="flex min-h-4 items-center justify-between gap-2">
-                <FieldLabel
-                    id={labelId}
-                    htmlFor={showSelector ? fieldId : undefined}
-                >
-                    Unidad
-                </FieldLabel>
-                {material && !showSelector && currentUnit && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="-my-1.5 h-7 px-2 text-xs"
-                        onClick={() => onOverrideChange(true)}
-                    >
-                        Cambiar
-                    </Button>
-                )}
-                {showSelector && override && defaultUnit && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="-my-1.5 h-7 px-2 text-xs"
-                        onClick={() => {
-                            onChange(String(defaultUnit.id));
-                            onOverrideChange(false);
-                        }}
-                    >
-                        Usar habitual
-                    </Button>
-                )}
+        <Field data-disabled={!material || undefined}>
+            <FieldLabel>Unidad</FieldLabel>
+            <div className="flex h-10 items-center rounded-md border border-border bg-muted/40 px-3 text-sm font-medium text-foreground">
+                {unit
+                    ? `${unit.name} (${unit.symbol})`
+                    : 'Se asignará al elegir material'}
             </div>
-            {showSelector ? (
-                <SimpleSelect
-                    id={fieldId}
-                    value={line.unit_id}
-                    onValueChange={onChange}
-                    options={unitOptions}
-                    placeholder="Seleccionar unidad"
-                    invalid={Boolean(error)}
-                    describedBy={fieldDescriptionIds(
-                        fieldId,
-                        error,
-                        Boolean(description),
-                    )}
-                />
-            ) : (
-                <div
-                    className="flex h-10 items-center rounded-md border border-border bg-muted/40 px-3 text-sm font-medium text-foreground"
-                    aria-labelledby={labelId}
-                >
-                    {currentUnit
-                        ? `${currentUnit.name} (${currentUnit.symbol})`
-                        : 'Se asignará al elegir material'}
-                </div>
-            )}
-            {description && (
-                <FieldDescription id={`${fieldId}-description`}>
-                    {description}
-                </FieldDescription>
-            )}
-            <FieldError id={`${fieldId}-error`}>{error}</FieldError>
         </Field>
     );
 }

@@ -67,7 +67,7 @@ erDiagram
 | Tabla                          | Responsabilidad                                                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
 | `users`                        | Cuentas autorizadas. `is_active` bloquea inmediatamente el acceso.                                                 |
-| `storage_locations`            | Implementación interna del catálogo “Tipo de vale”, actualmente Almacén o Patio.                                   |
+| `storage_locations`            | Configuración estructural de los tipos de vale Almacén y Patio; no expone rutas de administración.                 |
 | `material_storage_location`    | Relación editable que limita qué materiales se pueden capturar en cada tipo de vale.                               |
 | `units`                        | Unidad estructurada usada para cantidades.                                                                         |
 | `materials`                    | Catálogo canónico; conserva unidad habitual y bandera de revisión.                                                 |
@@ -80,7 +80,7 @@ erDiagram
 | `destination_aliases`          | Abreviaturas, nombres alternativos o anteriores que apuntan a una ubicación canónica; nunca contienen actividades. |
 | `destination_voucher`          | Relación de una o varias ubicaciones con cada vale.                                                                |
 | `vouchers`                     | Cabecera del documento, estado, revisión y responsables.                                                           |
-| `voucher_items`                | Material, unidad, descripción histórica y cantidad entregada.                                                      |
+| `voucher_items`                | Cantidad entregada y referencias al material y unidad canónicos; la descripción se mantiene sincronizada para búsquedas y presentación. |
 | `material_application_reports` | Datos comunes y evidencia opcional de una aplicación capturada en bloque.                                          |
 | `material_applications`        | Cantidad aplicada a una partida; una anulación conserva fecha, usuario y motivo.                                   |
 | `voucher_attachments`          | Metadatos de evidencia guardada en almacenamiento privado.                                                         |
@@ -94,7 +94,8 @@ erDiagram
 - Las cantidades utilizan decimal con tres posiciones y deben ser positivas al capturarse.
 - Una aplicación nueva no puede superar el pendiente; las partidas se bloquean durante la transacción para evitar carreras.
 - Una aplicación anulada deja de afectar las sumas, pero permanece auditable.
-- No se puede reducir una partida por debajo de lo ya comprobado ni eliminarla si posee movimientos vigentes.
+- Una partida con aplicaciones vigentes no puede cambiar de material, cantidad ni eliminarse; primero se anulan las aplicaciones con motivo.
+- La unidad de cada partida siempre deriva de la unidad predeterminada del material. Corregir el nombre o la unidad canónica del material se propaga a todos sus vales, conserva la cantidad numérica y deja auditoría.
 - Un vale con movimientos vigentes no puede cancelarse.
 - Un cancelado mínimo puede crearse sin movimiento, personas, destino ni partidas para conservar la serie física.
 - Un prestado mínimo sólo conserva tipo, folio, fecha y un nombre libre opcional; nunca se deriva de un vale operativo ni admite partidas.

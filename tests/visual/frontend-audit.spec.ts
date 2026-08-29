@@ -1,7 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
-import type { Page, Request } from '@playwright/test';
+import type { Locator, Page, Request } from '@playwright/test';
 
 const email = process.env.VISUAL_EMAIL;
 const password = process.env.VISUAL_PASSWORD;
@@ -78,6 +78,27 @@ async function assertPageFrame(page: Page, route: string) {
 
         expect(shellBackground).toBe('rgba(0, 0, 0, 0)');
     }
+}
+
+async function assertNoPressScale(page: Page, control: Locator) {
+    await control.scrollIntoViewIfNeeded();
+    const box = await control.boundingBox();
+
+    expect(box).not.toBeNull();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.down();
+    expect(
+        await control.evaluate((element) => getComputedStyle(element).scale),
+    ).toBe('none');
+    await page.mouse.move(0, 0);
+    await page.mouse.up();
+}
+
+async function assertFloatingSurfaceDoesNotZoom(surface: Locator) {
+    await expect(surface).toBeVisible();
+    expect(
+        await surface.evaluate((element) => getComputedStyle(element).scale),
+    ).toBe('none');
 }
 
 test('recorrido visual de todas las pantallas', async ({ browser }) => {
@@ -254,6 +275,24 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                 page.getByRole('button', { name: 'Aplicar filtros' }),
             ).toHaveCount(0);
             await expect(page.getByText('Sin filtros activos')).toBeVisible();
+
+            await page.goto('/vouchers/create', { waitUntil: 'networkidle' });
+            const voucherTypeSelect = page.locator('#voucher-type');
+            await voucherTypeSelect.click();
+            await assertFloatingSurfaceDoesNotZoom(
+                page.locator('[data-slot="select-content"]'),
+            );
+            await page.keyboard.press('Escape');
+
+            const receiverSelect = page.locator('#voucher-receiver');
+            await assertNoPressScale(page, receiverSelect);
+            await receiverSelect.click();
+            await assertFloatingSurfaceDoesNotZoom(
+                page.locator('[data-slot="popover-content"]'),
+            );
+            await page.keyboard.press('Escape');
+
+            await page.goto('/vouchers', { waitUntil: 'networkidle' });
             await expect(
                 page.getByRole('button', { name: /Limpiar \d+ filtro/ }),
             ).toHaveCount(0);
@@ -272,7 +311,7 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             };
             page.on('request', countVoucherFilterRequests);
             await page
-                .getByLabel('Buscar')
+                .getByRole('textbox', { name: 'Buscar', exact: true })
                 .pressSequentially('165', { delay: 40 });
             await expect
                 .poll(() => voucherFilterRequests, { timeout: 1500 })
@@ -302,9 +341,7 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                     'desktop-light--dialog-cancelled-voucher.png',
                 ),
             });
-            await page
-                .getByRole('button', { name: 'Cerrar diálogo' })
-                .click();
+            await page.getByRole('button', { name: 'Cerrar diálogo' }).click();
 
             await page
                 .getByRole('button', {
@@ -322,9 +359,7 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                     'desktop-light--dialog-quick-application.png',
                 ),
             });
-            await page
-                .getByRole('button', { name: 'Cerrar diálogo' })
-                .click();
+            await page.getByRole('button', { name: 'Cerrar diálogo' }).click();
 
             await page.goto('/vouchers', { waitUntil: 'networkidle' });
             await page
@@ -345,9 +380,7 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                     'desktop-light--dialog-loaned-voucher.png',
                 ),
             });
-            await page
-                .getByRole('button', { name: 'Cerrar diálogo' })
-                .click();
+            await page.getByRole('button', { name: 'Cerrar diálogo' }).click();
 
             if (voucherPath) {
                 await page.goto(voucherPath, { waitUntil: 'networkidle' });
@@ -373,6 +406,80 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                         .click();
                 }
             }
+
+            await page.goto('/catalogs', { waitUntil: 'networkidle' });
+            await expect(
+                page.getByRole('heading', { name: 'Personas', exact: true }),
+            ).toBeVisible();
+            await expect(
+                page.getByRole('navigation', {
+                    name: 'Catálogos disponibles',
+                }),
+            ).toBeVisible();
+            const activeCatalog = page.getByRole('button', {
+                name: /Personas/,
+            });
+            await expect(activeCatalog).toHaveAttribute('aria-current', 'page');
+            await assertNoPressScale(page, activeCatalog);
+            await page.getByRole('button', { name: /Materiales/ }).click();
+            await expect(page).toHaveURL(/section=materials/);
+            await expect(
+                page.getByRole('heading', { name: 'Materiales', exact: true }),
+            ).toBeVisible();
+            await expect(
+                page.getByRole('columnheader', { name: 'Unidad' }),
+            ).toBeVisible();
+            await expect(
+                page.getByRole('columnheader', { name: 'Disponible en' }),
+            ).toBeVisible();
+            expect(await page.locator('tbody tr').count()).toBeLessThanOrEqual(
+                25,
+            );
+
+            let catalogFilterRequests = 0;
+            const countCatalogFilterRequests = (request: Request) => {
+                const url = new URL(request.url());
+
+                if (
+                    url.pathname === '/catalogs' &&
+                    request.headers()['x-inertia'] === 'true' &&
+                    url.searchParams.has('search')
+                ) {
+                    catalogFilterRequests++;
+                }
+            };
+            page.on('request', countCatalogFilterRequests);
+            await page
+                .getByRole('textbox', { name: 'Buscar', exact: true })
+                .pressSequentially('cable', { delay: 40 });
+            await expect
+                .poll(() => catalogFilterRequests, { timeout: 1500 })
+                .toBe(1);
+            page.off('request', countCatalogFilterRequests);
+            await page
+                .getByRole('button', { name: /Limpiar 1 filtro/ })
+                .click();
+            await page.waitForLoadState('networkidle');
+
+            await page.getByRole('button', { name: /Ubicaciones/ }).click();
+            await expect(page).toHaveURL(/section=destinations/);
+            await expect(
+                page.getByRole('heading', {
+                    name: 'Ubicaciones',
+                    exact: true,
+                }),
+            ).toBeVisible();
+            await page.goBack({ waitUntil: 'networkidle' });
+            await expect(
+                page.getByRole('heading', { name: 'Materiales', exact: true }),
+            ).toBeVisible();
+            await page
+                .getByRole('button', { name: 'Gestionar unidades' })
+                .click();
+            await expect(
+                page.getByRole('heading', { name: 'Gestionar unidades' }),
+            ).toBeVisible();
+            await page.getByRole('button', { name: 'Cerrar diálogo' }).click();
 
             await page.goto('/reports/material-tracking', {
                 waitUntil: 'networkidle',
@@ -451,6 +558,20 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                     fullPage: true,
                 });
             }
+        }
+
+        if (viewport.name === 'mobile-light') {
+            await page.goto('/catalogs', { waitUntil: 'networkidle' });
+            await expect(
+                page.getByRole('navigation', {
+                    name: 'Catálogos disponibles',
+                }),
+            ).toBeVisible();
+            await expect(
+                page.getByRole('heading', { name: 'Personas', exact: true }),
+            ).toBeVisible();
+            await expect(page.locator('article').first()).toBeVisible();
+            await expect(page.getByRole('table')).not.toBeVisible();
         }
 
         expect(pageErrors, `Errores JavaScript en ${viewport.name}`).toEqual(
