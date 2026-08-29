@@ -84,7 +84,7 @@ export function CatalogNavigation({
                             className={cn(
                                 'group relative flex min-h-[4.5rem] min-w-0 cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-[background-color,border-color,color,box-shadow] duration-150 outline-none focus-visible:ring-3 focus-visible:ring-ring/20 sm:gap-3 sm:px-4',
                                 active
-                                    ? 'border-primary/30 bg-primary-subtle text-primary shadow-[0_3px_12px_rgb(22_74_140/0.1)]'
+                                    ? 'border-primary/30 bg-primary-subtle text-primary shadow-[var(--shadow-control)]'
                                     : 'border-transparent text-text-secondary hover:border-border hover:bg-hover hover:text-foreground active:bg-primary-subtle/60',
                             )}
                         >
@@ -92,7 +92,7 @@ export function CatalogNavigation({
                                 className={cn(
                                     'grid size-9 shrink-0 place-items-center rounded-lg border',
                                     active
-                                        ? 'border-primary bg-primary text-primary-foreground shadow-[0_3px_10px_rgb(22_74_140/0.2)]'
+                                        ? 'border-primary bg-primary text-primary-foreground'
                                         : 'border-border bg-surface-subtle',
                                 )}
                             >
@@ -364,7 +364,7 @@ export function MobileDatum({
 }) {
     return (
         <div className="grid gap-0.5">
-            <span className="text-[10px] font-bold tracking-[0.1em] text-text-secondary uppercase">
+            <span className="text-xs font-semibold tracking-[0.055em] text-text-secondary uppercase">
                 {label}
             </span>
             <div className="text-sm text-foreground">{children}</div>
@@ -384,7 +384,11 @@ export function StatusAction({
             type="button"
             size="sm"
             variant="ghost"
-            className={target.active ? 'text-danger' : undefined}
+            className={
+                target.active
+                    ? 'text-danger hover:bg-danger-subtle hover:text-danger'
+                    : undefined
+            }
             onClick={() =>
                 target.active
                     ? onRequest(target)

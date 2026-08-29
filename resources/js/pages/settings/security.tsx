@@ -25,8 +25,6 @@ export default function Security(props: Props) {
         <>
             <Head title="Seguridad" />
 
-            <h1 className="sr-only">Seguridad</h1>
-
             <div className="flex flex-col gap-6">
                 <Heading
                     variant="small"

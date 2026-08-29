@@ -28,8 +28,6 @@ export default function Profile({
         <>
             <Head title="Perfil" />
 
-            <h1 className="sr-only">Perfil</h1>
-
             <div className="flex flex-col gap-6">
                 <Heading
                     variant="small"

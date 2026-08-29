@@ -22,13 +22,13 @@ export function FilterBar({
         <section
             aria-label={title}
             className={cn(
-                'glass-panel tech-highlight overflow-hidden rounded-2xl border',
+                'glass-panel overflow-hidden rounded-2xl border',
                 className,
             )}
         >
-            <div className="flex flex-col gap-3 border-b bg-gradient-to-r from-primary-subtle/75 via-glass to-info-subtle/55 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="flex flex-col gap-3 border-b bg-surface-subtle/60 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/10 bg-glass-strong text-primary shadow-[inset_0_1px_0_rgb(255_255_255/0.7),0_5px_14px_rgb(22_74_140/0.08)]">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-subtle text-primary">
                         <SlidersHorizontal
                             className="size-4"
                             aria-hidden="true"
@@ -75,7 +75,7 @@ export function FilterBar({
                     )}
                 </div>
             </div>
-            <div className="p-4 sm:p-5">{children}</div>
+            <div className="bg-surface/55 p-4 sm:p-5">{children}</div>
         </section>
     );
 }

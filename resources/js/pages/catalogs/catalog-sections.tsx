@@ -85,7 +85,7 @@ function SectionShell({
         <Card className="gap-0 overflow-hidden py-0">
             <div className="flex flex-col gap-5 px-4 py-5 sm:px-6 md:flex-row md:items-start md:justify-between">
                 <div className="flex min-w-0 gap-4">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-primary/15 bg-primary-subtle text-primary shadow-[inset_0_1px_0_rgb(255_255_255/0.5)]">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-subtle text-primary">
                         {icon}
                     </span>
                     <div className="min-w-0">

@@ -199,37 +199,135 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             )
             .toBe('rgba(0, 0, 0, 0)');
 
-        if (viewport.name === 'desktop-light') {
-            await page.evaluate(() => window.scrollTo(0, 520));
-            await expect
-                .poll(() =>
-                    stickyHeader.evaluate(
-                        (element) => getComputedStyle(element).backgroundColor,
-                    ),
-                )
-                .not.toBe('rgba(0, 0, 0, 0)');
-            await expect(stickyHeader).toBeVisible();
-            await page.screenshot({
-                path: path.join(
-                    evidenceDir,
-                    'desktop-light--header-scrolled.png',
-                ),
-            });
-            await page.evaluate(() => window.scrollTo(0, 0));
-            await expect
-                .poll(() =>
-                    stickyHeader.evaluate(
-                        (element) => getComputedStyle(element).backgroundColor,
-                    ),
-                )
-                .toBe('rgba(0, 0, 0, 0)');
-        }
-
         if (viewport.width >= 1024) {
-            await page
-                .getByRole('button', { name: 'Contraer navegación' })
-                .click();
+            await expect(stickyHeader).toBeHidden();
+
+            const sidebarPanel = page.locator(
+                '[data-slot="sidebar"] [data-sidebar="sidebar"]',
+            );
+            const edgeTrigger = page.getByRole('button', {
+                name: 'Contraer navegación',
+            });
+            await expect(edgeTrigger).toBeVisible();
+            await expect(edgeTrigger).toHaveAttribute('aria-expanded', 'true');
+            const panelBox = await sidebarPanel.boundingBox();
+            const triggerBox = await edgeTrigger.boundingBox();
+            expect(panelBox).not.toBeNull();
+            expect(triggerBox).not.toBeNull();
+            expect(triggerBox!.width).toBe(40);
+            expect(triggerBox!.height).toBe(40);
+            expect(
+                await edgeTrigger.evaluate(
+                    (element) => getComputedStyle(element, '::before').width,
+                ),
+            ).toBe('24px');
+            expect(
+                Math.abs(
+                    triggerBox!.x +
+                        triggerBox!.width / 2 -
+                        (panelBox!.x + panelBox!.width),
+                ),
+            ).toBeLessThanOrEqual(1);
+            const logoMark = page.locator('[data-slot="app-logo-mark"]');
+            const expandedLogoBox = await logoMark.boundingBox();
+            const expandedFirstNavBox = await page
+                .locator(
+                    '[data-sidebar="content"] [data-sidebar="menu-button"]',
+                )
+                .first()
+                .boundingBox();
+            expect(expandedLogoBox).not.toBeNull();
+            expect(expandedFirstNavBox).not.toBeNull();
+            const expandedNavGap =
+                expandedFirstNavBox!.y -
+                (expandedLogoBox!.y + expandedLogoBox!.height);
+
+            await edgeTrigger.click();
             await page.waitForTimeout(250);
+            await expect(logoMark).toBeVisible();
+            const logoBox = await logoMark.boundingBox();
+            expect(logoBox).not.toBeNull();
+            expect(logoBox!.width).toBe(40);
+            expect(logoBox!.height).toBe(40);
+            const collapsedPanelBox = await sidebarPanel.boundingBox();
+            expect(collapsedPanelBox).not.toBeNull();
+            expect(collapsedPanelBox!.x).toBe(6);
+            const logoCenter = logoBox!.x + logoBox!.width / 2;
+            const collapsedNavControls = page.locator(
+                '[data-sidebar="content"] [data-sidebar="menu-button"]',
+            );
+            const firstNavBox = await collapsedNavControls
+                .first()
+                .boundingBox();
+            expect(firstNavBox).not.toBeNull();
+            const collapsedTrigger = page.getByRole('button', {
+                name: 'Abrir navegación',
+            });
+            const collapsedTriggerBox = await collapsedTrigger.boundingBox();
+            expect(collapsedTriggerBox).not.toBeNull();
+            const visibleTriggerBottom =
+                collapsedTriggerBox!.y + (collapsedTriggerBox!.height + 24) / 2;
+            expect(
+                firstNavBox!.y - visibleTriggerBottom,
+            ).toBeGreaterThanOrEqual(12);
+            const collapsedNavGap =
+                firstNavBox!.y - (logoBox!.y + logoBox!.height);
+            expect(
+                Math.abs(collapsedNavGap - expandedNavGap),
+            ).toBeLessThanOrEqual(1);
+            const collapsedControls = page.locator(
+                '[data-sidebar="content"] [data-sidebar="menu-button"], [data-sidebar="footer"] [data-sidebar="menu-button"]',
+            );
+            const collapsedControlBoxes = await collapsedControls.evaluateAll(
+                (elements) =>
+                    elements.map((element) => {
+                        const box = element.getBoundingClientRect();
+
+                        return {
+                            center: box.x + box.width / 2,
+                            height: box.height,
+                            width: box.width,
+                        };
+                    }),
+            );
+            expect(collapsedControlBoxes.length).toBeGreaterThanOrEqual(6);
+
+            for (const box of collapsedControlBoxes) {
+                expect(box.width).toBe(40);
+                expect(box.height).toBe(40);
+                expect(Math.abs(box.center - logoCenter)).toBeLessThanOrEqual(
+                    1,
+                );
+            }
+
+            const profileButton = page.locator(
+                '[data-test="sidebar-menu-button"]',
+            );
+            const profileAvatar = profileButton.locator('[data-slot="avatar"]');
+            const profileButtonBox = await profileButton.boundingBox();
+            const profileAvatarBox = await profileAvatar.boundingBox();
+            expect(profileButtonBox).not.toBeNull();
+            expect(profileAvatarBox).not.toBeNull();
+            expect(
+                Math.abs(
+                    profileButtonBox!.x +
+                        profileButtonBox!.width / 2 -
+                        (profileAvatarBox!.x + profileAvatarBox!.width / 2),
+                ),
+            ).toBeLessThanOrEqual(1);
+            await expect(
+                profileButton.locator('[data-slot="user-info-text"]'),
+            ).toBeHidden();
+            await expect(profileButton.locator('svg')).toBeHidden();
+
+            const collapsedSpacer = page
+                .locator(
+                    'div[data-slot="sidebar"][data-state="collapsed"] > div',
+                )
+                .first();
+            const collapsedSpacerBox = await collapsedSpacer.boundingBox();
+            expect(collapsedSpacerBox).not.toBeNull();
+            expect(collapsedSpacerBox!.width).toBeLessThanOrEqual(60);
             await page.screenshot({
                 path: path.join(
                     evidenceDir,
@@ -263,9 +361,46 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             await expect(
                 page.getByRole('heading', { name: 'Resumen general' }),
             ).toBeVisible();
+            await expect(page.locator('[data-slot="metric-card"]')).toHaveCount(
+                3,
+            );
+            await expect(
+                page.getByRole('link', { name: /vales liquidados/ }),
+            ).toBeVisible();
+            await expect(
+                page.getByText('Materiales por comprobar', { exact: true }),
+            ).toBeVisible();
+            await expect(
+                page.locator('[data-slot="metric-notices"]'),
+            ).toHaveCount(0);
             await expect(
                 page.getByRole('group', { name: 'Mostrar vales de' }),
             ).toHaveCount(0);
+
+            const themeToggle = page.getByRole('button', {
+                name: 'Cambiar a tema oscuro',
+            });
+            await expect(themeToggle).toBeVisible();
+            await assertNoPressScale(page, themeToggle);
+            await themeToggle.click();
+            await expect(page.locator('html')).toHaveClass(/dark/);
+            expect(
+                await page.evaluate(() => localStorage.getItem('appearance')),
+            ).toBe('dark');
+            await page
+                .getByRole('button', { name: 'Cambiar a tema claro' })
+                .click();
+            await expect(page.locator('html')).not.toHaveClass(/dark/);
+            expect(
+                await page.evaluate(() => localStorage.getItem('appearance')),
+            ).toBe('light');
+
+            await page.goto('/settings/appearance', {
+                waitUntil: 'networkidle',
+            });
+            await expect(
+                page.getByRole('button', { name: 'Sistema' }),
+            ).toBeVisible();
 
             await page.goto('/vouchers', { waitUntil: 'networkidle' });
             await expect(page.getByLabel('Tipo de vale')).toContainText(
@@ -561,6 +696,14 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
         }
 
         if (viewport.name === 'mobile-light') {
+            await page.goto('/dashboard', { waitUntil: 'networkidle' });
+            await expect(page.locator('[data-slot="metric-card"]')).toHaveCount(
+                3,
+            );
+            await expect(
+                page.getByRole('link', { name: /vales liquidados/ }),
+            ).toBeVisible();
+
             await page.goto('/catalogs', { waitUntil: 'networkidle' });
             await expect(
                 page.getByRole('navigation', {

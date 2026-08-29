@@ -159,8 +159,24 @@ export default function Dashboard({
 
                 <section aria-labelledby="prioridades-title">
                     <SectionHeader
+                        id="prioridades-title"
                         title="Prioridad operativa"
                         description="Responsabilidad abierta que conviene atender primero."
+                        action={
+                            <Badge
+                                variant="success"
+                                asChild
+                                className="min-h-8 px-3 transition-[background-color,border-color,color] hover:border-success/20 hover:bg-success-subtle/70"
+                            >
+                                <Link href="/reports/material-tracking?tab=detail&state=settled">
+                                    <CheckCircle2 aria-hidden="true" />
+                                    {metrics.settled_vouchers}{' '}
+                                    {metrics.settled_vouchers === 1
+                                        ? 'vale liquidado'
+                                        : 'vales liquidados'}
+                                </Link>
+                            </Badge>
+                        }
                     />
                     <div className="mt-3 grid gap-3 md:grid-cols-3">
                         <MetricCard
@@ -168,35 +184,12 @@ export default function Dashboard({
                             value={metrics.pending_vouchers}
                             icon={ClipboardCheck}
                             tone="warning"
-                            emphasis="primary"
                         />
                         <MetricCard
-                            label="Partidas aún por comprobar"
+                            label="Materiales por comprobar"
                             value={metrics.pending_items}
                             icon={PackageOpen}
                             tone="warning"
-                            emphasis="primary"
-                        />
-                        <MetricCard
-                            label="Inconsistencias que requieren atención"
-                            value={metrics.anomalies}
-                            icon={AlertTriangle}
-                            tone="danger"
-                            emphasis="primary"
-                        />
-                    </div>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                        <MetricCard
-                            label="Vales liquidados"
-                            value={metrics.settled_vouchers}
-                            icon={CheckCircle2}
-                            tone="success"
-                        />
-                        <MetricCard
-                            label="Registros por revisar"
-                            value={metrics.needs_review}
-                            icon={SearchCheck}
-                            tone="info"
                         />
                         <MetricCard
                             label="Técnicos con pendientes"
@@ -205,11 +198,65 @@ export default function Dashboard({
                             tone="neutral"
                         />
                     </div>
+                    {(metrics.anomalies > 0 || metrics.needs_review > 0) && (
+                        <div
+                            data-slot="metric-notices"
+                            className="mt-3 grid gap-2 sm:grid-cols-2"
+                        >
+                            {metrics.anomalies > 0 && (
+                                <Alert variant="destructive" className="py-3">
+                                    <AlertTriangle aria-hidden="true" />
+                                    <AlertTitle>
+                                        {metrics.anomalies}{' '}
+                                        {metrics.anomalies === 1
+                                            ? 'inconsistencia requiere atención'
+                                            : 'inconsistencias requieren atención'}
+                                    </AlertTitle>
+                                    <AlertDescription>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            asChild
+                                        >
+                                            <Link href="/reports/material-tracking?tab=detail&state=anomaly">
+                                                Ver inconsistencias
+                                                <ArrowRight data-icon="inline-end" />
+                                            </Link>
+                                        </Button>
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                            {metrics.needs_review > 0 && (
+                                <Alert variant="info" className="py-3">
+                                    <SearchCheck aria-hidden="true" />
+                                    <AlertTitle>
+                                        {metrics.needs_review}{' '}
+                                        {metrics.needs_review === 1
+                                            ? 'vale requiere revisión'
+                                            : 'vales requieren revisión'}
+                                    </AlertTitle>
+                                    <AlertDescription>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            asChild
+                                        >
+                                            <Link href="/vouchers?voucher_type_id=all&status=review">
+                                                Ver vales por revisar
+                                                <ArrowRight data-icon="inline-end" />
+                                            </Link>
+                                        </Button>
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                        </div>
+                    )}
                 </section>
 
                 <div className="grid gap-7 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,.85fr)]">
                     <section className="min-w-0" aria-labelledby="oldest-title">
                         <SectionHeader
+                            id="oldest-title"
                             title="Pendientes más antiguos"
                             description="Partidas abiertas ordenadas por antigüedad."
                             action={
@@ -290,6 +337,7 @@ export default function Dashboard({
 
                     <section aria-labelledby="recent-title">
                         <SectionHeader
+                            id="recent-title"
                             title="Actividad reciente"
                             description="Últimos vales capturados o actualizados."
                         />

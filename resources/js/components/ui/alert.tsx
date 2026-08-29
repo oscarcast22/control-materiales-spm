@@ -4,11 +4,11 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const alertVariants = cva(
-  "relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-xl border px-4 py-4 text-sm shadow-[inset_0_1px_0_rgb(255_255_255/0.34),0_6px_18px_rgb(30_60_95/0.04)] backdrop-blur-lg has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
+  "relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-xl border px-4 py-4 text-sm shadow-[0_1px_2px_rgb(15_35_65/0.04)] has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
   {
     variants: {
       variant: {
-        default: "border-border bg-glass text-foreground",
+        default: "border-border bg-surface-raised text-foreground",
         info: "border-info/30 bg-info-subtle/80 text-info",
         warning: "border-warning/35 bg-warning-subtle/80 text-warning",
         success: "border-success/30 bg-success-subtle/80 text-success",

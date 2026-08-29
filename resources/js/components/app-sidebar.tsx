@@ -8,7 +8,7 @@ import {
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import { ThemeMenu } from '@/components/theme-menu';
+import { ThemeToggle } from '@/components/theme-menu';
 import {
     Sidebar,
     SidebarContent,
@@ -17,6 +17,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarRail,
 } from '@/components/ui/sidebar';
 import type { NavItem } from '@/types';
 
@@ -46,13 +47,13 @@ const mainNavItems: NavItem[] = [
 export function AppSidebar() {
     return (
         <Sidebar variant="inset" collapsible="icon">
-            <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
+            <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:px-1.5">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
                             size="lg"
                             asChild
-                            className="h-14 rounded-xl group-data-[collapsible=icon]:h-10 hover:bg-sidebar-accent/45"
+                            className="h-14 rounded-xl group-data-[collapsible=icon]:h-14! hover:bg-sidebar-accent/45"
                         >
                             <Link href="/dashboard" prefetch>
                                 <AppLogo />
@@ -66,10 +67,11 @@ export function AppSidebar() {
                 <NavMain items={mainNavItems} />
             </SidebarContent>
 
-            <SidebarFooter className="border-t border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
-                <ThemeMenu />
+            <SidebarFooter className="border-t border-sidebar-border p-3 group-data-[collapsible=icon]:px-1.5">
+                <ThemeToggle />
                 <NavUser />
             </SidebarFooter>
+            <SidebarRail />
         </Sidebar>
     );
 }

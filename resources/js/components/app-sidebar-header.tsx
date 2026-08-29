@@ -10,6 +10,7 @@ export function AppSidebarHeader({
     breadcrumbs?: BreadcrumbItemType[];
 }) {
     const [isScrolled, setIsScrolled] = useState(false);
+    const hasBreadcrumbs = breadcrumbs.length > 0;
 
     useEffect(() => {
         const updateScrolledState = () => setIsScrolled(window.scrollY > 8);
@@ -29,13 +30,16 @@ export function AppSidebarHeader({
                 isScrolled
                     ? 'border-border/55 bg-background/80 backdrop-blur-xl'
                     : 'border-transparent bg-transparent backdrop-blur-none',
+                !hasBreadcrumbs && 'lg:hidden',
             )}
         >
             <div className="flex min-w-0 flex-1 items-center gap-2">
-                <SidebarTrigger className="-ml-1 shrink-0" />
-                <div className="min-w-0 overflow-hidden">
-                    <Breadcrumbs breadcrumbs={breadcrumbs} />
-                </div>
+                <SidebarTrigger className="-ml-1 shrink-0 lg:hidden" />
+                {hasBreadcrumbs && (
+                    <div className="min-w-0 overflow-hidden">
+                        <Breadcrumbs breadcrumbs={breadcrumbs} />
+                    </div>
+                )}
             </div>
         </header>
     );

@@ -24,7 +24,7 @@ export function DataTableSurface({
             aria-label={label}
             tabIndex={0}
             className={cn(
-                'glass-panel-strong overflow-hidden rounded-2xl border outline-none focus-visible:ring-3 focus-visible:ring-ring/25',
+                'glass-panel overflow-hidden rounded-2xl border outline-none focus-visible:ring-3 focus-visible:ring-ring/25',
                 className,
             )}
         >

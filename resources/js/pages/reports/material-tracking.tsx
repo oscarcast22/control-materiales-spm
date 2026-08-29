@@ -398,7 +398,7 @@ function TrackingMetrics({ metrics }: { metrics: Props['metrics'] }) {
     return (
         <section
             aria-label="Resumen de los filtros actuales"
-            className="overflow-hidden rounded-xl border bg-glass/75 shadow-[inset_0_1px_0_rgb(255_255_255/0.48),0_6px_18px_rgb(31_64_104/0.045)] backdrop-blur-lg"
+            className="overflow-hidden rounded-xl border bg-surface-raised shadow-[var(--shadow-control)]"
         >
             <dl className="grid sm:grid-cols-3">
                 {values.map((metric, index) => (

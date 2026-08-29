@@ -121,6 +121,13 @@
     --sidebar-accent-foreground: #164a8c;
     --sidebar-border: rgb(84 117 157 / 0.18);
     --sidebar-ring: #0ea5e9;
+    --shadow-control:
+        0 1px 2px rgb(15 35 65 / 0.06), 0 4px 12px rgb(31 64 104 / 0.06);
+    --shadow-panel:
+        0 1px 2px rgb(15 35 65 / 0.04), 0 10px 28px rgb(31 64 104 / 0.065);
+    --shadow-panel-raised:
+        0 1px 3px rgb(15 35 65 / 0.06), 0 16px 38px rgb(31 64 104 / 0.09);
+    --shadow-overlay: 0 24px 64px -18px rgb(4 20 42 / 0.34);
 }
 
 .dark {
@@ -165,6 +172,11 @@
     --sidebar-accent-foreground: #dcecff;
     --sidebar-border: #2d405c;
     --sidebar-ring: #7dd3fc;
+    --shadow-control: 0 1px 2px rgb(0 0 0 / 0.2), 0 4px 12px rgb(0 0 0 / 0.12);
+    --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.2), 0 12px 30px rgb(0 0 0 / 0.14);
+    --shadow-panel-raised:
+        0 1px 3px rgb(0 0 0 / 0.24), 0 18px 42px rgb(0 0 0 / 0.2);
+    --shadow-overlay: 0 26px 70px -18px rgb(0 0 0 / 0.58);
 }
 
 @layer base {
@@ -191,7 +203,6 @@
             rgb(14 165 233 / 0.11),
             transparent 38rem
         );
-        background-attachment: fixed;
         color: var(--foreground);
         font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'tnum';
         -webkit-font-smoothing: antialiased;
@@ -239,43 +250,15 @@
     .glass-panel {
         border-color: var(--border);
         background: var(--glass);
-        box-shadow:
-            0 1px 0 rgb(255 255 255 / 0.55) inset,
-            0 1px 2px rgb(15 35 65 / 0.05),
-            0 14px 36px rgb(31 64 104 / 0.07);
-        backdrop-filter: blur(18px) saturate(130%);
+        box-shadow: var(--shadow-panel);
+        backdrop-filter: blur(14px) saturate(118%);
     }
 
     .glass-panel-strong {
         border-color: var(--border);
         background: var(--glass-strong);
-        box-shadow:
-            0 1px 0 rgb(255 255 255 / 0.58) inset,
-            0 12px 30px rgb(17 47 84 / 0.08);
-        backdrop-filter: blur(20px) saturate(125%);
-    }
-
-    .tech-highlight {
-        position: relative;
-        isolation: isolate;
-        overflow: hidden;
-    }
-
-    .tech-highlight::before {
-        position: absolute;
-        z-index: -1;
-        top: -5rem;
-        right: -4rem;
-        width: 11rem;
-        height: 11rem;
-        border-radius: 999px;
-        background: radial-gradient(
-            circle,
-            rgb(56 189 248 / 0.16),
-            transparent 68%
-        );
-        content: '';
-        pointer-events: none;
+        box-shadow: var(--shadow-panel-raised);
+        backdrop-filter: blur(18px) saturate(116%);
     }
 }
 
