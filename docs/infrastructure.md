@@ -122,6 +122,12 @@ Los procesos principales son:
 | `control-materiales-backup.timer`   | Crear el respaldo diario alrededor de las 03:15 UTC |
 | `cloudflared.service`               | Mantener el túnel productivo                        |
 
+La ubicación PHP de Nginx reserva un búfer FastCGI de `32k` para los
+encabezados de respuesta. Es necesario porque Inertia y Vite pueden emitir un
+encabezado `Link` con la precarga de varios fragmentos; reducirlo al valor
+predeterminado puede provocar respuestas `502` en páginas con más dependencias,
+aunque `/up` continúe respondiendo correctamente.
+
 ## Requisitos para desplegar
 
 Un despliegue normal se ejecuta desde la computadora administrativa que
