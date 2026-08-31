@@ -14,6 +14,7 @@ use App\Models\Program;
 use App\Models\Unit;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
+use App\Support\CatalogDeletion;
 use App\Support\CatalogIndexData;
 use App\Support\Normalizer;
 use Illuminate\Database\Eloquent\Model;
@@ -56,7 +57,10 @@ class CatalogController extends Controller
     public function updateDestination(Request $request, Destination $destination): RedirectResponse
     {
         Gate::authorize('manage-catalogs');
-        $data = $request->validate(['name' => ['required', 'string', 'max:255']]);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
         $data['name'] = trim($data['name']);
         $key = Normalizer::key($data['name']);
         if ($key === '') {
@@ -87,6 +91,7 @@ class CatalogController extends Controller
                 'name' => $data['name'],
                 'normalized_name' => $key,
                 'needs_review' => false,
+                ...$this->statusAttributes($destination, $data),
             ]);
             AuditEvent::record($destination, 'reviewed', $before, $destination->fresh()->toArray());
         });
@@ -134,6 +139,7 @@ class CatalogController extends Controller
             'default_unit_id' => ['required', 'exists:units,id'],
             'voucher_type_ids' => ['required', 'array', 'min:1'],
             'voucher_type_ids.*' => ['required', 'integer', 'distinct', Rule::exists('storage_locations', 'id')->where('is_active', true)],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
         $key = Normalizer::key($data['name']);
         $duplicate = Material::query()->where('normalized_name', $key)->whereKeyNot($material->id)->exists();
@@ -160,6 +166,7 @@ class CatalogController extends Controller
                 'default_unit_id' => $data['default_unit_id'],
                 'normalized_name' => $key,
                 'needs_review' => false,
+                ...$this->statusAttributes($locked, $data),
             ]);
             $locked->voucherTypes()->sync($data['voucher_type_ids']);
             MaterialAlias::firstOrCreate(
@@ -226,6 +233,7 @@ class CatalogController extends Controller
             'can_receive_material' => ['required', 'boolean'],
             'can_deliver_material' => ['required', 'boolean'],
             'can_authorize_material' => ['required', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
         if (! $data['can_receive_material'] && ! $data['can_deliver_material'] && ! $data['can_authorize_material']) {
             throw ValidationException::withMessages(['name' => 'Selecciona al menos una función para la persona.']);
@@ -242,6 +250,7 @@ class CatalogController extends Controller
 
         DB::transaction(function () use ($person, $data, $key): void {
             $before = $person->toArray();
+            $this->statusAttributes($person, $data);
             PersonAlias::firstOrCreate(
                 ['normalized_alias' => $person->normalized_name],
                 ['person_id' => $person->id, 'alias' => $person->name],
@@ -280,9 +289,11 @@ class CatalogController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'symbol' => ['required', 'string', 'max:20', Rule::unique('units', 'symbol')->ignore($unit)],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $before = $unit->toArray();
+        $this->statusAttributes($unit, $data);
         $unit->update($data);
         AuditEvent::record($unit, 'updated', $before, $unit->fresh()->toArray());
 
@@ -309,11 +320,13 @@ class CatalogController extends Controller
         $data = $request->validate([
             'name' => ['nullable', 'string', 'max:255'],
             'code' => ['prohibited'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $before = $program->toArray();
         $program->update([
             'name' => filled($data['name'] ?? null) ? trim((string) $data['name']) : null,
+            ...$this->statusAttributes($program, $data),
         ]);
         AuditEvent::record($program, 'updated', $before, $program->fresh()->toArray());
 
@@ -348,15 +361,35 @@ class CatalogController extends Controller
             'name' => ['nullable', 'string', 'max:255'],
             'code' => ['prohibited'],
             'program_id' => ['prohibited'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $before = $action->toArray();
         $action->update([
             'name' => filled($data['name'] ?? null) ? trim((string) $data['name']) : null,
+            ...$this->statusAttributes($action, $data),
         ]);
         AuditEvent::record($action, 'updated', $before, $action->fresh()->toArray());
 
         return back()->with('success', 'Acción actualizada.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, bool>
+     */
+    private function statusAttributes(Model $model, array $data): array
+    {
+        if (! array_key_exists('is_active', $data)) {
+            return [];
+        }
+
+        $isActive = (bool) $data['is_active'];
+        if ((bool) $model->getAttribute('is_active') && ! $isActive) {
+            $this->ensureCanDeactivate($model);
+        }
+
+        return ['is_active' => $isActive];
     }
 
     public function toggle(string $type, int $id): RedirectResponse
@@ -381,6 +414,14 @@ class CatalogController extends Controller
         AuditEvent::record($model, 'status_changed', $before, $model->fresh()->toArray());
 
         return back()->with('success', 'Estado actualizado.');
+    }
+
+    public function destroy(string $type, int $id, CatalogDeletion $catalogDeletion): RedirectResponse
+    {
+        Gate::authorize('manage-catalogs');
+        $catalogDeletion->delete($type, $id);
+
+        return back()->with('success', 'Registro eliminado.');
     }
 
     private function ensureCanDeactivate(Model $model): void
@@ -495,6 +536,7 @@ class CatalogController extends Controller
             $source = Destination::query()->with(['aliases', 'vouchers:id'])->lockForUpdate()->findOrFail($sourceId);
             $target = Destination::query()->lockForUpdate()->findOrFail($targetId);
             $target->vouchers()->syncWithoutDetaching($source->vouchers->modelKeys());
+            $source->vouchers()->detach();
             foreach ($source->aliases as $alias) {
                 $existing = DestinationAlias::query()->where('normalized_alias', $alias->normalized_alias)->first();
                 $existing && $existing->id !== $alias->id ? $alias->delete() : $alias->update(['destination_id' => $target->id]);

@@ -9,7 +9,8 @@ import {
     Workflow,
     X,
 } from 'lucide-react';
-import type { FormEvent, ReactNode } from 'react';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 import InputError from '@/components/input-error';
 import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
+    DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,9 +31,9 @@ import { cn } from '@/lib/utils';
 import type { Paginated, VoucherType } from '@/types';
 import type {
     CatalogFilters,
+    CatalogDeleteTarget,
     CatalogNavigationItem,
     CatalogSection,
-    StatusTarget,
 } from './catalog-types';
 
 const catalogReloadProps = ['catalog', 'filters'];
@@ -372,92 +374,120 @@ export function MobileDatum({
     );
 }
 
-export function StatusAction({
-    target,
-    onRequest,
+export function CatalogStatusField({
+    value,
+    onValueChange,
 }: {
-    target: StatusTarget;
-    onRequest: (target: StatusTarget) => void;
+    value: boolean;
+    onValueChange: (value: boolean) => void;
 }) {
     return (
-        <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className={
-                target.active
-                    ? 'text-danger hover:bg-danger-subtle hover:text-danger'
-                    : undefined
-            }
-            onClick={() =>
-                target.active
-                    ? onRequest(target)
-                    : router.post(
-                          `/catalogs/${target.type}/${target.id}/toggle`,
-                          {},
-                          { preserveScroll: true },
-                      )
-            }
-        >
-            {target.active ? 'Desactivar' : 'Activar'}
-        </Button>
+        <section className="grid gap-3 rounded-xl border border-border bg-surface-subtle p-4">
+            <div className="grid gap-1">
+                <p className="text-sm font-semibold text-foreground">Estado</p>
+                <p className="text-sm text-text-secondary">
+                    {value
+                        ? 'Activo: disponible para nuevas capturas.'
+                        : 'Inactivo: no disponible para nuevas capturas.'}
+                </p>
+            </div>
+            <div
+                role="radiogroup"
+                aria-label="Estado del registro"
+                className="inline-flex min-h-11 w-fit overflow-hidden rounded-lg border border-border-strong bg-surface-raised"
+            >
+                <button
+                    type="button"
+                    role="radio"
+                    aria-checked={value}
+                    className={`min-h-11 px-4 text-sm font-semibold transition-[background-color,color] duration-150 outline-none focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:ring-inset ${
+                        value
+                            ? 'bg-success-subtle text-success'
+                            : 'text-text-secondary hover:bg-hover hover:text-foreground'
+                    }`}
+                    onClick={() => onValueChange(true)}
+                >
+                    Activo
+                </button>
+                <button
+                    type="button"
+                    role="radio"
+                    aria-checked={!value}
+                    className={`min-h-11 border-l border-border px-4 text-sm font-semibold transition-[background-color,color] duration-150 outline-none focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:ring-inset ${
+                        !value
+                            ? 'bg-secondary text-foreground'
+                            : 'text-text-secondary hover:bg-hover hover:text-foreground'
+                    }`}
+                    onClick={() => onValueChange(false)}
+                >
+                    Inactivo
+                </button>
+            </div>
+        </section>
     );
 }
 
-export function CatalogStatusDialog({
+export function CatalogDeleteAction({
     target,
-    onClose,
+    onDeleted,
 }: {
-    target: StatusTarget | null;
-    onClose: () => void;
+    target: CatalogDeleteTarget;
+    onDeleted: () => void;
 }) {
-    const form = useForm({ status: '' });
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
+    const [open, setOpen] = useState(false);
+    const form = useForm<{ delete: string }>({ delete: '' });
+    const eligibility = target.deletion ?? {
+        can_delete: false,
+        blocked_reason: 'Verifica primero si este registro se puede eliminar.',
+    };
 
-        if (!target) {
-            return;
-        }
-
-        form.post(`/catalogs/${target.type}/${target.id}/toggle`, {
+    const remove = () => {
+        form.delete(`/catalogs/${target.type}/${target.id}`, {
             preserveScroll: true,
-            onSuccess: onClose,
+            onSuccess: () => {
+                setOpen(false);
+                onDeleted();
+            },
         });
     };
 
+    if (!eligibility.can_delete) {
+        return null;
+    }
+
     return (
-        <Dialog
-            open={Boolean(target)}
-            onOpenChange={(open) => !open && onClose()}
-        >
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button type="button" variant="destructive">
+                    Eliminar registro
+                </Button>
+            </DialogTrigger>
             <DialogContent>
-                <form onSubmit={submit} className="grid gap-5">
-                    <DialogHeader>
-                        <DialogTitle>Desactivar {target?.name}</DialogTitle>
-                        <DialogDescription>
-                            Dejará de estar disponible para nuevas capturas. Los
-                            vales y registros históricos conservarán su
-                            información.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <InputError message={form.errors.status} />
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                        >
-                            Volver
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="destructive"
-                            disabled={form.processing}
-                        >
-                            Desactivar
-                        </Button>
-                    </DialogFooter>
-                </form>
+                <DialogHeader>
+                    <DialogTitle>¿Eliminar {target.name}?</DialogTitle>
+                    <DialogDescription>
+                        Esta acción es permanente. Sólo se elimina porque no
+                        tiene vales ni otras dependencias que conservar.
+                    </DialogDescription>
+                </DialogHeader>
+                <InputError message={form.errors.delete} />
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setOpen(false)}
+                    >
+                        Volver
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={form.processing}
+                        onClick={remove}
+                    >
+                        Eliminar definitivamente
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

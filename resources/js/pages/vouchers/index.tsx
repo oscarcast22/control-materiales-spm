@@ -65,7 +65,7 @@ const baseFilters = {
     received_by_id: '',
     direction: '',
     status: '',
-    sort: 'issued_on',
+    sort: 'folio',
     sort_direction: 'desc',
 };
 
@@ -90,7 +90,7 @@ export default function VoucherIndex({
         voucher_type_id: String(filters.voucher_type_id ?? ''),
         direction: String(filters.direction ?? ''),
         status: String(filters.status ?? ''),
-        sort: String(filters.sort ?? 'issued_on'),
+        sort: String(filters.sort ?? 'folio'),
         sort_direction: String(filters.sort_direction ?? 'desc'),
     };
     const {

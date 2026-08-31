@@ -632,7 +632,7 @@ function TechnicianTable({
 
 function DetailTable({ rows }: { rows: TrackingRow[] }) {
     const summaries = groupTrackingRows(rows);
-    const sorted = useTableSort(summaries, 'date', 'desc', {
+    const sorted = useTableSort(summaries, 'folio', 'desc', {
         folio: (row) => row.folio,
         date: (row) => row.issued_on,
         technician: (row) => row.received_by.name,
@@ -912,7 +912,6 @@ function AbstractQuantity({
     emphasized?: boolean;
 }) {
     const negative = value < 0;
-    const label = Math.abs(value) === 1 ? 'material' : 'materiales';
 
     return (
         <TableCell
@@ -924,7 +923,7 @@ function AbstractQuantity({
         >
             {formatQuantity(value)}{' '}
             <span className="text-xs font-normal text-muted-foreground">
-                {label}
+                mat.
             </span>
         </TableCell>
     );

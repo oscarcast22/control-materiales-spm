@@ -49,18 +49,16 @@ import type {
     CatalogFilters,
     CatalogNavigationItem,
     ProgramsCatalog,
-    StatusTarget,
 } from './catalog-types';
 import {
+    CatalogDeleteAction,
     CatalogEmpty,
     CatalogPagination,
+    CatalogStatusField,
     CatalogToolbar,
     MobileDatum,
     MobileRecord,
-    StatusAction,
 } from './catalog-ui';
-
-type StatusHandler = (target: StatusTarget) => void;
 
 function SectionShell({
     eyebrow,
@@ -134,28 +132,18 @@ function RecordName({
     );
 }
 
-function StateBadge({ active }: { active?: boolean }) {
-    return (
-        <Badge variant={active ? 'success' : 'outline'}>
-            {active ? 'Activo' : 'Inactivo'}
-        </Badge>
-    );
-}
-
 export function MaterialSection({
     page,
     filters,
     summary,
     units,
     voucherTypes,
-    onStatus,
 }: {
     page: Paginated<Material>;
     filters: CatalogFilters;
     summary: CatalogNavigationItem;
     units: Unit[];
     voucherTypes: VoucherType[];
-    onStatus: StatusHandler;
 }) {
     const [createOpen, setCreateOpen] = useState(false);
     const [editing, setEditing] = useState<Material | null>(null);
@@ -200,20 +188,17 @@ export function MaterialSection({
                             <Table className="table-fixed">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[29%]">
+                                        <TableHead className="w-[35%]">
                                             Nombre
                                         </TableHead>
                                         <TableHead className="w-[12%]">
                                             Unidad
                                         </TableHead>
-                                        <TableHead className="w-[18%]">
+                                        <TableHead className="w-[25%]">
                                             Disponible en
                                         </TableHead>
-                                        <TableHead className="w-[12%]">
-                                            Estado
-                                        </TableHead>
-                                        <TableHead className="w-[29%] text-right">
-                                            Acciones
+                                        <TableHead className="w-[28%] text-right">
+                                            Editar
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -249,11 +234,6 @@ export function MaterialSection({
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <StateBadge
-                                                    active={material.is_active}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
                                                 <div className="flex justify-end gap-1">
                                                     <Button
                                                         size="sm"
@@ -267,17 +247,6 @@ export function MaterialSection({
                                                             ? 'Revisar'
                                                             : 'Editar'}
                                                     </Button>
-                                                    <StatusAction
-                                                        target={{
-                                                            type: 'materials',
-                                                            id: material.id,
-                                                            name: material.name,
-                                                            active: Boolean(
-                                                                material.is_active,
-                                                            ),
-                                                        }}
-                                                        onRequest={onStatus}
-                                                    />
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -296,11 +265,6 @@ export function MaterialSection({
                                 <div className="mt-4 grid grid-cols-2 gap-4">
                                     <MobileDatum label="Unidad">
                                         {material.default_unit?.symbol ?? '—'}
-                                    </MobileDatum>
-                                    <MobileDatum label="Estado">
-                                        <StateBadge
-                                            active={material.is_active}
-                                        />
                                     </MobileDatum>
                                     <div className="col-span-2">
                                         <MobileDatum label="Disponible en">
@@ -330,15 +294,6 @@ export function MaterialSection({
                                             ? 'Revisar'
                                             : 'Editar'}
                                     </Button>
-                                    <StatusAction
-                                        target={{
-                                            type: 'materials',
-                                            id: material.id,
-                                            name: material.name,
-                                            active: Boolean(material.is_active),
-                                        }}
-                                        onRequest={onStatus}
-                                    />
                                 </div>
                             </MobileRecord>
                         ))}
@@ -366,7 +321,6 @@ export function MaterialSection({
                 open={unitsOpen}
                 onOpenChange={setUnitsOpen}
                 units={units}
-                onStatus={onStatus}
             />
         </SectionShell>
     );
@@ -389,11 +343,13 @@ function MaterialDialog({
         name: string;
         default_unit_id: string;
         voucher_type_ids: string[];
+        is_active: boolean;
     }>({
         name: material?.name ?? '',
         default_unit_id: material ? String(material.default_unit_id) : '',
         voucher_type_ids:
             material?.voucher_types?.map((type) => String(type.id)) ?? [],
+        is_active: material?.is_active ?? true,
     });
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -507,21 +463,44 @@ function MaterialDialog({
                         </div>
                         <InputError message={form.errors.voucher_type_ids} />
                     </fieldset>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button type="submit" disabled={form.processing}>
-                            {material?.needs_review
-                                ? 'Guardar como revisado'
-                                : material
-                                  ? 'Guardar cambios'
-                                  : 'Agregar material'}
-                        </Button>
+                    {material && (
+                        <CatalogStatusField
+                            value={form.data.is_active}
+                            onValueChange={(value) =>
+                                form.setData('is_active', value)
+                            }
+                        />
+                    )}
+                    <DialogFooter
+                        className={material ? 'sm:justify-between' : undefined}
+                    >
+                        {material && (
+                            <CatalogDeleteAction
+                                target={{
+                                    type: 'materials',
+                                    id: material.id,
+                                    name: material.name,
+                                    deletion: material.deletion,
+                                }}
+                                onDeleted={() => onOpenChange(false)}
+                            />
+                        )}
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button type="submit" disabled={form.processing}>
+                                {material?.needs_review
+                                    ? 'Guardar como revisado'
+                                    : material
+                                      ? 'Guardar cambios'
+                                      : 'Agregar material'}
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -533,12 +512,10 @@ function UnitManager({
     open,
     onOpenChange,
     units,
-    onStatus,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     units: Unit[];
-    onStatus: StatusHandler;
 }) {
     const form = useForm({ name: '', symbol: '' });
     const submit = (event: FormEvent) => {
@@ -595,11 +572,7 @@ function UnitManager({
                 </form>
                 <div className="grid gap-2">
                     {units.map((unit) => (
-                        <UnitRow
-                            key={unit.id}
-                            unit={unit}
-                            onStatus={onStatus}
-                        />
+                        <UnitRow key={unit.id} unit={unit} />
                     ))}
                 </div>
             </DialogContent>
@@ -607,8 +580,12 @@ function UnitManager({
     );
 }
 
-function UnitRow({ unit, onStatus }: { unit: Unit; onStatus: StatusHandler }) {
-    const form = useForm({ name: unit.name, symbol: unit.symbol });
+function UnitRow({ unit }: { unit: Unit }) {
+    const form = useForm({
+        name: unit.name,
+        symbol: unit.symbol,
+        is_active: unit.is_active ?? true,
+    });
 
     return (
         <form
@@ -616,6 +593,7 @@ function UnitRow({ unit, onStatus }: { unit: Unit; onStatus: StatusHandler }) {
                 event.preventDefault();
                 form.put(`/catalogs/units/${unit.id}`, {
                     preserveScroll: true,
+                    onSuccess: () => form.setDefaults(),
                 });
             }}
             className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[1fr_110px_auto_auto] sm:items-center"
@@ -638,15 +616,21 @@ function UnitRow({ unit, onStatus }: { unit: Unit; onStatus: StatusHandler }) {
             >
                 Guardar
             </Button>
-            <StatusAction
+            <CatalogDeleteAction
                 target={{
                     type: 'units',
                     id: unit.id,
                     name: unit.name,
-                    active: Boolean(unit.is_active),
+                    deletion: unit.deletion,
                 }}
-                onRequest={onStatus}
+                onDeleted={() => undefined}
             />
+            <div className="sm:col-span-4">
+                <CatalogStatusField
+                    value={form.data.is_active}
+                    onValueChange={(value) => form.setData('is_active', value)}
+                />
+            </div>
             <div className="sm:col-span-4">
                 <InputError message={form.errors.name ?? form.errors.symbol} />
             </div>
@@ -658,12 +642,10 @@ export function DestinationSection({
     page,
     filters,
     summary,
-    onStatus,
 }: {
     page: Paginated<Destination>;
     filters: CatalogFilters;
     summary: CatalogNavigationItem;
-    onStatus: StatusHandler;
 }) {
     const [createOpen, setCreateOpen] = useState(false);
     const [editing, setEditing] = useState<Destination | null>(null);
@@ -698,17 +680,14 @@ export function DestinationSection({
                             <Table className="table-fixed">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[45%]">
+                                        <TableHead className="w-[55%]">
                                             Ubicación
                                         </TableHead>
-                                        <TableHead className="w-[15%]">
+                                        <TableHead className="w-[20%]">
                                             Otros nombres
                                         </TableHead>
-                                        <TableHead className="w-[15%]">
-                                            Estado
-                                        </TableHead>
                                         <TableHead className="w-[25%] text-right">
-                                            Acciones
+                                            Editar
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -727,13 +706,6 @@ export function DestinationSection({
                                                 {destination.aliases_count ?? 0}
                                             </TableCell>
                                             <TableCell>
-                                                <StateBadge
-                                                    active={
-                                                        destination.is_active
-                                                    }
-                                                />
-                                            </TableCell>
-                                            <TableCell>
                                                 <div className="flex justify-end gap-1">
                                                     <Button
                                                         size="sm"
@@ -749,17 +721,6 @@ export function DestinationSection({
                                                             ? 'Revisar'
                                                             : 'Editar'}
                                                     </Button>
-                                                    <StatusAction
-                                                        target={{
-                                                            type: 'destinations',
-                                                            id: destination.id,
-                                                            name: destination.name,
-                                                            active: Boolean(
-                                                                destination.is_active,
-                                                            ),
-                                                        }}
-                                                        onRequest={onStatus}
-                                                    />
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -779,11 +740,6 @@ export function DestinationSection({
                                     <MobileDatum label="Otros nombres">
                                         {destination.aliases_count ?? 0}
                                     </MobileDatum>
-                                    <MobileDatum label="Estado">
-                                        <StateBadge
-                                            active={destination.is_active}
-                                        />
-                                    </MobileDatum>
                                 </div>
                                 <div className="mt-4 flex justify-end gap-1 border-t border-border pt-3">
                                     <Button
@@ -796,17 +752,6 @@ export function DestinationSection({
                                             ? 'Revisar'
                                             : 'Editar'}
                                     </Button>
-                                    <StatusAction
-                                        target={{
-                                            type: 'destinations',
-                                            id: destination.id,
-                                            name: destination.name,
-                                            active: Boolean(
-                                                destination.is_active,
-                                            ),
-                                        }}
-                                        onRequest={onStatus}
-                                    />
                                 </div>
                             </MobileRecord>
                         ))}
@@ -836,7 +781,10 @@ function DestinationDialog({
     onOpenChange: (open: boolean) => void;
     destination?: Destination;
 }) {
-    const form = useForm({ name: destination?.name ?? '' });
+    const form = useForm({
+        name: destination?.name ?? '',
+        is_active: destination?.is_active ?? true,
+    });
     const submit = (event: FormEvent) => {
         event.preventDefault();
         const options = {
@@ -885,21 +833,46 @@ function DestinationDialog({
                         />
                         <InputError message={form.errors.name} />
                     </div>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button disabled={form.processing}>
-                            {destination?.needs_review
-                                ? 'Guardar como revisada'
-                                : destination
-                                  ? 'Guardar cambios'
-                                  : 'Agregar ubicación'}
-                        </Button>
+                    {destination && (
+                        <CatalogStatusField
+                            value={form.data.is_active}
+                            onValueChange={(value) =>
+                                form.setData('is_active', value)
+                            }
+                        />
+                    )}
+                    <DialogFooter
+                        className={
+                            destination ? 'sm:justify-between' : undefined
+                        }
+                    >
+                        {destination && (
+                            <CatalogDeleteAction
+                                target={{
+                                    type: 'destinations',
+                                    id: destination.id,
+                                    name: destination.name,
+                                    deletion: destination.deletion,
+                                }}
+                                onDeleted={() => onOpenChange(false)}
+                            />
+                        )}
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button disabled={form.processing}>
+                                {destination?.needs_review
+                                    ? 'Guardar como revisada'
+                                    : destination
+                                      ? 'Guardar cambios'
+                                      : 'Agregar ubicación'}
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -919,12 +892,10 @@ export function PeopleSection({
     page,
     filters,
     summary,
-    onStatus,
 }: {
     page: Paginated<Person>;
     filters: CatalogFilters;
     summary: CatalogNavigationItem;
-    onStatus: StatusHandler;
 }) {
     const [createOpen, setCreateOpen] = useState(false);
     const [editing, setEditing] = useState<Person | null>(null);
@@ -959,17 +930,14 @@ export function PeopleSection({
                             <Table className="table-fixed">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[35%]">
+                                        <TableHead className="w-[42%]">
                                             Nombre
                                         </TableHead>
-                                        <TableHead className="w-[25%]">
+                                        <TableHead className="w-[33%]">
                                             Funciones
                                         </TableHead>
-                                        <TableHead className="w-[15%]">
-                                            Estado
-                                        </TableHead>
                                         <TableHead className="w-[25%] text-right">
-                                            Acciones
+                                            Editar
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -999,11 +967,6 @@ export function PeopleSection({
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <StateBadge
-                                                    active={person.is_active}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
                                                 <div className="flex justify-end gap-1">
                                                     <Button
                                                         size="sm"
@@ -1017,17 +980,6 @@ export function PeopleSection({
                                                             ? 'Revisar'
                                                             : 'Editar'}
                                                     </Button>
-                                                    <StatusAction
-                                                        target={{
-                                                            type: 'people',
-                                                            id: person.id,
-                                                            name: person.name,
-                                                            active: Boolean(
-                                                                person.is_active,
-                                                            ),
-                                                        }}
-                                                        onRequest={onStatus}
-                                                    />
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -1056,9 +1008,6 @@ export function PeopleSection({
                                             ))}
                                         </div>
                                     </MobileDatum>
-                                    <MobileDatum label="Estado">
-                                        <StateBadge active={person.is_active} />
-                                    </MobileDatum>
                                 </div>
                                 <div className="mt-4 flex justify-end gap-1 border-t border-border pt-3">
                                     <Button
@@ -1071,15 +1020,6 @@ export function PeopleSection({
                                             ? 'Revisar'
                                             : 'Editar'}
                                     </Button>
-                                    <StatusAction
-                                        target={{
-                                            type: 'people',
-                                            id: person.id,
-                                            name: person.name,
-                                            active: Boolean(person.is_active),
-                                        }}
-                                        onRequest={onStatus}
-                                    />
                                 </div>
                             </MobileRecord>
                         ))}
@@ -1114,6 +1054,7 @@ function PersonDialog({
         can_receive_material: person?.can_receive_material ?? true,
         can_deliver_material: person?.can_deliver_material ?? false,
         can_authorize_material: person?.can_authorize_material ?? false,
+        is_active: person?.is_active ?? true,
     });
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -1187,21 +1128,44 @@ function PersonDialog({
                             ))}
                         </div>
                     </fieldset>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button disabled={form.processing}>
-                            {person?.needs_review
-                                ? 'Guardar como revisado'
-                                : person
-                                  ? 'Guardar cambios'
-                                  : 'Agregar persona'}
-                        </Button>
+                    {person && (
+                        <CatalogStatusField
+                            value={form.data.is_active}
+                            onValueChange={(value) =>
+                                form.setData('is_active', value)
+                            }
+                        />
+                    )}
+                    <DialogFooter
+                        className={person ? 'sm:justify-between' : undefined}
+                    >
+                        {person && (
+                            <CatalogDeleteAction
+                                target={{
+                                    type: 'people',
+                                    id: person.id,
+                                    name: person.name,
+                                    deletion: person.deletion,
+                                }}
+                                onDeleted={() => onOpenChange(false)}
+                            />
+                        )}
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button disabled={form.processing}>
+                                {person?.needs_review
+                                    ? 'Guardar como revisado'
+                                    : person
+                                      ? 'Guardar cambios'
+                                      : 'Agregar persona'}
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -1214,13 +1178,11 @@ export function ProgramsSection({
     filters,
     summary,
     programOptions,
-    onStatus,
 }: {
     catalog: ProgramsCatalog;
     filters: CatalogFilters;
     summary: CatalogNavigationItem;
     programOptions: Program[];
-    onStatus: StatusHandler;
 }) {
     const [programOpen, setProgramOpen] = useState(false);
     const [actionOpen, setActionOpen] = useState(false);
@@ -1270,7 +1232,6 @@ export function ProgramsSection({
                             kind="program"
                             rows={catalog.programs}
                             onEdit={(row) => setEditingProgram(row as Program)}
-                            onStatus={onStatus}
                         />
                     )}
                 </ClassificationBlock>
@@ -1286,7 +1247,6 @@ export function ProgramsSection({
                             kind="action"
                             rows={catalog.actions}
                             onEdit={(row) => setEditingAction(row as Action)}
-                            onStatus={onStatus}
                         />
                     )}
                 </ClassificationBlock>
@@ -1351,12 +1311,10 @@ function ClassificationTable({
     kind,
     rows,
     onEdit,
-    onStatus,
 }: {
     kind: 'program' | 'action';
     rows: (Program | Action)[];
     onEdit: (row: Program | Action) => void;
-    onStatus: StatusHandler;
 }) {
     return (
         <>
@@ -1371,9 +1329,8 @@ function ClassificationTable({
                                 </TableHead>
                             )}
                             <TableHead>Nombre</TableHead>
-                            <TableHead className="w-[13%]">Estado</TableHead>
-                            <TableHead className="w-[24%] text-right">
-                                Acciones
+                            <TableHead className="w-[17%] text-right">
+                                Editar
                             </TableHead>
                         </TableRow>
                     </TableHeader>
@@ -1396,9 +1353,6 @@ function ClassificationTable({
                                     )}
                                 </TableCell>
                                 <TableCell>
-                                    <StateBadge active={row.is_active} />
-                                </TableCell>
-                                <TableCell>
                                     <div className="flex justify-end gap-1">
                                         <Button
                                             size="sm"
@@ -1408,18 +1362,6 @@ function ClassificationTable({
                                             <Pencil aria-hidden="true" />
                                             Editar
                                         </Button>
-                                        <StatusAction
-                                            target={{
-                                                type:
-                                                    kind === 'program'
-                                                        ? 'programs'
-                                                        : 'actions',
-                                                id: row.id,
-                                                name: row.code,
-                                                active: Boolean(row.is_active),
-                                            }}
-                                            onRequest={onStatus}
-                                        />
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -1439,7 +1381,6 @@ function ClassificationTable({
                                     {row.name || 'Sin nombre'}
                                 </p>
                             </div>
-                            <StateBadge active={row.is_active} />
                         </div>
                         {kind === 'action' && (
                             <div className="mt-3">
@@ -1457,18 +1398,6 @@ function ClassificationTable({
                                 <Pencil aria-hidden="true" />
                                 Editar
                             </Button>
-                            <StatusAction
-                                target={{
-                                    type:
-                                        kind === 'program'
-                                            ? 'programs'
-                                            : 'actions',
-                                    id: row.id,
-                                    name: row.code,
-                                    active: Boolean(row.is_active),
-                                }}
-                                onRequest={onStatus}
-                            />
                         </div>
                     </MobileRecord>
                 ))}
@@ -1489,6 +1418,7 @@ function ProgramDialog({
     const form = useForm({
         code: program?.code ?? '',
         name: program?.name ?? '',
+        is_active: program?.is_active ?? true,
     });
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -1501,7 +1431,10 @@ function ProgramDialog({
         };
 
         if (program) {
-            form.transform((data) => ({ name: data.name }));
+            form.transform((data) => ({
+                name: data.name,
+                is_active: data.is_active,
+            }));
             form.put(`/catalogs/programs/${program.id}`, options);
         } else {
             form.post('/catalogs/programs', options);
@@ -1550,17 +1483,42 @@ function ProgramDialog({
                             <InputError message={form.errors.name} />
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button disabled={form.processing}>
-                            {program ? 'Guardar cambios' : 'Agregar programa'}
-                        </Button>
+                    {program && (
+                        <CatalogStatusField
+                            value={form.data.is_active}
+                            onValueChange={(value) =>
+                                form.setData('is_active', value)
+                            }
+                        />
+                    )}
+                    <DialogFooter
+                        className={program ? 'sm:justify-between' : undefined}
+                    >
+                        {program && (
+                            <CatalogDeleteAction
+                                target={{
+                                    type: 'programs',
+                                    id: program.id,
+                                    name: program.code,
+                                    deletion: program.deletion,
+                                }}
+                                onDeleted={() => onOpenChange(false)}
+                            />
+                        )}
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button disabled={form.processing}>
+                                {program
+                                    ? 'Guardar cambios'
+                                    : 'Agregar programa'}
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -1583,6 +1541,7 @@ function ActionDialog({
         program_id: action ? String(action.program_id) : '',
         code: action?.code ?? '',
         name: action?.name ?? '',
+        is_active: action?.is_active ?? true,
     });
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -1595,7 +1554,10 @@ function ActionDialog({
         };
 
         if (action) {
-            form.transform((data) => ({ name: data.name }));
+            form.transform((data) => ({
+                name: data.name,
+                is_active: data.is_active,
+            }));
             form.put(`/catalogs/actions/${action.id}`, options);
         } else {
             form.post('/catalogs/actions', options);
@@ -1663,17 +1625,40 @@ function ActionDialog({
                             </div>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button disabled={form.processing}>
-                            {action ? 'Guardar cambios' : 'Agregar acción'}
-                        </Button>
+                    {action && (
+                        <CatalogStatusField
+                            value={form.data.is_active}
+                            onValueChange={(value) =>
+                                form.setData('is_active', value)
+                            }
+                        />
+                    )}
+                    <DialogFooter
+                        className={action ? 'sm:justify-between' : undefined}
+                    >
+                        {action && (
+                            <CatalogDeleteAction
+                                target={{
+                                    type: 'actions',
+                                    id: action.id,
+                                    name: action.code,
+                                    deletion: action.deletion,
+                                }}
+                                onDeleted={() => onOpenChange(false)}
+                            />
+                        )}
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button disabled={form.processing}>
+                                {action ? 'Guardar cambios' : 'Agregar acción'}
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </form>
             </DialogContent>

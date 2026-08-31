@@ -30,4 +30,10 @@ class Program extends Model
     {
         return $this->hasMany(Action::class);
     }
+
+    /** @return HasMany<Voucher, $this> */
+    public function vouchers(): HasMany
+    {
+        return $this->hasMany(Voucher::class);
+    }
 }

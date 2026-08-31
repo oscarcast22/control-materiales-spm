@@ -41,6 +41,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('catalogs/programs/{program}', [CatalogController::class, 'updateProgram'])->name('catalogs.programs.update');
     Route::post('catalogs/actions', [CatalogController::class, 'storeAction'])->name('catalogs.actions.store');
     Route::put('catalogs/actions/{action}', [CatalogController::class, 'updateAction'])->name('catalogs.actions.update');
+    Route::delete('catalogs/{type}/{id}', [CatalogController::class, 'destroy'])
+        ->whereIn('type', ['materials', 'people', 'units', 'programs', 'actions', 'destinations'])
+        ->name('catalogs.destroy');
     Route::post('catalogs/{type}/{id}/toggle', [CatalogController::class, 'toggle'])->name('catalogs.toggle');
     Route::post('catalogs/{type}/{source}/merge', [CatalogController::class, 'merge'])->name('catalogs.merge');
 

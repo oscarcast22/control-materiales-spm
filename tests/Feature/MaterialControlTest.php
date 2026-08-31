@@ -145,6 +145,32 @@ class MaterialControlTest extends TestCase
         );
     }
 
+    public function test_voucher_validation_messages_explain_the_field_that_needs_correction(): void
+    {
+        $user = User::factory()->create();
+        [, $issuer, , $material] = $this->catalogs();
+        $location = StorageLocation::factory()->create();
+        $material->voucherTypes()->sync([$location->id]);
+
+        $this->actingAs($user)->from(route('vouchers.create'))->post(route('vouchers.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => '001-C',
+            'direction' => VoucherDirection::Exit->value,
+            'issued_on' => '2026-08-24',
+            'received_by_id' => '',
+            'delivered_by_id' => '',
+            'authorized_by_id' => $issuer->id,
+            'destination_ids' => ['ubicacion-invalida'],
+            'items' => [
+                ['material_id' => $material->id, 'quantity' => 1],
+            ],
+        ])->assertSessionHasErrors([
+            'received_by_id' => 'Selecciona quién recibió el material.',
+            'delivered_by_id' => 'Selecciona quién entregó el material.',
+            'destination_ids.0' => 'La ubicación seleccionada no es válida. Vuelve a elegirla.',
+        ]);
+    }
+
     public function test_a_voucher_accepts_multiple_catalogued_and_inline_locations_or_only_an_activity(): void
     {
         $user = User::factory()->create();
@@ -232,6 +258,14 @@ class MaterialControlTest extends TestCase
             ->assertOk()
             ->assertJsonPath('voucher.status', 'cancelled')
             ->assertJsonStructure(['voucherTypes']);
+
+        $this->actingAs($user)->get(route('vouchers.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filters.sort', 'folio')
+                ->where('filters.sort_direction', 'desc')
+                ->where('vouchers.data.0.folio', '10')
+                ->where('vouchers.data.1.folio', '2'));
 
         $this->actingAs($user)->get(route('vouchers.index', [
             'sort' => 'folio',
@@ -756,7 +790,9 @@ class MaterialControlTest extends TestCase
             ->where('by_material.0.delivered_quantity', '15.000')
             ->where('by_material.0.used_quantity', '11.000')
             ->where('by_material.0.pending_quantity', '4.000')
-            ->has('rows', 2));
+            ->has('rows', 2)
+            ->where('rows.0.issued_on', '2026-02-10')
+            ->where('rows.1.issued_on', '2026-01-10'));
     }
 
     public function test_tracking_text_search_finds_complete_vouchers_by_their_visible_context(): void

@@ -80,7 +80,7 @@ class VoucherController extends Controller
 
         $sort = in_array($request->string('sort')->value(), ['issued_on', 'folio', 'voucher_type', 'received_by', 'items_count'], true)
             ? $request->string('sort')->value()
-            : 'issued_on';
+            : 'folio';
         $sortDirection = $request->string('sort_direction')->value() === 'asc' ? 'asc' : 'desc';
         $this->applyVoucherOrder($query, $sort, $sortDirection);
 
@@ -495,7 +495,7 @@ class VoucherController extends Controller
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,3', 'max:999999999.999'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
-        ]);
+        ], $this->voucherValidationMessages());
 
         $eligibleMaterialIds = Material::query()
             ->whereHas('voucherTypes', fn (Builder $query) => $query->whereKey($data['voucher_type_id']))
@@ -555,6 +555,66 @@ class VoucherController extends Controller
         $data['folio'] = trim($data['folio']);
 
         return $data;
+    }
+
+    /** @return array<string, string> */
+    private function voucherValidationMessages(): array
+    {
+        return [
+            'voucher_type_id.required' => 'Selecciona el tipo de vale.',
+            'voucher_type_id.exists' => 'El tipo de vale seleccionado no está disponible.',
+            'folio.required' => 'Escribe el folio del vale.',
+            'folio.string' => 'El folio debe contener texto válido.',
+            'folio.max' => 'El folio no puede tener más de 50 caracteres.',
+            'direction.required' => 'Selecciona si es una salida o una entrada.',
+            'direction.enum' => 'Selecciona un movimiento válido.',
+            'issued_on.required' => 'Indica la fecha del vale.',
+            'issued_on.date' => 'Escribe una fecha válida.',
+            'received_by_id.required' => 'Selecciona quién recibió el material.',
+            'received_by_id.exists' => 'La persona que recibió el material ya no está disponible.',
+            'delivered_by_id.required' => 'Selecciona quién entregó el material.',
+            'delivered_by_id.exists' => 'La persona que entregó el material ya no está disponible.',
+            'authorized_by_id.required' => 'Selecciona quién autorizó el material.',
+            'authorized_by_id.exists' => 'La persona que autorizó el material ya no está disponible.',
+            'program_id.integer' => 'Selecciona un programa válido.',
+            'program_id.exists' => 'El programa seleccionado ya no está disponible.',
+            'action_id.integer' => 'Selecciona una acción válida.',
+            'action_id.exists' => 'La acción seleccionada ya no está disponible.',
+            'destination_ids.array' => 'Selecciona una ubicación válida.',
+            'destination_ids.max' => 'Puedes asociar como máximo diez ubicaciones al mismo vale.',
+            'destination_ids.*.required' => 'Selecciona una ubicación válida.',
+            'destination_ids.*.integer' => 'La ubicación seleccionada no es válida. Vuelve a elegirla.',
+            'destination_ids.*.distinct' => 'La misma ubicación está seleccionada más de una vez.',
+            'destination_ids.*.exists' => 'La ubicación seleccionada ya no está disponible.',
+            'new_destinations.array' => 'Escribe una ubicación válida.',
+            'new_destinations.max' => 'Puedes asociar como máximo diez ubicaciones al mismo vale.',
+            'new_destinations.*.required' => 'Escribe el nombre de la ubicación.',
+            'new_destinations.*.string' => 'El nombre de la ubicación debe ser texto.',
+            'new_destinations.*.max' => 'El nombre de la ubicación no puede tener más de 255 caracteres.',
+            'new_destinations.*.distinct' => 'La misma ubicación aparece más de una vez.',
+            'usage_description.string' => 'La descripción de uso debe ser texto.',
+            'usage_description.max' => 'La descripción de uso no puede tener más de 3,000 caracteres.',
+            'notes.string' => 'Las observaciones deben ser texto.',
+            'notes.max' => 'Las observaciones no pueden tener más de 5,000 caracteres.',
+            'items.required' => 'Agrega al menos un material.',
+            'items.array' => 'Agrega materiales válidos.',
+            'items.min' => 'Agrega al menos un material.',
+            'items.*.id.prohibited' => 'Este material no se puede guardar en este vale.',
+            'items.*.id.integer' => 'Este renglón del vale no es válido. Vuelve a agregar el material.',
+            'items.*.material_id.required' => 'Selecciona el material.',
+            'items.*.material_id.exists' => 'El material seleccionado ya no está disponible.',
+            'items.*.unit_id.prohibited' => 'La unidad se toma automáticamente del material.',
+            'items.*.quantity.required' => 'Escribe la cantidad.',
+            'items.*.quantity.numeric' => 'La cantidad debe ser un número.',
+            'items.*.quantity.gt' => 'La cantidad debe ser mayor que cero.',
+            'items.*.quantity.decimal' => 'La cantidad puede tener hasta tres decimales.',
+            'items.*.quantity.max' => 'La cantidad es demasiado grande.',
+            'attachments.array' => 'Adjunta archivos válidos.',
+            'attachments.max' => 'Puedes adjuntar como máximo cinco archivos.',
+            'attachments.*.file' => 'Cada adjunto debe ser un archivo válido.',
+            'attachments.*.mimes' => 'Adjunta una imagen JPG, PNG, WEBP o un archivo PDF.',
+            'attachments.*.max' => 'Cada archivo puede pesar como máximo 10 MB.',
+        ];
     }
 
     /** @param array<string, mixed> $data

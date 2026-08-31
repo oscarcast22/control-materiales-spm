@@ -1,10 +1,9 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
-    ClipboardCheck,
+    Check,
     FileText,
     PackageSearch,
-    Plus,
     Save,
     Trash2,
 } from 'lucide-react';
@@ -49,10 +48,12 @@ import type {
 } from '@/types';
 
 type Line = {
+    client_id: string;
     id?: number;
     material_id: string;
     quantity: string;
     has_applications?: boolean;
+    confirmed: boolean;
 };
 type FormData = {
     _dialog: boolean;
@@ -87,9 +88,13 @@ export type VoucherFormProps = {
     onDirtyChange?: (dirty: boolean) => void;
 };
 
+let nextLineId = 0;
+
 const blankLine = (): Line => ({
+    client_id: `new-${++nextLineId}`,
     material_id: '',
     quantity: '',
+    confirmed: false,
 });
 
 export default function VoucherForm({
@@ -182,10 +187,12 @@ export default function VoucherForm({
         usage_description: voucher?.usage_description ?? '',
         notes: voucher?.notes ?? '',
         items: voucher?.items.map((item) => ({
+            client_id: `saved-${item.id}`,
             id: item.id,
             material_id: String(item.material.id),
             quantity: item.quantity,
             has_applications: Number(item.used_quantity) > 0,
+            confirmed: true,
         })) ?? [blankLine()],
         attachments: [],
     });
@@ -242,7 +249,21 @@ export default function VoucherForm({
             (voucherType) =>
                 String(voucherType.id) === form.data.voucher_type_id,
         )?.code === 'warehouse';
-    const errorSignature = Object.keys(form.errors).sort().join('|');
+    const errorSignature = Object.entries(form.errors)
+        .sort(([firstField], [secondField]) =>
+            firstField.localeCompare(secondField),
+        )
+        .map(([field, message]) => `${field}:${message}`)
+        .join('|');
+    const destinationError = Object.entries(form.errors).find(([field]) =>
+        ['destination_ids', 'new_destinations'].some(
+            (prefix) => field === prefix || field.startsWith(`${prefix}.`),
+        ),
+    )?.[1];
+    const destinationLabel =
+        form.data.direction === 'entry'
+            ? 'Origen o ubicación'
+            : 'Ubicación del destino';
 
     useEffect(() => {
         onDirtyChange?.(form.isDirty);
@@ -254,14 +275,11 @@ export default function VoucherForm({
         }
 
         const frame = window.requestAnimationFrame(() => {
-            const target =
-                formElement.current?.querySelector<HTMLElement>(
-                    '[aria-invalid="true"]',
-                ) ??
-                formElement.current?.querySelector<HTMLElement>(
-                    '[data-error-summary]',
-                );
+            const target = formElement.current?.querySelector<HTMLElement>(
+                '[aria-invalid="true"]',
+            );
 
+            target?.scrollIntoView({ block: 'center' });
             target?.focus();
         });
 
@@ -269,15 +287,40 @@ export default function VoucherForm({
     }, [errorSignature]);
     const missingDeliverers = deliverers.length === 0;
     const missingAuthorizers = authorizers.length === 0;
+    const clearDestinationErrors = () => {
+        const fields = Object.keys(form.errors).filter((field) =>
+            ['destination_ids', 'new_destinations'].some(
+                (prefix) => field === prefix || field.startsWith(`${prefix}.`),
+            ),
+        );
+
+        fields.forEach((field) =>
+            form.clearErrors(field as keyof typeof form.errors),
+        );
+    };
     const duplicateMaterials = form.data.items
         .map((line) => line.material_id)
         .filter(Boolean)
         .filter((id, index, array) => array.indexOf(id) !== index);
+    const confirmedMaterialCount = form.data.items.filter(
+        (line) => line.confirmed,
+    ).length;
     const changeLine = (index: number, values: Partial<Line>) =>
         form.setData(
             'items',
             form.data.items.map((line, i) =>
-                i === index ? { ...line, ...values } : line,
+                i === index
+                    ? {
+                          ...line,
+                          ...values,
+                          confirmed:
+                              line.has_applications ||
+                              (!('material_id' in values) &&
+                                  !('quantity' in values))
+                                  ? line.confirmed
+                                  : false,
+                      }
+                    : line,
             ),
         );
     const selectMaterial = (index: number, materialId: string) => {
@@ -317,7 +360,12 @@ export default function VoucherForm({
             if (line.material_id && !allowed.has(line.material_id)) {
                 removed++;
 
-                return { ...line, material_id: '', quantity: '' };
+                return {
+                    ...line,
+                    material_id: '',
+                    quantity: '',
+                    confirmed: false,
+                };
             }
 
             return line;
@@ -341,23 +389,103 @@ export default function VoucherForm({
             );
         }
     };
-    const addLine = () => {
-        const nextIndex = form.data.items.length;
-        form.setData('items', [...form.data.items, blankLine()]);
+    const focusMaterial = (index: number) => {
         window.setTimeout(
-            () =>
-                document.getElementById(`item-${nextIndex}-material`)?.focus(),
+            () => document.getElementById(`item-${index}-material`)?.focus(),
             0,
         );
     };
-    const removeLine = (index: number) => {
-        form.setData(
-            'items',
-            form.data.items.filter((_, i) => i !== index),
+    const confirmLine = (index: number) => {
+        const line = form.data.items[index];
+
+        if (!line || !isCompleteMaterial(line)) {
+            const focusId = line?.material_id
+                ? `item-${index}-quantity`
+                : `item-${index}-material`;
+            form.setError(
+                'items',
+                'Completa el material y la cantidad antes de confirmarlo.',
+            );
+            window.setTimeout(
+                () => document.getElementById(focusId)?.focus(),
+                0,
+            );
+
+            return;
+        }
+
+        const draftIndex = form.data.items.findIndex(
+            (candidate, candidateIndex) =>
+                candidateIndex !== index &&
+                !candidate.confirmed &&
+                !candidate.has_applications,
         );
+        const nextIndex =
+            draftIndex === -1 ? form.data.items.length : draftIndex;
+
+        form.clearErrors('items');
+        form.setData('items', [
+            ...form.data.items.map((candidate, candidateIndex) =>
+                candidateIndex === index
+                    ? { ...candidate, confirmed: true }
+                    : candidate,
+            ),
+            ...(draftIndex === -1 ? [blankLine()] : []),
+        ]);
+        focusMaterial(nextIndex);
+    };
+    const removeLine = (index: number) => {
+        const items = form.data.items.filter((_, i) => i !== index);
+
+        form.setData('items', items.length > 0 ? items : [blankLine()]);
     };
     const submit = (event: FormEvent) => {
         event.preventDefault();
+        const draftIndex = form.data.items.findIndex(
+            (line) => !line.confirmed && hasMaterialValues(line),
+        );
+
+        if (draftIndex !== -1) {
+            const draft = form.data.items[draftIndex];
+            const focusId = isCompleteMaterial(draft)
+                ? `item-${draftIndex}-confirm`
+                : draft.material_id
+                  ? `item-${draftIndex}-quantity`
+                  : `item-${draftIndex}-material`;
+            form.setError(
+                'items',
+                isCompleteMaterial(draft)
+                    ? 'Confirma el material pendiente antes de guardar.'
+                    : 'Completa y confirma el material pendiente antes de guardar.',
+            );
+            window.setTimeout(
+                () => document.getElementById(focusId)?.focus(),
+                0,
+            );
+
+            return;
+        }
+
+        if (confirmedMaterialCount === 0) {
+            form.setError(
+                'items',
+                'Agrega y confirma al menos un material antes de guardar.',
+            );
+            focusMaterial(0);
+
+            return;
+        }
+
+        form.transform((data) => ({
+            ...data,
+            items: data.items
+                .filter((line) => line.confirmed)
+                .map((line) => ({
+                    ...(line.id === undefined ? {} : { id: line.id }),
+                    material_id: line.material_id,
+                    quantity: line.quantity,
+                })),
+        }));
         const options = {
             forceFormData: true,
             preserveScroll: true,
@@ -386,7 +514,7 @@ export default function VoucherForm({
                 className={
                     embedded
                         ? 'flex w-full flex-col gap-6 px-1 py-1'
-                        : 'mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-6 px-4 py-6 min-[1200px]:px-8 md:px-6'
+                        : 'mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-7 px-4 py-6 min-[1200px]:px-8 md:px-6'
                 }
             >
                 <PageHeader
@@ -428,41 +556,6 @@ export default function VoucherForm({
                         </>
                     }
                 />
-                {form.data.direction === 'exit' && (
-                    <Alert variant="info">
-                        <ClipboardCheck aria-hidden="true" />
-                        <AlertDescription>
-                            <p className="font-medium text-foreground">
-                                Este formulario registra el vale original.
-                            </p>
-                            <p>
-                                Captura el vale → registra el material utilizado
-                                desde la lista o el detalle → consulta el saldo
-                                pendiente actualizado.
-                            </p>
-                            {voucher && (
-                                <Link
-                                    className="font-medium text-primary underline-offset-4 hover:underline"
-                                    href={`/vouchers/${voucher.id}`}
-                                >
-                                    Ir al detalle del vale
-                                </Link>
-                            )}
-                        </AlertDescription>
-                    </Alert>
-                )}
-                {Object.keys(form.errors).length > 0 && (
-                    <Alert
-                        variant="destructive"
-                        aria-live="polite"
-                        tabIndex={-1}
-                        data-error-summary
-                    >
-                        <AlertDescription>
-                            Revisa los campos marcados antes de guardar.
-                        </AlertDescription>
-                    </Alert>
-                )}
                 {missingDeliverers && (
                     <Alert variant="warning">
                         <AlertDescription>
@@ -501,16 +594,16 @@ export default function VoucherForm({
                         </AlertDescription>
                     </Alert>
                 )}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>1. Datos del vale</CardTitle>
-                        <CardDescription>
-                            Transcribe los datos tal como aparecen en el
-                            documento físico.
-                        </CardDescription>
+                <Card className="gap-0 overflow-hidden border-border/85 py-0">
+                    <CardHeader className="border-b border-border/75 bg-surface-subtle/45 pt-6 pb-5">
+                        <VoucherSectionHeading
+                            step="1"
+                            title="Datos del vale"
+                            description="Transcribe los datos tal como aparecen en el documento físico."
+                        />
                     </CardHeader>
-                    <CardContent>
-                        <FieldGroup className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    <CardContent className="pt-5 pb-6">
+                        <FieldGroup className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
                             <VoucherField
                                 id="voucher-type"
                                 label="Tipo de vale"
@@ -536,6 +629,7 @@ export default function VoucherForm({
                                     Movimiento
                                 </FieldLabel>
                                 <ToggleGroup
+                                    id="voucher-direction"
                                     type="single"
                                     variant="outline"
                                     value={form.data.direction}
@@ -773,18 +867,16 @@ export default function VoucherForm({
                                     />
                                 </VoucherField>
                             )}
-                            <div className="md:col-span-2 xl:col-span-4">
+                            <div
+                                data-invalid={
+                                    Boolean(destinationError) || undefined
+                                }
+                                className="rounded-xl border border-border/75 bg-surface-subtle/35 p-4 transition-[background-color,border-color] data-[invalid=true]:border-danger/50 data-[invalid=true]:bg-danger-subtle/10 md:col-span-2 md:p-5 xl:col-span-4"
+                            >
                                 <VoucherField
                                     id="voucher-destination"
-                                    label={
-                                        form.data.direction === 'entry'
-                                            ? 'Origen o ubicación'
-                                            : 'Ubicación del destino'
-                                    }
-                                    error={
-                                        form.errors.destination_ids ??
-                                        form.errors.new_destinations
-                                    }
+                                    label={destinationLabel}
+                                    error={destinationError}
                                 >
                                     <VoucherDestinationPicker
                                         id="voucher-destination"
@@ -793,27 +885,33 @@ export default function VoucherForm({
                                         newDestinations={
                                             form.data.new_destinations
                                         }
-                                        onSelectedIdsChange={(ids) =>
-                                            form.setData('destination_ids', ids)
-                                        }
-                                        onNewDestinationsChange={(names) =>
+                                        onSelectedIdsChange={(ids) => {
+                                            clearDestinationErrors();
+                                            form.setData(
+                                                'destination_ids',
+                                                ids,
+                                            );
+                                        }}
+                                        onNewDestinationsChange={(names) => {
+                                            clearDestinationErrors();
                                             form.setData(
                                                 'new_destinations',
                                                 names,
-                                            )
-                                        }
-                                        invalid={Boolean(
-                                            form.errors.destination_ids ??
-                                            form.errors.new_destinations,
-                                        )}
+                                            );
+                                        }}
+                                        invalid={Boolean(destinationError)}
                                         describedBy={errorDescriptionId(
                                             'voucher-destination',
-                                            form.errors.destination_ids ??
-                                                form.errors.new_destinations,
+                                            destinationError,
                                         )}
                                     />
                                 </VoucherField>
-                                <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-dashed px-4 py-3 transition-colors hover:bg-muted/30">
+                                <label
+                                    data-invalid={
+                                        Boolean(destinationError) || undefined
+                                    }
+                                    className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-dashed px-4 py-3 transition-[background-color,border-color] hover:bg-muted/30 data-[invalid=true]:border-danger/35 data-[invalid=true]:bg-danger-subtle/15"
+                                >
                                     <Checkbox
                                         checked={showUsageDescription}
                                         onCheckedChange={(checked) => {
@@ -859,12 +957,18 @@ export default function VoucherForm({
                                                 value={
                                                     form.data.usage_description
                                                 }
-                                                onChange={(event) =>
+                                                onChange={(event) => {
+                                                    if (
+                                                        event.target.value.trim()
+                                                    ) {
+                                                        clearDestinationErrors();
+                                                    }
+
                                                     form.setData(
                                                         'usage_description',
                                                         event.target.value,
-                                                    )
-                                                }
+                                                    );
+                                                }}
                                                 placeholder="Describe el trabajo, actualización o uso del material"
                                                 aria-invalid={
                                                     Boolean(
@@ -885,37 +989,34 @@ export default function VoucherForm({
                         </FieldGroup>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0">
-                            <CardTitle>
-                                2. Material{' '}
-                                {form.data.direction === 'entry'
+                <Card className="gap-0 overflow-hidden border-success/25 py-0">
+                    <CardHeader className="border-b border-success/20 bg-success-subtle/30 pt-6 pb-5">
+                        <VoucherSectionHeading
+                            step="2"
+                            title={`Material ${
+                                form.data.direction === 'entry'
                                     ? 'recibido'
-                                    : 'entregado'}
-                                <Badge variant="secondary" className="ml-2">
-                                    {form.data.items.length}{' '}
-                                    {form.data.items.length === 1
-                                        ? 'partida'
-                                        : 'partidas'}
-                                </Badge>
-                            </CardTitle>
-                            <CardDescription>
-                                Cada material usa su unidad canónica del
-                                catálogo.
-                            </CardDescription>
-                        </div>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={addLine}
+                                    : 'entregado'
+                            }`}
+                            description="Cada material usa su unidad canónica. Completa sus datos y confírmalo antes de agregar el siguiente."
                         >
-                            <Plus data-icon="inline-start" />
-                            Agregar material
-                        </Button>
+                            <Badge
+                                variant={
+                                    confirmedMaterialCount > 0
+                                        ? 'success'
+                                        : 'secondary'
+                                }
+                                className="tabular-nums"
+                            >
+                                {confirmedMaterialCount}{' '}
+                                {confirmedMaterialCount === 1
+                                    ? 'material agregado'
+                                    : 'materiales agregados'}
+                            </Badge>
+                        </VoucherSectionHeading>
                     </CardHeader>
-                    <CardContent>
-                        <FieldGroup className="gap-4">
+                    <CardContent className="pt-5 pb-6">
+                        <FieldGroup className="gap-5">
                             {duplicateMaterials.length > 0 && (
                                 <Alert variant="warning">
                                     <AlertDescription>
@@ -929,30 +1030,60 @@ export default function VoucherForm({
                                 const hasApplications = Boolean(
                                     line.has_applications,
                                 );
-                                const materialError =
+                                const isConfirmed = line.confirmed;
+                                const materialFieldError =
                                     form.errors[
                                         `items.${index}.material_id` as keyof typeof form.errors
                                     ];
+                                const itemError = Object.entries(
+                                    form.errors,
+                                ).find(([field]) =>
+                                    field.startsWith(`items.${index}.`),
+                                )?.[1];
+                                const materialError =
+                                    materialFieldError ?? itemError;
                                 const quantityError =
                                     form.errors[
                                         `items.${index}.quantity` as keyof typeof form.errors
                                     ];
+                                const unit = materials.find(
+                                    (material) =>
+                                        String(material.id) ===
+                                        line.material_id,
+                                )?.default_unit;
                                 const materialId = `item-${index}-material`;
                                 const quantityId = `item-${index}-quantity`;
 
                                 return (
                                     <fieldset
-                                        key={line.id ?? `new-${index}`}
-                                        className="grid min-w-0 items-end gap-4 rounded-lg border bg-surface-subtle/55 p-4 lg:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_210px_170px_auto]"
+                                        key={line.client_id}
+                                        data-confirmed={
+                                            isConfirmed || undefined
+                                        }
+                                        className="grid min-w-0 items-start gap-4 rounded-xl border border-border/80 bg-surface-subtle/55 p-4 transition-[background-color,border-color] data-[confirmed=true]:border-success/35 data-[confirmed=true]:bg-success-subtle/45 min-[900px]:!grid-cols-[minmax(260px,1fr)_minmax(190px,220px)_190px] sm:grid-cols-2"
                                     >
                                         <legend className="sr-only">
                                             Material {index + 1}
                                         </legend>
                                         <VoucherField
                                             id={materialId}
-                                            label={`Material ${index + 1}`}
+                                            label={
+                                                <span className="flex items-center gap-2">
+                                                    <span>
+                                                        Material {index + 1}
+                                                    </span>
+                                                    {isConfirmed && (
+                                                        <Badge
+                                                            variant="success"
+                                                            className="min-h-5 px-2 text-[11px]"
+                                                        >
+                                                            Agregado
+                                                        </Badge>
+                                                    )}
+                                                </span>
+                                            }
                                             error={materialError}
-                                            className="lg:col-span-2 xl:col-span-1"
+                                            className="min-[900px]:!col-span-1 sm:col-span-2"
                                         >
                                             <SearchableSelect
                                                 id={materialId}
@@ -975,13 +1106,19 @@ export default function VoucherForm({
                                                 )}
                                             />
                                         </VoucherField>
-                                        <CanonicalUnitField
-                                            materialId={line.material_id}
-                                            materials={materials}
-                                        />
                                         <VoucherField
                                             id={quantityId}
-                                            label="Cantidad"
+                                            label={
+                                                <span className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                                                    <span>Cantidad</span>
+                                                    {unit && (
+                                                        <span className="text-xs font-medium text-muted-foreground">
+                                                            Unidad: {unit.name}{' '}
+                                                            ({unit.symbol})
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            }
                                             error={quantityError}
                                         >
                                             <Input
@@ -1006,33 +1143,75 @@ export default function VoucherForm({
                                                 )}
                                             />
                                         </VoucherField>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            disabled={
-                                                form.data.items.length === 1 ||
-                                                hasApplications
-                                            }
-                                            onClick={() => removeLine(index)}
-                                            className="justify-self-end lg:col-span-2 xl:col-span-1 xl:justify-self-auto"
-                                        >
-                                            <Trash2 className="text-destructive" />
-                                            <span className="sr-only">
-                                                Eliminar material {index + 1}
-                                            </span>
-                                        </Button>
+                                        {isConfirmed ? (
+                                            <MaterialLineAction>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    disabled={hasApplications}
+                                                    onClick={() =>
+                                                        removeLine(index)
+                                                    }
+                                                    aria-label={`Eliminar material ${index + 1}`}
+                                                    className="w-full border-danger/35 text-destructive hover:border-danger/55 hover:bg-danger-subtle hover:text-destructive"
+                                                >
+                                                    <Trash2
+                                                        data-icon="inline-start"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Eliminar material
+                                                </Button>
+                                            </MaterialLineAction>
+                                        ) : isCompleteMaterial(line) ? (
+                                            <MaterialLineAction>
+                                                <Button
+                                                    id={`item-${index}-confirm`}
+                                                    type="button"
+                                                    variant="success"
+                                                    onClick={() =>
+                                                        confirmLine(index)
+                                                    }
+                                                    aria-label={`Confirmar material ${index + 1}`}
+                                                    aria-describedby={
+                                                        form.errors.items
+                                                            ? 'voucher-items-error'
+                                                            : undefined
+                                                    }
+                                                    className="w-full"
+                                                >
+                                                    <Check
+                                                        data-icon="inline-start"
+                                                        aria-hidden="true"
+                                                    />
+                                                    Confirmar material
+                                                </Button>
+                                            </MaterialLineAction>
+                                        ) : (
+                                            <MaterialLineAction>
+                                                <div
+                                                    role="status"
+                                                    aria-live="polite"
+                                                    className="flex min-h-10 w-full items-center rounded-lg border border-dashed border-border-strong/70 bg-surface-raised/60 px-3 text-xs leading-5 font-medium text-muted-foreground max-sm:min-h-11"
+                                                >
+                                                    Completa material y cantidad
+                                                </div>
+                                            </MaterialLineAction>
+                                        )}
                                         {hasApplications && (
-                                            <p className="text-sm text-muted-foreground lg:col-span-2 xl:col-span-4">
-                                                Esta partida ya tiene material
-                                                aplicado. Anula primero sus
-                                                aplicaciones para cambiarla.
+                                            <p className="text-sm text-muted-foreground min-[900px]:!col-span-3 sm:col-span-2">
+                                                Este material ya tiene
+                                                aplicaciones registradas. Anula
+                                                primero sus aplicaciones para
+                                                cambiarlo.
                                             </p>
                                         )}
                                     </fieldset>
                                 );
                             })}
-                            <InputError message={form.errors.items} />
+                            <InputError
+                                id="voucher-items-error"
+                                message={form.errors.items}
+                            />
                             <div className="flex items-start gap-2 text-sm text-muted-foreground">
                                 <PackageSearch
                                     className="mt-0.5 size-4 shrink-0"
@@ -1051,16 +1230,16 @@ export default function VoucherForm({
                         </FieldGroup>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>3. Respaldo y observaciones</CardTitle>
-                        <CardDescription>
-                            Adjunta evidencia del documento y conserva cualquier
-                            aclaración útil para su consulta.
-                        </CardDescription>
+                <Card className="gap-0 overflow-hidden border-border/85 py-0">
+                    <CardHeader className="border-b border-border/75 bg-surface-subtle/45 pt-6 pb-5">
+                        <VoucherSectionHeading
+                            step="3"
+                            title="Respaldo y observaciones"
+                            description="Adjunta evidencia del documento y conserva cualquier aclaración útil para su consulta."
+                        />
                     </CardHeader>
-                    <CardContent>
-                        <FieldGroup className="grid gap-5 md:grid-cols-2">
+                    <CardContent className="pt-5 pb-6">
+                        <FieldGroup className="grid gap-6 md:grid-cols-2">
                             <VoucherField
                                 id="voucher-attachments"
                                 label="Foto o PDF del vale (opcional)"
@@ -1138,25 +1317,46 @@ export default function VoucherForm({
     );
 }
 
-function CanonicalUnitField({
-    materialId,
-    materials,
+function VoucherSectionHeading({
+    step,
+    title,
+    description,
+    children,
 }: {
-    materialId: string;
-    materials: Material[];
+    step: string;
+    title: string;
+    description: string;
+    children?: ReactNode;
 }) {
-    const material = materials.find((item) => String(item.id) === materialId);
-    const unit = material?.default_unit;
-
     return (
-        <Field data-disabled={!material || undefined}>
-            <FieldLabel>Unidad</FieldLabel>
-            <div className="flex h-10 items-center rounded-md border border-border bg-muted/40 px-3 text-sm font-medium text-foreground">
-                {unit
-                    ? `${unit.name} (${unit.symbol})`
-                    : 'Se asignará al elegir material'}
+        <div className="flex items-start gap-3">
+            <span
+                aria-hidden="true"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground tabular-nums shadow-[var(--shadow-control)]"
+            >
+                {step}
+            </span>
+            <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                    <CardTitle className="text-[17px] tracking-[-0.015em]">
+                        {title}
+                    </CardTitle>
+                    {children}
+                </div>
+                <CardDescription className="mt-1 max-w-3xl leading-6">
+                    {description}
+                </CardDescription>
             </div>
-        </Field>
+        </div>
+    );
+}
+
+function MaterialLineAction({ children }: { children: ReactNode }) {
+    return (
+        <div className="flex w-full flex-col gap-2">
+            <span aria-hidden="true" className="h-5" />
+            {children}
+        </div>
     );
 }
 
@@ -1169,7 +1369,7 @@ function VoucherField({
     children,
 }: {
     id: string;
-    label: string;
+    label: ReactNode;
     error?: string;
     description?: string;
     className?: string;
@@ -1198,6 +1398,21 @@ function peopleOptions(people: Named[]): ChoiceOption[] {
 
 function errorDescriptionId(id: string, error?: string) {
     return error ? `${id}-error` : undefined;
+}
+
+function hasMaterialValues(line: Line) {
+    return Boolean(line.material_id || line.quantity.trim());
+}
+
+function isCompleteMaterial(line: Line) {
+    const quantity = Number(line.quantity);
+
+    return (
+        line.material_id !== '' &&
+        line.quantity.trim() !== '' &&
+        Number.isFinite(quantity) &&
+        quantity > 0
+    );
 }
 
 function fieldDescriptionIds(

@@ -1,5 +1,6 @@
 import type {
     Action,
+    CatalogDeletion,
     Destination,
     Material,
     Paginated,
@@ -60,4 +61,11 @@ export type StatusTarget = {
     id: number;
     name: string;
     active: boolean;
+};
+
+export type CatalogDeleteTarget = {
+    type: StatusTarget['type'];
+    id: number;
+    name: string;
+    deletion?: CatalogDeletion;
 };

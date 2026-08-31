@@ -11,6 +11,7 @@ use App\Models\StorageLocation;
 use App\Models\Unit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 final class CatalogIndexData
@@ -19,6 +20,8 @@ final class CatalogIndexData
 
     /** @var list<string> */
     private const SECTIONS = ['people', 'materials', 'destinations', 'programs'];
+
+    public function __construct(private CatalogDeletion $catalogDeletion) {}
 
     /** @return array<string, mixed> */
     public function make(Request $request): array
@@ -32,7 +35,11 @@ final class CatalogIndexData
             'navigation' => fn (): array => $this->navigation(),
             'catalog' => fn (): mixed => $this->catalog($section, $filters),
             'units' => fn () => $section === 'materials'
-                ? Unit::query()->orderBy('name')->get(['id', 'name', 'symbol', 'is_active'])
+                ? Unit::query()
+                    ->withExists(['materials', 'voucherItems', 'inventoryAdjustments'])
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'symbol', 'is_active'])
+                    ->each(fn (Unit $unit) => $this->decorateDeletion($unit))
                 : [],
             'voucherTypes' => fn () => $section === 'materials'
                 ? StorageLocation::query()
@@ -102,7 +109,8 @@ final class CatalogIndexData
                 'defaultUnit:id,name,symbol,is_active',
                 'voucherTypes:id,name,code',
             ])
-            ->withCount('aliases');
+            ->withCount('aliases')
+            ->withExists(['voucherItems', 'inventoryAdjustments']);
 
         $this->applyCommonFilters($query, $filters);
         $this->applyNormalizedSearch($query, $filters['search']);
@@ -114,7 +122,8 @@ final class CatalogIndexData
             );
         }
 
-        return $query->orderBy('name')->paginate(25)->withQueryString();
+        return $query->orderBy('name')->paginate(25)->withQueryString()
+            ->through(fn (Material $material) => $this->decorateDeletion($material));
     }
 
     /** @param array<string, string> $filters */
@@ -122,12 +131,14 @@ final class CatalogIndexData
     {
         $query = Destination::query()
             ->select(['id', 'name', 'is_active', 'needs_review'])
-            ->withCount('aliases');
+            ->withCount('aliases')
+            ->withExists('vouchers');
 
         $this->applyCommonFilters($query, $filters);
         $this->applyNormalizedSearch($query, $filters['search']);
 
-        return $query->orderBy('name')->paginate(25)->withQueryString();
+        return $query->orderBy('name')->paginate(25)->withQueryString()
+            ->through(fn (Destination $destination) => $this->decorateDeletion($destination));
     }
 
     /** @param array<string, string> $filters */
@@ -138,7 +149,8 @@ final class CatalogIndexData
                 'id', 'name', 'can_receive_material', 'can_deliver_material',
                 'can_authorize_material', 'is_active', 'needs_review',
             ])
-            ->withCount('aliases');
+            ->withCount('aliases')
+            ->withExists(['receivedVouchers', 'deliveredVouchers', 'authorizedVouchers']);
 
         $this->applyCommonFilters($query, $filters);
         $this->applyNormalizedSearch($query, $filters['search']);
@@ -153,7 +165,10 @@ final class CatalogIndexData
             $query->where($roleColumn, true);
         }
 
-        return $query->orderBy('name')->paginate(25)->withQueryString();
+        $activeRoleCounts = $this->activeRoleCounts();
+
+        return $query->orderBy('name')->paginate(25)->withQueryString()
+            ->through(fn (Person $person) => $this->decorateDeletion($person, $activeRoleCounts));
     }
 
     /** @param array<string, string> $filters
@@ -163,10 +178,12 @@ final class CatalogIndexData
     {
         $programs = Program::query()
             ->select(['id', 'code', 'name', 'is_active'])
-            ->withCount('actions');
+            ->withCount('actions')
+            ->withExists(['actions', 'vouchers']);
         $actions = Action::query()
             ->select(['id', 'program_id', 'code', 'name', 'is_active'])
-            ->with('program:id,code,name,is_active');
+            ->with('program:id,code,name,is_active')
+            ->withExists('vouchers');
 
         if ($filters['status'] !== 'all') {
             $active = $filters['status'] === 'active';
@@ -184,8 +201,35 @@ final class CatalogIndexData
         }
 
         return [
-            'programs' => $programs->orderBy('code')->get(),
-            'actions' => $actions->orderBy('code')->get(),
+            'programs' => $programs->orderBy('code')->get()
+                ->each(fn (Program $program) => $this->decorateDeletion($program)),
+            'actions' => $actions->orderBy('code')->get()
+                ->each(fn (Action $action) => $this->decorateDeletion($action)),
+        ];
+    }
+
+    /** @param array<string, int>|null $activeRoleCounts */
+    private function decorateDeletion(Model $model, ?array $activeRoleCounts = null): Model
+    {
+        $model->setAttribute('deletion', $this->catalogDeletion->eligibility($model, $activeRoleCounts));
+
+        return $model;
+    }
+
+    /** @return array<string, int> */
+    private function activeRoleCounts(): array
+    {
+        $counts = Person::query()
+            ->where('is_active', true)
+            ->selectRaw('SUM(CASE WHEN can_receive_material THEN 1 ELSE 0 END) as can_receive_material')
+            ->selectRaw('SUM(CASE WHEN can_deliver_material THEN 1 ELSE 0 END) as can_deliver_material')
+            ->selectRaw('SUM(CASE WHEN can_authorize_material THEN 1 ELSE 0 END) as can_authorize_material')
+            ->firstOrFail();
+
+        return [
+            'can_receive_material' => (int) $counts->getAttribute('can_receive_material'),
+            'can_deliver_material' => (int) $counts->getAttribute('can_deliver_material'),
+            'can_authorize_material' => (int) $counts->getAttribute('can_authorize_material'),
         ];
     }
 

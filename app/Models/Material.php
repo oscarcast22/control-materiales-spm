@@ -45,6 +45,18 @@ class Material extends Model
         return $this->hasMany(MaterialAlias::class);
     }
 
+    /** @return HasMany<VoucherItem, $this> */
+    public function voucherItems(): HasMany
+    {
+        return $this->hasMany(VoucherItem::class);
+    }
+
+    /** @return HasMany<InventoryAdjustment, $this> */
+    public function inventoryAdjustments(): HasMany
+    {
+        return $this->hasMany(InventoryAdjustment::class);
+    }
+
     /** @return BelongsToMany<StorageLocation, $this> */
     public function voucherTypes(): BelongsToMany
     {

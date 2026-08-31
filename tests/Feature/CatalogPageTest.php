@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Action;
 use App\Models\AuditEvent;
+use App\Models\Destination;
+use App\Models\InventoryAdjustment;
 use App\Models\Material;
 use App\Models\MaterialAlias;
 use App\Models\Person;
@@ -11,6 +13,8 @@ use App\Models\Program;
 use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Models\User;
+use App\Models\Voucher;
+use App\Models\VoucherItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -160,5 +164,213 @@ class CatalogPageTest extends TestCase
             'auditable_id' => $unit->id,
             'user_id' => $user->id,
         ]);
+    }
+
+    public function test_catalog_updates_save_the_selected_status_and_preserve_deactivation_rules(): void
+    {
+        $user = User::factory()->create();
+        $unit = Unit::factory()->create();
+        $inUseUnit = Unit::factory()->create();
+        Material::factory()->create(['default_unit_id' => $inUseUnit->id]);
+
+        $this->actingAs($user)
+            ->put(route('catalogs.units.update', $unit), [
+                'name' => 'Unidad corregida',
+                'symbol' => 'uc',
+                'is_active' => false,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertFalse($unit->fresh()->is_active);
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'updated',
+            'auditable_type' => Unit::class,
+            'auditable_id' => $unit->id,
+            'user_id' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('catalogs.units.update', $inUseUnit), [
+                'name' => $inUseUnit->name,
+                'symbol' => $inUseUnit->symbol,
+                'is_active' => false,
+            ])
+            ->assertSessionHasErrors('status');
+
+        $this->assertTrue($inUseUnit->fresh()->is_active);
+    }
+
+    public function test_an_unreferenced_catalog_record_can_be_deleted_and_is_audited(): void
+    {
+        $user = User::factory()->create();
+        $unit = Unit::factory()->create();
+        $material = Material::factory()->create(['default_unit_id' => $unit->id]);
+        $person = Person::factory()->create([
+            'can_receive_material' => false,
+            'can_deliver_material' => false,
+            'can_authorize_material' => false,
+        ]);
+        $destination = Destination::factory()->create();
+        $program = Program::factory()->create();
+        $action = Action::factory()->create(['program_id' => Program::factory()->create()->id]);
+
+        foreach ([
+            ['materials', $material, Material::class],
+            ['people', $person, Person::class],
+            ['destinations', $destination, Destination::class],
+            ['actions', $action, Action::class],
+            ['programs', $program, Program::class],
+        ] as [$type, $model, $class]) {
+            $this->actingAs($user)
+                ->delete(route('catalogs.destroy', ['type' => $type, 'id' => $model->id]))
+                ->assertSessionHasNoErrors();
+
+            $this->assertModelMissing($model);
+            $this->assertDatabaseHas('audit_events', [
+                'event' => 'deleted',
+                'auditable_type' => $class,
+                'auditable_id' => $model->id,
+                'user_id' => $user->id,
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->delete(route('catalogs.destroy', ['type' => 'units', 'id' => $unit->id]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertModelMissing($unit);
+    }
+
+    public function test_catalog_records_referenced_by_a_voucher_cannot_be_deleted(): void
+    {
+        $user = User::factory()->create();
+        $unit = Unit::factory()->create();
+        $material = Material::factory()->create(['default_unit_id' => $unit->id]);
+        $receiver = Person::factory()->create();
+        $deliverer = Person::factory()->create();
+        $authorizer = Person::factory()->create();
+        $destination = Destination::factory()->create();
+        $program = Program::factory()->create();
+        $action = Action::factory()->create(['program_id' => $program->id]);
+        $voucher = Voucher::factory()->create([
+            'received_by_id' => $receiver->id,
+            'delivered_by_id' => $deliverer->id,
+            'authorized_by_id' => $authorizer->id,
+            'program_id' => $program->id,
+            'action_id' => $action->id,
+        ]);
+        $voucher->destinations()->attach($destination);
+        VoucherItem::factory()->create([
+            'voucher_id' => $voucher->id,
+            'material_id' => $material->id,
+            'unit_id' => $unit->id,
+        ]);
+
+        foreach ([
+            ['materials', $material],
+            ['units', $unit],
+            ['people', $receiver],
+            ['people', $deliverer],
+            ['people', $authorizer],
+            ['destinations', $destination],
+            ['programs', $program],
+            ['actions', $action],
+        ] as [$type, $model]) {
+            $this->actingAs($user)
+                ->delete(route('catalogs.destroy', ['type' => $type, 'id' => $model->id]))
+                ->assertSessionHasErrors('delete');
+
+            $this->assertModelExists($model);
+        }
+
+        $this->assertSame(0, AuditEvent::query()->where('event', 'deleted')->count());
+    }
+
+    public function test_catalog_deletion_preserves_catalog_configuration_and_reserved_adjustments(): void
+    {
+        $user = User::factory()->create();
+        $unit = Unit::factory()->create();
+        $material = Material::factory()->create(['default_unit_id' => $unit->id]);
+        $program = Program::factory()->create();
+        Action::factory()->create(['program_id' => $program->id, 'is_active' => false]);
+
+        $this->actingAs($user)
+            ->delete(route('catalogs.destroy', ['type' => 'units', 'id' => $unit->id]))
+            ->assertSessionHasErrors('delete');
+        $this->actingAs($user)
+            ->delete(route('catalogs.destroy', ['type' => 'programs', 'id' => $program->id]))
+            ->assertSessionHasErrors('delete');
+
+        $adjustment = InventoryAdjustment::factory()->create([
+            'material_id' => $material->id,
+            'unit_id' => $unit->id,
+        ]);
+        $this->actingAs($user)
+            ->delete(route('catalogs.destroy', ['type' => 'materials', 'id' => $material->id]))
+            ->assertSessionHasErrors('delete');
+
+        $this->assertModelExists($adjustment);
+        $this->assertModelExists($material);
+        $this->assertModelExists($unit);
+        $this->assertModelExists($program);
+    }
+
+    public function test_the_last_active_person_for_a_required_role_cannot_be_deleted(): void
+    {
+        $user = User::factory()->create();
+        $person = Person::factory()->create([
+            'can_receive_material' => true,
+            'can_deliver_material' => false,
+            'can_authorize_material' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->delete(route('catalogs.destroy', ['type' => 'people', 'id' => $person->id]))
+            ->assertSessionHasErrors('delete');
+
+        $this->assertModelExists($person);
+    }
+
+    public function test_merging_destinations_still_preserves_voucher_links_before_deleting_the_source(): void
+    {
+        $user = User::factory()->create();
+        $source = Destination::factory()->create();
+        $target = Destination::factory()->create();
+        $voucher = Voucher::factory()->create();
+        $voucher->destinations()->attach($source);
+
+        $this->actingAs($user)->post(route('catalogs.merge', [
+            'type' => 'destinations',
+            'source' => $source->id,
+        ]), ['target_id' => $target->id])->assertSessionHasNoErrors();
+
+        $this->assertModelMissing($source);
+        $this->assertDatabaseHas('destination_voucher', [
+            'destination_id' => $target->id,
+            'voucher_id' => $voucher->id,
+        ]);
+        $this->assertDatabaseMissing('destination_voucher', [
+            'destination_id' => $source->id,
+            'voucher_id' => $voucher->id,
+        ]);
+    }
+
+    public function test_catalog_index_exposes_deletion_eligibility(): void
+    {
+        $user = User::factory()->create();
+        $unit = Unit::factory()->create();
+        $material = Material::factory()->create(['default_unit_id' => $unit->id]);
+        $voucher = Voucher::factory()->create();
+        VoucherItem::factory()->create([
+            'voucher_id' => $voucher->id,
+            'material_id' => $material->id,
+            'unit_id' => $unit->id,
+        ]);
+
+        $this->actingAs($user)->get(route('catalogs.index', ['section' => 'materials']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('catalog.data.0.deletion.can_delete', false)
+                ->where('catalog.data.0.deletion.blocked_reason', 'No se puede eliminar porque este material ya está asignado a un vale.'));
     }
 }

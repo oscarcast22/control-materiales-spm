@@ -33,4 +33,16 @@ class Unit extends Model
     {
         return $this->hasMany(Material::class, 'default_unit_id');
     }
+
+    /** @return HasMany<VoucherItem, $this> */
+    public function voucherItems(): HasMany
+    {
+        return $this->hasMany(VoucherItem::class);
+    }
+
+    /** @return HasMany<InventoryAdjustment, $this> */
+    public function inventoryAdjustments(): HasMany
+    {
+        return $this->hasMany(InventoryAdjustment::class);
+    }
 }

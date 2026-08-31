@@ -1,5 +1,13 @@
 export type Named = { id: number; name: string };
-export type Unit = Named & { symbol: string; is_active?: boolean };
+export type CatalogDeletion = {
+    can_delete: boolean;
+    blocked_reason: string | null;
+};
+export type Unit = Named & {
+    symbol: string;
+    is_active?: boolean;
+    deletion?: CatalogDeletion;
+};
 export type VoucherType = Named & {
     code: string;
     tracking_started_on: string;
@@ -12,6 +20,7 @@ export type Material = Named & {
     needs_review?: boolean;
     aliases_count?: number;
     voucher_types?: Pick<VoucherType, 'id' | 'name' | 'code'>[];
+    deletion?: CatalogDeletion;
 };
 export type Person = Named & {
     can_receive_material: boolean;
@@ -20,18 +29,21 @@ export type Person = Named & {
     is_active?: boolean;
     needs_review?: boolean;
     aliases_count?: number;
+    deletion?: CatalogDeletion;
 };
 export type Destination = Named & {
     is_active?: boolean;
     needs_review?: boolean;
     aliases_count?: number;
     aliases?: { id: number; alias: string }[];
+    deletion?: CatalogDeletion;
 };
 export type Program = {
     id: number;
     code: string;
     name?: string | null;
     is_active?: boolean;
+    deletion?: CatalogDeletion;
 };
 export type Action = {
     id: number;
@@ -40,6 +52,7 @@ export type Action = {
     name?: string | null;
     is_active?: boolean;
     program?: Pick<Program, 'id' | 'code'>;
+    deletion?: CatalogDeletion;
 };
 
 export type MaterialApplication = {

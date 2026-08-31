@@ -56,6 +56,7 @@
     --color-text-secondary: var(--text-secondary);
     --color-text-muted: var(--text-muted);
     --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
     --color-success-subtle: var(--success-subtle);
     --color-warning: var(--warning);
     --color-warning-subtle: var(--warning-subtle);
@@ -102,6 +103,7 @@
     --violet: #6658c7;
     --coral: #c6485d;
     --success: #087b57;
+    --success-foreground: #ffffff;
     --success-subtle: #e4f7ee;
     --warning: #8a5200;
     --warning-subtle: #fff3dd;
@@ -153,6 +155,7 @@
     --violet: #b4a8ff;
     --coral: #ff9bad;
     --success: #72e0b5;
+    --success-foreground: #062b20;
     --success-subtle: #133e33;
     --warning: #ffd18a;
     --warning-subtle: #4a3210;

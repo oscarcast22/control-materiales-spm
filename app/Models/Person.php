@@ -44,4 +44,22 @@ class Person extends Model
     {
         return $this->hasMany(PersonAlias::class);
     }
+
+    /** @return HasMany<Voucher, $this> */
+    public function receivedVouchers(): HasMany
+    {
+        return $this->hasMany(Voucher::class, 'received_by_id');
+    }
+
+    /** @return HasMany<Voucher, $this> */
+    public function deliveredVouchers(): HasMany
+    {
+        return $this->hasMany(Voucher::class, 'delivered_by_id');
+    }
+
+    /** @return HasMany<Voucher, $this> */
+    public function authorizedVouchers(): HasMany
+    {
+        return $this->hasMany(Voucher::class, 'authorized_by_id');
+    }
 }

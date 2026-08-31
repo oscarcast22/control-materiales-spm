@@ -101,6 +101,7 @@ erDiagram
 - La unidad de cada partida siempre deriva de la unidad predeterminada del material. Corregir el nombre o la unidad canónica del material se propaga a todos sus vales, conserva la cantidad numérica y deja auditoría.
 - Los códigos de programas y acciones son inmutables después de su creación; sólo puede corregirse su nombre descriptivo.
 - No se puede desactivar una unidad usada por materiales activos, la última persona activa para una función necesaria ni un programa con acciones activas. Primero deben resolverse esas dependencias.
+- Un registro de catálogo sólo se elimina si no referencia vales ni otras dependencias que perderían información: unidades no usadas por materiales, partidas o ajustes reservados; programas sin acciones; y personas que no sean la última persona activa para una función necesaria. La eliminación deja auditoría y la base restringe las referencias históricas.
 - Un vale con movimientos vigentes no puede cancelarse.
 - Un cancelado mínimo puede crearse sin movimiento, personas, destino ni partidas para conservar la serie física.
 - Un prestado mínimo sólo conserva tipo, folio, fecha y un nombre libre opcional; nunca se deriva de un vale operativo ni admite partidas.

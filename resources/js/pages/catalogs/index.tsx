@@ -1,5 +1,4 @@
 import { Head } from '@inertiajs/react';
-import { useState } from 'react';
 import { Page, PageHeader } from '@/components/page';
 import type { Destination, Material, Paginated, Person } from '@/types';
 import {
@@ -8,12 +7,8 @@ import {
     PeopleSection,
     ProgramsSection,
 } from './catalog-sections';
-import type {
-    CatalogPageProps,
-    ProgramsCatalog,
-    StatusTarget,
-} from './catalog-types';
-import { CatalogNavigation, CatalogStatusDialog } from './catalog-ui';
+import type { CatalogPageProps, ProgramsCatalog } from './catalog-types';
+import { CatalogNavigation } from './catalog-ui';
 
 export default function Catalogs({
     section,
@@ -24,7 +19,6 @@ export default function Catalogs({
     voucherTypes,
     programOptions,
 }: CatalogPageProps) {
-    const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null);
     const summary =
         navigation.find((item) => item.key === section) ?? navigation[0];
 
@@ -49,7 +43,6 @@ export default function Catalogs({
                                 summary={summary}
                                 units={units}
                                 voucherTypes={voucherTypes}
-                                onStatus={setStatusTarget}
                             />
                         )}
                         {section === 'destinations' && (
@@ -57,7 +50,6 @@ export default function Catalogs({
                                 page={catalog as Paginated<Destination>}
                                 filters={filters}
                                 summary={summary}
-                                onStatus={setStatusTarget}
                             />
                         )}
                         {section === 'people' && (
@@ -65,7 +57,6 @@ export default function Catalogs({
                                 page={catalog as Paginated<Person>}
                                 filters={filters}
                                 summary={summary}
-                                onStatus={setStatusTarget}
                             />
                         )}
                         {section === 'programs' && (
@@ -74,22 +65,11 @@ export default function Catalogs({
                                 filters={filters}
                                 summary={summary}
                                 programOptions={programOptions}
-                                onStatus={setStatusTarget}
                             />
                         )}
                     </main>
                 </div>
             </Page>
-
-            <CatalogStatusDialog
-                key={
-                    statusTarget
-                        ? `${statusTarget.type}-${statusTarget.id}`
-                        : 'closed'
-                }
-                target={statusTarget}
-                onClose={() => setStatusTarget(null)}
-            />
         </>
     );
 }

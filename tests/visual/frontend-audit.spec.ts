@@ -17,6 +17,18 @@ type AuditViewport = {
 const viewports: AuditViewport[] = [
     { name: 'desktop-light', width: 1440, height: 1000, theme: 'light' },
     { name: 'desktop-dark', width: 1440, height: 1000, theme: 'dark' },
+    {
+        name: 'tablet-landscape-light',
+        width: 1134,
+        height: 834,
+        theme: 'light',
+    },
+    {
+        name: 'tablet-compact-light',
+        width: 960,
+        height: 834,
+        theme: 'light',
+    },
     { name: 'mobile-light', width: 390, height: 844, theme: 'light' },
 ];
 
@@ -101,6 +113,44 @@ async function assertFloatingSurfaceDoesNotZoom(surface: Locator) {
     ).toBe('none');
 }
 
+async function assertVoucherModalSelectScroll(page: Page) {
+    await page.getByRole('link', { name: 'Capturar vale' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'Capturar vale' });
+
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel('Material 1').click();
+
+    const commandList = page.locator('[data-slot="command-list"]');
+
+    await expect(commandList).toBeVisible();
+
+    if (
+        await commandList.evaluate(
+            (element) => element.scrollHeight > element.clientHeight,
+        )
+    ) {
+        const dialogScrollTop = await dialog.evaluate(
+            (element) => element.scrollTop,
+        );
+
+        await commandList.hover();
+        await page.mouse.wheel(0, 240);
+
+        await expect
+            .poll(() => commandList.evaluate((element) => element.scrollTop))
+            .toBeGreaterThan(0);
+        expect(await dialog.evaluate((element) => element.scrollTop)).toBe(
+            dialogScrollTop,
+        );
+    }
+
+    await page.keyboard.press('Escape');
+    await expect(commandList).toBeHidden();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+}
+
 test('recorrido visual de todas las pantallas', async ({ browser }) => {
     test.setTimeout(180_000);
     test.skip(!email || !password, 'Faltan VISUAL_EMAIL y VISUAL_PASSWORD.');
@@ -182,6 +232,100 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                 ).toBeVisible();
             }
 
+            if (route === '/vouchers/create') {
+                await expect(
+                    page.getByText('0 materiales agregados', { exact: true }),
+                ).toBeVisible();
+                await expect(
+                    page.getByRole('button', {
+                        name: 'Confirmar material 1',
+                    }),
+                ).toHaveCount(0);
+                await expect(
+                    page.getByText('Completa material y cantidad', {
+                        exact: true,
+                    }),
+                ).toBeVisible();
+                await expect(
+                    page.getByText(
+                        'Este formulario registra el vale original.',
+                        {
+                            exact: true,
+                        },
+                    ),
+                ).toHaveCount(0);
+
+                if (viewport.name === 'desktop-light') {
+                    await page
+                        .getByRole('button', { name: 'Guardar vale' })
+                        .click();
+                    await expect(
+                        page.getByText(
+                            'Agrega y confirma al menos un material antes de guardar.',
+                            { exact: true },
+                        ),
+                    ).toBeVisible();
+                    await expect(
+                        page.locator('#voucher-form-error-summary'),
+                    ).toHaveCount(0);
+                    await expect(page.getByLabel('Material 1')).toBeFocused();
+                }
+
+                if (viewport.theme === 'light' && viewport.width >= 900) {
+                    await page.getByLabel('Material 1').click();
+                    const firstMaterial = page.getByRole('option').first();
+
+                    if (await firstMaterial.isVisible()) {
+                        await firstMaterial.click();
+                        const quantity = page.getByLabel(/Cantidad.*Unidad:/);
+
+                        await quantity.fill('1');
+                        const confirmMaterial = page.getByRole('button', {
+                            name: 'Confirmar material 1',
+                        });
+
+                        const [materialBox, quantityBox, actionBox] =
+                            await Promise.all([
+                                page.getByLabel('Material 1').boundingBox(),
+                                quantity.boundingBox(),
+                                confirmMaterial.boundingBox(),
+                            ]);
+
+                        expect(materialBox).not.toBeNull();
+                        expect(quantityBox).not.toBeNull();
+                        expect(actionBox).not.toBeNull();
+                        expect(quantityBox!.y).toBe(materialBox!.y);
+                        expect(actionBox!.y).toBe(materialBox!.y);
+                        await expect(confirmMaterial).toBeEnabled();
+                        await expect(confirmMaterial).toHaveText(
+                            'Confirmar material',
+                        );
+                        await confirmMaterial.click();
+                        await expect(
+                            page.getByText('1 material agregado', {
+                                exact: true,
+                            }),
+                        ).toBeVisible();
+                        const removeMaterial = page.getByRole('button', {
+                            name: 'Eliminar material 1',
+                        });
+
+                        await expect(removeMaterial).toBeVisible();
+                        await expect(removeMaterial).toHaveText(
+                            'Eliminar material',
+                        );
+                        await expect(
+                            page.getByText('Agregado', { exact: true }),
+                        ).toBeVisible();
+                        await expect(
+                            page.getByText('Completa material y cantidad', {
+                                exact: true,
+                            }),
+                        ).toBeVisible();
+                    }
+                }
+            }
+
             await page.screenshot({
                 path: path.join(evidenceDir, `${viewport.name}--${name}.png`),
                 fullPage: true,
@@ -189,6 +333,10 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
         }
 
         await page.goto('/dashboard', { waitUntil: 'networkidle' });
+
+        if (viewport.name === 'desktop-light') {
+            await assertVoucherModalSelectScroll(page);
+        }
 
         const stickyHeader = page.locator('#main-content > header');
         await expect
@@ -406,6 +554,12 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             await expect(page.getByLabel('Tipo de vale')).toContainText(
                 'Almacén',
             );
+            await expect(
+                page.getByRole('columnheader', { name: 'Folio', exact: true }),
+            ).toHaveAttribute('aria-sort', 'descending');
+            await expect(
+                page.getByRole('columnheader', { name: 'Fecha', exact: true }),
+            ).toHaveAttribute('aria-sort', 'none');
             await expect(
                 page.getByRole('button', { name: 'Aplicar filtros' }),
             ).toHaveCount(0);
@@ -628,6 +782,12 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             await expect(
                 page.getByRole('tab', { name: 'Por vale' }),
             ).toHaveAttribute('aria-selected', 'true');
+            await expect(
+                page.getByRole('columnheader', { name: 'Vale', exact: true }),
+            ).toHaveAttribute('aria-sort', 'descending');
+            await expect(
+                page.getByRole('columnheader', { name: 'Fecha', exact: true }),
+            ).toHaveAttribute('aria-sort', 'none');
             await expect(page.getByText('Sin filtros activos')).toBeVisible();
             await expect(
                 page.getByRole('button', { name: /Limpiar \d+ filtro/ }),
