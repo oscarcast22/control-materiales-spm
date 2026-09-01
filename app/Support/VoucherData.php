@@ -31,7 +31,7 @@ final class VoucherData
     public static function make(Voucher $voucher, bool $detailed = false): array
     {
         $voucher->loadMissing([
-            'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action',
+            'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'actionIndicator',
             'destinations', 'items.material', 'items.unit', 'items.applications.report.attachment', 'attachments',
         ]);
 
@@ -66,6 +66,7 @@ final class VoucherData
             'authorized_by' => $voucher->authorizedBy?->only(['id', 'name']),
             'program' => $voucher->program?->only(['id', 'code', 'name']),
             'action' => $voucher->action?->only(['id', 'program_id', 'code', 'name']),
+            'indicator' => $voucher->actionIndicator?->only(['id', 'action_id', 'code', 'name']),
             'destinations' => $voucher->destinations->map->only(['id', 'name'])->values(),
             'usage_description' => $voucher->usage_description,
             'destination_summary' => self::destinationSummary($voucher),

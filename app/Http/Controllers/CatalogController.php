@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Action;
+use App\Models\ActionIndicator;
 use App\Models\AuditEvent;
 use App\Models\Destination;
 use App\Models\DestinationAlias;
@@ -10,7 +11,6 @@ use App\Models\Material;
 use App\Models\MaterialAlias;
 use App\Models\Person;
 use App\Models\PersonAlias;
-use App\Models\Program;
 use App\Models\Unit;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
@@ -300,65 +300,11 @@ class CatalogController extends Controller
         return back()->with('success', 'Unidad actualizada en todos los vales relacionados.');
     }
 
-    public function storeProgram(Request $request): RedirectResponse
-    {
-        Gate::authorize('manage-catalogs');
-        $request->merge(['code' => mb_strtoupper(trim((string) $request->input('code')))]);
-        $data = $request->validate([
-            'code' => ['required', 'string', 'max:50', 'regex:/^SPM-\d{2}$/', Rule::unique('programs', 'code')],
-            'name' => ['nullable', 'string', 'max:255'],
-        ]);
-        $model = Program::create($data);
-        AuditEvent::record($model, 'created', null, $model->toArray());
-
-        return back()->with('success', 'Programa agregado.');
-    }
-
-    public function updateProgram(Request $request, Program $program): RedirectResponse
-    {
-        Gate::authorize('manage-catalogs');
-        $data = $request->validate([
-            'name' => ['nullable', 'string', 'max:255'],
-            'code' => ['prohibited'],
-            'is_active' => ['sometimes', 'boolean'],
-        ]);
-
-        $before = $program->toArray();
-        $program->update([
-            'name' => filled($data['name'] ?? null) ? trim((string) $data['name']) : null,
-            ...$this->statusAttributes($program, $data),
-        ]);
-        AuditEvent::record($program, 'updated', $before, $program->fresh()->toArray());
-
-        return back()->with('success', 'Programa actualizado.');
-    }
-
-    public function storeAction(Request $request): RedirectResponse
-    {
-        Gate::authorize('manage-catalogs');
-        $request->merge(['code' => mb_strtoupper(trim((string) $request->input('code')))]);
-        $data = $request->validate([
-            'program_id' => ['required', 'integer', Rule::exists('programs', 'id')->where('is_active', true)],
-            'code' => ['required', 'string', 'max:50', 'regex:/^SPM-\d{2}-\d{2}$/', Rule::unique('actions', 'code')],
-            'name' => ['nullable', 'string', 'max:255'],
-        ]);
-        $program = Program::query()->findOrFail((int) $data['program_id']);
-        if (! str_starts_with($data['code'], $program->code.'-')) {
-            throw ValidationException::withMessages([
-                'code' => 'El código de la acción debe comenzar con el código del programa seleccionado.',
-            ]);
-        }
-        $model = Action::create($data);
-        AuditEvent::record($model, 'created', null, $model->toArray());
-
-        return back()->with('success', 'Acción agregada.');
-    }
-
     public function updateAction(Request $request, Action $action): RedirectResponse
     {
         Gate::authorize('manage-catalogs');
         $data = $request->validate([
-            'name' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'code' => ['prohibited'],
             'program_id' => ['prohibited'],
             'is_active' => ['sometimes', 'boolean'],
@@ -366,12 +312,32 @@ class CatalogController extends Controller
 
         $before = $action->toArray();
         $action->update([
-            'name' => filled($data['name'] ?? null) ? trim((string) $data['name']) : null,
+            'name' => trim($data['name']),
             ...$this->statusAttributes($action, $data),
         ]);
         AuditEvent::record($action, 'updated', $before, $action->fresh()->toArray());
 
         return back()->with('success', 'Acción actualizada.');
+    }
+
+    public function updateIndicator(Request $request, ActionIndicator $indicator): RedirectResponse
+    {
+        Gate::authorize('manage-catalogs');
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['prohibited'],
+            'action_id' => ['prohibited'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $before = $indicator->toArray();
+        $indicator->update([
+            'name' => trim($data['name']),
+            ...$this->statusAttributes($indicator, $data),
+        ]);
+        AuditEvent::record($indicator, 'updated', $before, $indicator->fresh()->toArray());
+
+        return back()->with('success', 'Indicador actualizado.');
     }
 
     /**
@@ -399,8 +365,8 @@ class CatalogController extends Controller
             'materials' => Material::class,
             'people' => Person::class,
             'units' => Unit::class,
-            'programs' => Program::class,
             'actions' => Action::class,
+            'indicators' => ActionIndicator::class,
             'destinations' => Destination::class,
             default => abort(404),
         };
@@ -455,11 +421,26 @@ class CatalogController extends Controller
             }
         }
 
-        if ($model instanceof Program) {
-            $actions = $model->actions()->where('is_active', true)->count();
-            if ($actions > 0) {
+        if ($model instanceof Action) {
+            $remainingActions = $model->program->actions()
+                ->where('is_active', true)
+                ->whereKeyNot($model->id)
+                ->count();
+            if ($remainingActions === 0) {
                 throw ValidationException::withMessages([
-                    'status' => "Este programa todavía tiene {$actions} acciones activas. Desactívalas primero.",
+                    'status' => 'No se puede desactivar la última acción disponible del programa SPM-06.',
+                ]);
+            }
+        }
+
+        if ($model instanceof ActionIndicator && $model->action->is_active) {
+            $remainingIndicators = $model->action->indicators()
+                ->where('is_active', true)
+                ->whereKeyNot($model->id)
+                ->count();
+            if ($remainingIndicators === 0) {
+                throw ValidationException::withMessages([
+                    'status' => 'No se puede desactivar el último indicador disponible de una acción activa.',
                 ]);
             }
         }

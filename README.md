@@ -17,7 +17,7 @@ La aplicación está desplegada en producción en `https://materiales.utopiadigi
 
 - Acceso privado con cuentas creadas por consola; el registro público está deshabilitado.
 - Captura y edición de entradas y salidas de Almacén o Patio con varios materiales.
-- Catálogos organizados en Personas, Materiales —con sus unidades habituales—, Ubicaciones y una sección conjunta de Programas y acciones. Almacén y Patio son tipos estructurales fijos.
+- Catálogos organizados en Personas, Materiales —con sus unidades habituales—, Ubicaciones y una sección conjunta del programa fijo SPM-06, sus acciones e indicadores. Almacén y Patio son tipos estructurales fijos.
 - Aplicaciones parciales o en bloque, con saldo por partida.
 - Anulación auditada de movimientos, registro mínimo y corrección de folios físicos prestados, y cancelación controlada de vales.
 - Fotos o PDF del vale guardados en almacenamiento privado.
@@ -58,7 +58,7 @@ composer dev
 
 ## Catálogos iniciales e histórico
 
-`php artisan migrate --seed` carga directamente el catálogo inicial incluido en `database/data`; no requiere ningún Excel. Contiene 843 materiales canónicos asignados explícitamente a Almacén, Patio o ambos, 309 ubicaciones reutilizables, 7 nombres alternativos, 44 personas, unidades, el programa SPM-06 y la acción SPM-06-01.
+`php artisan migrate --seed` carga directamente el catálogo inicial incluido en `database/data`; no requiere ningún Excel. Contiene 843 materiales canónicos asignados explícitamente a Almacén, Patio o ambos, 309 ubicaciones reutilizables, 7 nombres alternativos, 44 personas, unidades, el programa SPM-06, 17 acciones y 21 indicadores.
 
 La depuración fusiona únicamente equivalencias inequívocas y conserva como registros separados los calibres, medidas, potencias, modelos o identidades dudosas. Los nombres originales aceptados quedan como alias. El catálogo versiona los textos descriptivos de las columnas de Almacén y Patio; la fila numérica situada encima de los materiales de Almacén se ignora. Las unidades se infieren sólo para presentaciones explícitas o familias previamente uniformes. Hay 199 materiales con `s/e`; los 176 agregados desde el libro sin unidad inferible quedan marcados para revisión.
 

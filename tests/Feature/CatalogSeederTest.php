@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ActionIndicator;
 use App\Models\Destination;
 use App\Models\DestinationAlias;
 use App\Models\LegacyImportRow;
@@ -53,7 +54,13 @@ class CatalogSeederTest extends TestCase
         $this->assertDatabaseCount('units', 7);
         $this->assertDatabaseCount('programs', 1);
         $this->assertTrue(Schema::hasTable('actions'));
-        $this->assertDatabaseCount('actions', 1);
+        $this->assertDatabaseCount('actions', 17);
+        $this->assertDatabaseCount('action_indicators', 21);
+        $this->assertDatabaseHas('action_indicators', [
+            'code' => 'SPM-06-17-01',
+            'name' => 'Cableado subterráneo instalado',
+        ]);
+        $this->assertDatabaseMissing('action_indicators', ['code' => 'SPM-06-06-03']);
         $this->assertDatabaseCount('vouchers', 0);
         $this->assertSame(18, Person::query()->where('needs_review', true)->count());
         $this->assertSame(176, Material::query()->where('needs_review', true)->count());
@@ -134,6 +141,8 @@ class CatalogSeederTest extends TestCase
         $this->assertDatabaseCount('person_aliases', 56);
         $this->assertDatabaseCount('destinations', 309);
         $this->assertDatabaseCount('destination_aliases', 7);
+        $this->assertDatabaseCount('actions', 17);
+        $this->assertSame(21, ActionIndicator::query()->count());
 
         $this->assertSame([
             'jgo' => 4,

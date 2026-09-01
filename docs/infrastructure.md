@@ -210,6 +210,33 @@ Las migraciones nuevas deben ser compatibles con la versión que está activa al
 inicio del despliegue. Para cambios destructivos o que reescriban grandes
 volúmenes, diseñar una migración por etapas y probarla con una copia aislada.
 
+### Corte del catálogo de clasificación SPM-06
+
+La migración `2026_09_01_120000_add_action_indicators_and_populate_spm06_catalog`
+es aditiva: crea el catálogo y la referencia nullable al indicador, pero no
+actualiza vales existentes ni sus marcas de revisión. Antes de aplicarla en una
+ventana de mantenimiento, confirmar que continúa pendiente y registrar sólo
+conteos y una huella de clasificación sin datos personales. Tras el corte, la
+huella de `program_id`, `action_id`, `needs_review` y `review_reasons` de los
+vales existentes debe coincidir; `action_indicator_id` permanecerá nulo hasta
+que se clasifique explícitamente un vale.
+
+Desde la computadora administrativa, el comprobador de sólo lectura realiza
+esa validación y muestra la huella para compararla:
+
+```bash
+ops/oci/classification-release-check.sh before
+ops/oci/deploy.sh
+ops/oci/classification-release-check.sh after
+```
+
+La salida posterior debe conservar la misma huella, partidas y aplicaciones;
+el conteo de indicadores asignados a vales debe ser `0` en este primer corte.
+
+Si la migración ya figura como ejecutada, no se debe editar ni intentar repetir
+su archivo. Detener el corte y preparar una migración correctiva a partir del
+respaldo y el estado real de producción.
+
 En producción nunca ejecutar:
 
 ```bash

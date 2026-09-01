@@ -58,6 +58,7 @@ type SearchableSelectProps = {
     invalid?: boolean;
     describedBy?: string;
     className?: string;
+    optionLayout?: 'default' | 'code-description';
     onCreate?: (label: string) => void;
     createLabel?: (label: string) => string;
 };
@@ -75,6 +76,7 @@ export function SearchableSelect({
     invalid = false,
     describedBy,
     className,
+    optionLayout = 'default',
     onCreate,
     createLabel = (label) => `Crear ubicación “${label}”`,
 }: SearchableSelectProps) {
@@ -86,6 +88,8 @@ export function SearchableSelect({
         [options, value],
     );
     const visibleLabel = selected?.label ?? emptyLabel ?? placeholder;
+    const visibleDescription = selected?.meta ?? selected?.description;
+    const usesCodeDescriptionLayout = optionLayout === 'code-description';
     const trimmedQuery = query.trim();
     const normalizedQuery = normalizeSearchText(trimmedQuery);
     const canCreate =
@@ -137,25 +141,39 @@ export function SearchableSelect({
                     aria-describedby={describedBy}
                     disabled={disabled}
                     className={cn(
-                        'h-10 w-full min-w-0 justify-between px-4 text-left font-normal',
+                        'w-full min-w-0 justify-between px-4 text-left font-normal',
+                        usesCodeDescriptionLayout
+                            ? 'h-auto min-h-11 py-2'
+                            : 'h-10',
                         className,
                     )}
                 >
-                    <span className="flex min-w-0 flex-1 items-center gap-2">
-                        <span
-                            className={cn(
-                                'min-w-0 truncate',
-                                !selected && 'text-muted-foreground',
-                            )}
-                        >
-                            {visibleLabel}
-                        </span>
-                        {selected?.meta && (
-                            <span className="shrink-0 text-xs font-semibold text-muted-foreground">
-                                {selected.meta}
+                    {usesCodeDescriptionLayout && selected ? (
+                        <span className="grid min-w-0 flex-1 grid-cols-[max-content_minmax(0,1fr)] items-start gap-2 pr-2">
+                            <span className="font-mono text-xs font-semibold whitespace-nowrap text-foreground">
+                                {selected.label}
                             </span>
-                        )}
-                    </span>
+                            <span className="line-clamp-2 min-w-0 text-xs leading-4 text-muted-foreground">
+                                {visibleDescription}
+                            </span>
+                        </span>
+                    ) : (
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                            <span
+                                className={cn(
+                                    'min-w-0 truncate',
+                                    !selected && 'text-muted-foreground',
+                                )}
+                            >
+                                {visibleLabel}
+                            </span>
+                            {selected?.meta && (
+                                <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+                                    {selected.meta}
+                                </span>
+                            )}
+                        </span>
+                    )}
                     <ChevronsUpDown
                         data-icon="inline-end"
                         className="shrink-0 opacity-55"
@@ -166,7 +184,12 @@ export function SearchableSelect({
             {open && (
                 <PopoverContent
                     align="start"
-                    className="w-(--radix-popover-trigger-width) max-w-(--radix-popover-content-available-width) min-w-[min(18rem,var(--radix-popover-trigger-width))] p-0"
+                    className={cn(
+                        'max-w-(--radix-popover-content-available-width) p-0',
+                        usesCodeDescriptionLayout
+                            ? 'w-(--radix-popover-trigger-width)'
+                            : 'w-(--radix-popover-trigger-width) min-w-[min(18rem,var(--radix-popover-trigger-width))]',
+                    )}
                     onOpenAutoFocus={(event) => {
                         event.preventDefault();
                         inputRef.current?.focus();
@@ -213,23 +236,35 @@ export function SearchableSelect({
                                         disabled={option.disabled}
                                         onSelect={choose}
                                     >
-                                        <span className="min-w-0 flex-1">
-                                            <span className="flex min-w-0 items-baseline justify-between gap-3">
-                                                <span className="min-w-0 truncate font-medium">
+                                        {usesCodeDescriptionLayout ? (
+                                            <span className="grid min-w-0 flex-1 grid-cols-[max-content_minmax(0,1fr)] items-start gap-2 py-1">
+                                                <span className="font-mono text-xs font-semibold whitespace-nowrap text-foreground">
                                                     {option.label}
                                                 </span>
-                                                {option.meta && (
-                                                    <span className="shrink-0 text-xs font-semibold text-muted-foreground">
-                                                        {option.meta}
+                                                <span className="min-w-0 text-xs leading-4 text-muted-foreground">
+                                                    {option.meta ??
+                                                        option.description}
+                                                </span>
+                                            </span>
+                                        ) : (
+                                            <span className="min-w-0 flex-1">
+                                                <span className="flex min-w-0 items-baseline justify-between gap-3">
+                                                    <span className="min-w-0 truncate font-medium">
+                                                        {option.label}
+                                                    </span>
+                                                    {option.meta && (
+                                                        <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+                                                            {option.meta}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                {option.description && (
+                                                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                                                        {option.description}
                                                     </span>
                                                 )}
                                             </span>
-                                            {option.description && (
-                                                <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                                                    {option.description}
-                                                </span>
-                                            )}
-                                        </span>
+                                        )}
                                         {value === option.value && (
                                             <Check
                                                 className="ml-auto text-primary"

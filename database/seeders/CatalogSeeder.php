@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Action;
+use App\Models\ActionIndicator;
 use App\Models\AuditEvent;
 use App\Models\Destination;
 use App\Models\DestinationAlias;
@@ -15,6 +16,7 @@ use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Support\CuratedDestinationCatalog;
 use App\Support\CuratedMaterialCatalog;
+use App\Support\CuratedProgramCatalog;
 use App\Support\Normalizer;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -23,14 +25,17 @@ use RuntimeException;
 
 class CatalogSeeder extends Seeder
 {
-    public function run(CuratedMaterialCatalog $catalog, CuratedDestinationCatalog $destinationCatalog): void
-    {
-        DB::transaction(function () use ($catalog, $destinationCatalog): void {
+    public function run(
+        CuratedMaterialCatalog $catalog,
+        CuratedDestinationCatalog $destinationCatalog,
+        CuratedProgramCatalog $programCatalog,
+    ): void {
+        DB::transaction(function () use ($catalog, $destinationCatalog, $programCatalog): void {
             $units = $this->seedUnits($catalog);
             $this->seedMaterials($units, $catalog);
             $this->seedDestinations($destinationCatalog);
             $this->seedPeople();
-            $this->seedPrograms();
+            $this->seedPrograms($programCatalog);
         });
     }
 
@@ -173,14 +178,41 @@ class CatalogSeeder extends Seeder
         }
     }
 
-    private function seedPrograms(): void
+    private function seedPrograms(CuratedProgramCatalog $catalog): void
     {
-        $program = Program::firstOrCreate(['code' => 'SPM-06'], ['name' => 'Alumbrado público']);
-
-        Action::firstOrCreate(
-            ['code' => 'SPM-06-01'],
-            ['program_id' => $program->id, 'name' => null],
+        $data = $catalog->program();
+        $program = Program::firstOrCreate(
+            ['code' => $data['code']],
+            ['name' => $data['name'], 'is_active' => true],
         );
+
+        foreach ($data['actions'] as $actionData) {
+            $action = Action::firstOrCreate(
+                ['code' => $actionData['code']],
+                [
+                    'program_id' => $program->id,
+                    'name' => $actionData['name'],
+                    'is_active' => true,
+                ],
+            );
+            if ($action->program_id !== $program->id) {
+                throw new RuntimeException("La acción {$action->code} pertenece a otro programa.");
+            }
+
+            foreach ($actionData['indicators'] as $indicatorData) {
+                $indicator = ActionIndicator::firstOrCreate(
+                    ['code' => $indicatorData['code']],
+                    [
+                        'action_id' => $action->id,
+                        'name' => $indicatorData['name'],
+                        'is_active' => true,
+                    ],
+                );
+                if ($indicator->action_id !== $action->id) {
+                    throw new RuntimeException("El indicador {$indicator->code} pertenece a otra acción.");
+                }
+            }
+        }
     }
 
     /** @return list<array{name: string, can_receive_material: bool, can_deliver_material: bool, can_authorize_material: bool, needs_review: bool, aliases: list<string>}> */

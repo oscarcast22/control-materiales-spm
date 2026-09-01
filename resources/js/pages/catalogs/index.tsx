@@ -17,7 +17,6 @@ export default function Catalogs({
     catalog,
     units,
     voucherTypes,
-    programOptions,
 }: CatalogPageProps) {
     const summary =
         navigation.find((item) => item.key === section) ?? navigation[0];
@@ -64,7 +63,6 @@ export default function Catalogs({
                                 catalog={catalog as ProgramsCatalog}
                                 filters={filters}
                                 summary={summary}
-                                programOptions={programOptions}
                             />
                         )}
                     </main>

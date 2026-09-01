@@ -37,11 +37,11 @@ import {
 } from '@/components/ui/table';
 import type {
     Action,
+    ActionIndicator,
     Destination,
     Material,
     Paginated,
     Person,
-    Program,
     Unit,
     VoucherType,
 } from '@/types';
@@ -1177,41 +1177,24 @@ export function ProgramsSection({
     catalog,
     filters,
     summary,
-    programOptions,
 }: {
     catalog: ProgramsCatalog;
     filters: CatalogFilters;
     summary: CatalogNavigationItem;
-    programOptions: Program[];
 }) {
-    const [programOpen, setProgramOpen] = useState(false);
-    const [actionOpen, setActionOpen] = useState(false);
-    const [editingProgram, setEditingProgram] = useState<Program | null>(null);
     const [editingAction, setEditingAction] = useState<Action | null>(null);
+    const [editingIndicator, setEditingIndicator] =
+        useState<ActionIndicator | null>(null);
+    const program = catalog.programs[0];
 
     return (
         <SectionShell
             eyebrow="Clasificación de Almacén"
-            title="Programas y acciones"
-            description="Organiza las clasificaciones opcionales de los vales de Almacén. Cada acción pertenece a un programa."
+            title="Programa, acciones e indicadores"
+            description="Consulta la clasificación oficial de las salidas de Almacén. Los códigos y relaciones son estructurales; sólo se corrigen nombres y estados."
             icon={<Workflow className="size-5" aria-hidden="true" />}
             count={summary.total}
-            actions={
-                <>
-                    <Button
-                        variant="outline"
-                        onClick={() => setActionOpen(true)}
-                        disabled={programOptions.length === 0}
-                    >
-                        <Plus aria-hidden="true" />
-                        Nueva acción
-                    </Button>
-                    <Button onClick={() => setProgramOpen(true)}>
-                        <Plus aria-hidden="true" />
-                        Nuevo programa
-                    </Button>
-                </>
-            }
+            actions={null}
         >
             <CatalogToolbar
                 section="programs"
@@ -1221,18 +1204,21 @@ export function ProgramsSection({
             />
             <CardContent className="grid gap-6 py-6">
                 <ClassificationBlock
-                    title="Programas"
+                    title="Programa fijo"
                     count={catalog.programs.length}
-                    description="Código principal y nombre descriptivo."
+                    description="Se asigna automáticamente a toda salida de Almacén."
                 >
-                    {catalog.programs.length === 0 ? (
+                    {!program ? (
                         <CatalogEmpty title="No se encontraron programas" />
                     ) : (
-                        <ClassificationTable
-                            kind="program"
-                            rows={catalog.programs}
-                            onEdit={(row) => setEditingProgram(row as Program)}
-                        />
+                        <div className="flex flex-col gap-1 p-4 sm:p-5">
+                            <span className="font-mono text-xs font-bold text-primary">
+                                {program.code}
+                            </span>
+                            <span className="font-medium">
+                                {program.name ?? 'Alumbrado público'}
+                            </span>
+                        </div>
                     )}
                 </ClassificationBlock>
                 <ClassificationBlock
@@ -1250,28 +1236,38 @@ export function ProgramsSection({
                         />
                     )}
                 </ClassificationBlock>
+                <ClassificationBlock
+                    title="Indicadores"
+                    count={catalog.indicators.length}
+                    description="Resultados subordinados a cada acción; el formulario los asigna o solicita según corresponda."
+                >
+                    {catalog.indicators.length === 0 ? (
+                        <CatalogEmpty title="No se encontraron indicadores" />
+                    ) : (
+                        <ClassificationTable
+                            kind="indicator"
+                            rows={catalog.indicators}
+                            onEdit={(row) =>
+                                setEditingIndicator(row as ActionIndicator)
+                            }
+                        />
+                    )}
+                </ClassificationBlock>
             </CardContent>
-            <ProgramDialog open={programOpen} onOpenChange={setProgramOpen} />
-            {editingProgram && (
-                <ProgramDialog
-                    key={editingProgram.id}
-                    open
-                    program={editingProgram}
-                    onOpenChange={(open) => !open && setEditingProgram(null)}
-                />
-            )}
-            <ActionDialog
-                open={actionOpen}
-                onOpenChange={setActionOpen}
-                programs={programOptions}
-            />
             {editingAction && (
                 <ActionDialog
                     key={editingAction.id}
                     open
                     action={editingAction}
-                    programs={programOptions}
                     onOpenChange={(open) => !open && setEditingAction(null)}
+                />
+            )}
+            {editingIndicator && (
+                <IndicatorDialog
+                    key={editingIndicator.id}
+                    open
+                    indicator={editingIndicator}
+                    onOpenChange={(open) => !open && setEditingIndicator(null)}
                 />
             )}
         </SectionShell>
@@ -1312,9 +1308,9 @@ function ClassificationTable({
     rows,
     onEdit,
 }: {
-    kind: 'program' | 'action';
-    rows: (Program | Action)[];
-    onEdit: (row: Program | Action) => void;
+    kind: 'action' | 'indicator';
+    rows: (Action | ActionIndicator)[];
+    onEdit: (row: Action | ActionIndicator) => void;
 }) {
     return (
         <>
@@ -1323,12 +1319,11 @@ function ClassificationTable({
                     <TableHeader>
                         <TableRow>
                             <TableHead className="w-[22%]">Código</TableHead>
-                            {kind === 'action' && (
-                                <TableHead className="w-[20%]">
-                                    Programa
-                                </TableHead>
-                            )}
+                            <TableHead className="w-[20%]">
+                                {kind === 'action' ? 'Programa' : 'Acción'}
+                            </TableHead>
                             <TableHead>Nombre</TableHead>
+                            <TableHead className="w-[12%]">Estado</TableHead>
                             <TableHead className="w-[17%] text-right">
                                 Editar
                             </TableHead>
@@ -1340,17 +1335,28 @@ function ClassificationTable({
                                 <TableCell className="font-mono text-xs font-semibold">
                                     {row.code}
                                 </TableCell>
-                                {kind === 'action' && (
-                                    <TableCell>
-                                        {(row as Action).program?.code}
-                                    </TableCell>
-                                )}
+                                <TableCell>
+                                    {kind === 'action'
+                                        ? (row as Action).program?.code
+                                        : (row as ActionIndicator).action?.code}
+                                </TableCell>
                                 <TableCell className="whitespace-normal">
                                     {row.name || (
                                         <span className="text-muted-foreground">
                                             Sin nombre
                                         </span>
                                     )}
+                                </TableCell>
+                                <TableCell>
+                                    <Badge
+                                        variant={
+                                            row.is_active
+                                                ? 'success'
+                                                : 'secondary'
+                                        }
+                                    >
+                                        {row.is_active ? 'Activo' : 'Inactivo'}
+                                    </Badge>
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex justify-end gap-1">
@@ -1382,13 +1388,20 @@ function ClassificationTable({
                                 </p>
                             </div>
                         </div>
-                        {kind === 'action' && (
-                            <div className="mt-3">
-                                <MobileDatum label="Programa">
-                                    {(row as Action).program?.code}
-                                </MobileDatum>
-                            </div>
-                        )}
+                        <div className="mt-3 grid grid-cols-2 gap-3">
+                            <MobileDatum
+                                label={
+                                    kind === 'action' ? 'Programa' : 'Acción'
+                                }
+                            >
+                                {kind === 'action'
+                                    ? (row as Action).program?.code
+                                    : (row as ActionIndicator).action?.code}
+                            </MobileDatum>
+                            <MobileDatum label="Estado">
+                                {row.is_active ? 'Activo' : 'Inactivo'}
+                            </MobileDatum>
+                        </div>
                         <div className="mt-4 flex justify-end gap-1 border-t border-border pt-3">
                             <Button
                                 size="sm"
@@ -1406,142 +1419,18 @@ function ClassificationTable({
     );
 }
 
-function ProgramDialog({
-    open,
-    onOpenChange,
-    program,
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    program?: Program;
-}) {
-    const form = useForm({
-        code: program?.code ?? '',
-        name: program?.name ?? '',
-        is_active: program?.is_active ?? true,
-    });
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
-        const options = {
-            preserveScroll: true,
-            onSuccess: () => {
-                form.reset();
-                onOpenChange(false);
-            },
-        };
-
-        if (program) {
-            form.transform((data) => ({
-                name: data.name,
-                is_active: data.is_active,
-            }));
-            form.put(`/catalogs/programs/${program.id}`, options);
-        } else {
-            form.post('/catalogs/programs', options);
-        }
-    };
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <form onSubmit={submit} className="grid gap-5">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {program ? 'Editar programa' : 'Nuevo programa'}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {program
-                                ? 'El código identifica al programa y no puede modificarse.'
-                                : 'Usa el formato SPM-00 para conservar la clasificación institucional.'}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 sm:grid-cols-[140px_1fr]">
-                        <div className="grid gap-2">
-                            <Label htmlFor="program-code">Código</Label>
-                            <Input
-                                id="program-code"
-                                value={form.data.code}
-                                onChange={(event) =>
-                                    form.setData('code', event.target.value)
-                                }
-                                disabled={Boolean(program)}
-                                placeholder="SPM-00"
-                            />
-                            <InputError message={form.errors.code} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="program-name">Nombre</Label>
-                            <Input
-                                id="program-name"
-                                autoFocus={Boolean(program)}
-                                value={form.data.name}
-                                onChange={(event) =>
-                                    form.setData('name', event.target.value)
-                                }
-                                placeholder="Nombre opcional"
-                            />
-                            <InputError message={form.errors.name} />
-                        </div>
-                    </div>
-                    {program && (
-                        <CatalogStatusField
-                            value={form.data.is_active}
-                            onValueChange={(value) =>
-                                form.setData('is_active', value)
-                            }
-                        />
-                    )}
-                    <DialogFooter
-                        className={program ? 'sm:justify-between' : undefined}
-                    >
-                        {program && (
-                            <CatalogDeleteAction
-                                target={{
-                                    type: 'programs',
-                                    id: program.id,
-                                    name: program.code,
-                                    deletion: program.deletion,
-                                }}
-                                onDeleted={() => onOpenChange(false)}
-                            />
-                        )}
-                        <div className="flex gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                            >
-                                Cancelar
-                            </Button>
-                            <Button disabled={form.processing}>
-                                {program
-                                    ? 'Guardar cambios'
-                                    : 'Agregar programa'}
-                            </Button>
-                        </div>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 function ActionDialog({
     open,
     onOpenChange,
     action,
-    programs,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    action?: Action;
-    programs: Program[];
+    action: Action;
 }) {
     const form = useForm({
-        program_id: action ? String(action.program_id) : '',
-        code: action?.code ?? '',
-        name: action?.name ?? '',
-        is_active: action?.is_active ?? true,
+        name: action.name ?? '',
+        is_active: action.is_active ?? true,
     });
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -1553,15 +1442,7 @@ function ActionDialog({
             },
         };
 
-        if (action) {
-            form.transform((data) => ({
-                name: data.name,
-                is_active: data.is_active,
-            }));
-            form.put(`/catalogs/actions/${action.id}`, options);
-        } else {
-            form.post('/catalogs/actions', options);
-        }
+        form.put(`/catalogs/actions/${action.id}`, options);
     };
 
     return (
@@ -1569,47 +1450,31 @@ function ActionDialog({
             <DialogContent>
                 <form onSubmit={submit} className="grid gap-5">
                     <DialogHeader>
-                        <DialogTitle>
-                            {action ? 'Editar acción' : 'Nueva acción'}
-                        </DialogTitle>
+                        <DialogTitle>Editar acción</DialogTitle>
                         <DialogDescription>
-                            {action
-                                ? 'El código y programa asociados no pueden modificarse.'
-                                : 'La acción debe comenzar con el código del programa seleccionado.'}
+                            El código y el programa son parte del catálogo
+                            oficial y no pueden modificarse.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="action-program">Programa</Label>
-                            <SimpleSelect
+                            <div
                                 id="action-program"
-                                value={form.data.program_id}
-                                onValueChange={(value) =>
-                                    form.setData('program_id', value)
-                                }
-                                options={programs.map((program) => ({
-                                    value: String(program.id),
-                                    label: `${program.code}${program.name ? ` · ${program.name}` : ''}`,
-                                }))}
-                                placeholder="Seleccionar programa"
-                                disabled={Boolean(action)}
-                                invalid={Boolean(form.errors.program_id)}
-                            />
-                            <InputError message={form.errors.program_id} />
+                                className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 font-mono text-sm font-semibold"
+                            >
+                                {action.program?.code ?? 'SPM-06'}
+                            </div>
                         </div>
                         <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
                             <div className="grid gap-2">
                                 <Label htmlFor="action-code">Código</Label>
-                                <Input
+                                <div
                                     id="action-code"
-                                    value={form.data.code}
-                                    onChange={(event) =>
-                                        form.setData('code', event.target.value)
-                                    }
-                                    disabled={Boolean(action)}
-                                    placeholder="SPM-06-01"
-                                />
-                                <InputError message={form.errors.code} />
+                                    className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 font-mono text-sm font-semibold"
+                                >
+                                    {action.code}
+                                </div>
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="action-name">Nombre</Label>
@@ -1619,34 +1484,19 @@ function ActionDialog({
                                     onChange={(event) =>
                                         form.setData('name', event.target.value)
                                     }
-                                    placeholder="Nombre opcional"
+                                    placeholder="Nombre breve"
                                 />
                                 <InputError message={form.errors.name} />
                             </div>
                         </div>
                     </div>
-                    {action && (
-                        <CatalogStatusField
-                            value={form.data.is_active}
-                            onValueChange={(value) =>
-                                form.setData('is_active', value)
-                            }
-                        />
-                    )}
-                    <DialogFooter
-                        className={action ? 'sm:justify-between' : undefined}
-                    >
-                        {action && (
-                            <CatalogDeleteAction
-                                target={{
-                                    type: 'actions',
-                                    id: action.id,
-                                    name: action.code,
-                                    deletion: action.deletion,
-                                }}
-                                onDeleted={() => onOpenChange(false)}
-                            />
-                        )}
+                    <CatalogStatusField
+                        value={form.data.is_active}
+                        onValueChange={(value) =>
+                            form.setData('is_active', value)
+                        }
+                    />
+                    <DialogFooter>
                         <div className="flex gap-2">
                             <Button
                                 type="button"
@@ -1656,7 +1506,100 @@ function ActionDialog({
                                 Cancelar
                             </Button>
                             <Button disabled={form.processing}>
-                                {action ? 'Guardar cambios' : 'Agregar acción'}
+                                Guardar cambios
+                            </Button>
+                        </div>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function IndicatorDialog({
+    open,
+    onOpenChange,
+    indicator,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    indicator: ActionIndicator;
+}) {
+    const form = useForm({
+        name: indicator.name,
+        is_active: indicator.is_active ?? true,
+    });
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        form.put(`/catalogs/indicators/${indicator.id}`, {
+            preserveScroll: true,
+            onSuccess: () => onOpenChange(false),
+        });
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <form onSubmit={submit} className="grid gap-5">
+                    <DialogHeader>
+                        <DialogTitle>Editar indicador</DialogTitle>
+                        <DialogDescription>
+                            El código y la acción son parte del catálogo oficial
+                            y no pueden modificarse.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="indicator-action">Acción</Label>
+                            <div
+                                id="indicator-action"
+                                className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 font-mono text-sm font-semibold"
+                            >
+                                {indicator.action?.code ?? '—'}
+                            </div>
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
+                            <div className="grid gap-2">
+                                <Label htmlFor="indicator-code">Código</Label>
+                                <div
+                                    id="indicator-code"
+                                    className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 font-mono text-sm font-semibold"
+                                >
+                                    {indicator.code}
+                                </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="indicator-name">Nombre</Label>
+                                <Input
+                                    id="indicator-name"
+                                    autoFocus
+                                    value={form.data.name}
+                                    onChange={(event) =>
+                                        form.setData('name', event.target.value)
+                                    }
+                                    placeholder="Nombre breve"
+                                />
+                                <InputError message={form.errors.name} />
+                            </div>
+                        </div>
+                    </div>
+                    <CatalogStatusField
+                        value={form.data.is_active}
+                        onValueChange={(value) =>
+                            form.setData('is_active', value)
+                        }
+                    />
+                    <DialogFooter>
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button disabled={form.processing}>
+                                Guardar cambios
                             </Button>
                         </div>
                     </DialogFooter>

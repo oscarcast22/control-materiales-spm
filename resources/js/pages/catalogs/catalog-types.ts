@@ -1,5 +1,6 @@
 import type {
     Action,
+    ActionIndicator,
     CatalogDeletion,
     Destination,
     Material,
@@ -32,6 +33,7 @@ export type CatalogNavigationItem = {
 export type ProgramsCatalog = {
     programs: Program[];
     actions: Action[];
+    indicators: ActionIndicator[];
 };
 
 export type CatalogData =
@@ -47,7 +49,6 @@ export type CatalogPageProps = {
     catalog: CatalogData;
     units: Unit[];
     voucherTypes: VoucherType[];
-    programOptions: Program[];
 };
 
 export type StatusTarget = {
@@ -57,7 +58,8 @@ export type StatusTarget = {
         | 'people'
         | 'units'
         | 'programs'
-        | 'actions';
+        | 'actions'
+        | 'indicators';
     id: number;
     name: string;
     active: boolean;

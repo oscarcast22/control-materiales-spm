@@ -200,7 +200,8 @@ class ImportLegacyControl extends Command
 
             $program = null;
             $action = null;
-            if ($row['voucher_type_code'] === 'warehouse') {
+            $indicator = null;
+            if ($row['voucher_type_code'] === 'warehouse' && $direction === VoucherDirection::Exit) {
                 [$program, $programIssue] = $this->program((string) $row['program']);
                 if ($programIssue) {
                     $issues[] = $programIssue;
@@ -208,6 +209,22 @@ class ImportLegacyControl extends Command
                 [$action, $actionIssue] = $this->action((string) $row['action'], $program);
                 if ($actionIssue) {
                     $issues[] = $actionIssue;
+                }
+                if ($program === null && $programIssue === null) {
+                    $issues[] = 'missing_program';
+                }
+                if ($action === null && $actionIssue === null) {
+                    $issues[] = 'missing_action';
+                }
+                if ($action !== null) {
+                    $indicators = $action->indicators()->where('is_active', true)->get();
+                    if ($indicators->count() === 1) {
+                        $indicator = $indicators->first();
+                    } elseif ($indicators->count() > 1) {
+                        $issues[] = 'ambiguous_action_indicator:'.$action->code;
+                    } else {
+                        $issues[] = 'missing_action_indicator:'.$action->code;
+                    }
                 }
             }
 
@@ -244,6 +261,7 @@ class ImportLegacyControl extends Command
                 'authorized_by_id' => $authorizerId,
                 'program_id' => $program?->id,
                 'action_id' => $action?->id,
+                'action_indicator_id' => $indicator?->id,
                 'usage_description' => $destinationData['usage_description'],
                 'destination_ids' => $destinationData['destination_ids'],
                 'needs_review' => $destinationData['needs_review'],

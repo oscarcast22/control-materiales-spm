@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
 use App\Models\Action;
+use App\Models\ActionIndicator;
 use App\Models\AuditEvent;
 use App\Models\Destination;
 use App\Models\DestinationAlias;
@@ -41,7 +42,7 @@ class VoucherController extends Controller
         $voucherTypeId = $voucherTypeScope->resolve($request);
         $query = Voucher::query()
             ->withCount('items')
-            ->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'destinations', 'items.material', 'items.unit', 'items.applications']);
+            ->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'actionIndicator', 'destinations', 'items.material', 'items.unit', 'items.applications']);
 
         if ($search = trim((string) $request->string('search'))) {
             $query->searchText($search);
@@ -419,13 +420,21 @@ class VoucherController extends Controller
     /** @return array<string, mixed> */
     private function catalogData(?Voucher $voucher = null): array
     {
-        $programs = Program::query()->where('is_active', true);
+        $programs = Program::query()->where('code', 'SPM-06')->where('is_active', true);
         if ($voucher?->program_id !== null) {
             $programs->orWhere('id', $voucher->program_id);
         }
-        $actions = Action::query()->with('program:id,code')->where('is_active', true);
+        $fixedProgramId = Program::query()->where('code', 'SPM-06')->value('id');
+        $actions = Action::query()
+            ->with('program:id,code')
+            ->where('program_id', $fixedProgramId)
+            ->where('is_active', true);
         if ($voucher?->action_id !== null) {
             $actions->orWhere('id', $voucher->action_id);
+        }
+        $indicators = ActionIndicator::query()->where('is_active', true);
+        if ($voucher?->action_indicator_id !== null) {
+            $indicators->orWhere('id', $voucher->action_indicator_id);
         }
         $destinations = Destination::query()->where('is_active', true);
         if ($voucher !== null) {
@@ -440,6 +449,7 @@ class VoucherController extends Controller
             'authorizers' => $this->peopleForRole('can_authorize_material', $voucher?->authorized_by_id),
             'programs' => $programs->orderBy('code')->get(),
             'actions' => $actions->orderBy('code')->get(),
+            'indicators' => $indicators->orderBy('code')->get(),
             'destinations' => $destinations
                 ->with('aliases:id,destination_id,alias')
                 ->orderBy('name')
@@ -456,7 +466,16 @@ class VoucherController extends Controller
             ->whereKey($request->input('voucher_type_id'))
             ->where('is_active', true)
             ->first();
-        $usesProgramAndAction = $selectedVoucherType?->code === 'warehouse';
+        $usesClassification = $selectedVoucherType?->code === 'warehouse'
+            && $request->input('direction') === VoucherDirection::Exit->value;
+        $fixedProgram = $usesClassification
+            ? Program::query()->where('code', 'SPM-06')->where('is_active', true)->first()
+            : null;
+        if ($usesClassification && $fixedProgram === null) {
+            throw ValidationException::withMessages([
+                'action_id' => 'El programa SPM-06 no está disponible. Revisa el catálogo antes de guardar.',
+            ]);
+        }
         $authorizers = $this->peopleForRole('can_authorize_material', $voucher?->authorized_by_id);
         if ($authorizers->isEmpty()) {
             throw ValidationException::withMessages([
@@ -471,11 +490,12 @@ class VoucherController extends Controller
             'received_by_id' => ['required', $this->personRoleRule('can_receive_material', $voucher?->received_by_id)],
             'delivered_by_id' => ['required', $this->personRoleRule('can_deliver_material', $voucher?->delivered_by_id)],
             'authorized_by_id' => [$authorizers->count() > 1 ? 'required' : 'nullable', $this->personRoleRule('can_authorize_material', $voucher?->authorized_by_id)],
-            'program_id' => $usesProgramAndAction
-                ? ['nullable', 'integer', Rule::exists('programs', 'id')->where('is_active', true)]
+            'program_id' => ['exclude'],
+            'action_id' => $usesClassification
+                ? ['nullable', 'integer', Rule::exists('actions', 'id')]
                 : ['exclude'],
-            'action_id' => $usesProgramAndAction
-                ? ['nullable', 'integer', Rule::exists('actions', 'id')->where('is_active', true)]
+            'action_indicator_id' => $usesClassification
+                ? ['nullable', 'integer', Rule::exists('action_indicators', 'id')]
                 : ['exclude'],
             'destination_ids' => ['nullable', 'array', 'max:10'],
             'destination_ids.*' => ['required', 'integer', 'distinct', Rule::exists('destinations', 'id')->where(function ($query) use ($currentDestinationIds): void {
@@ -512,6 +532,56 @@ class VoucherController extends Controller
             throw ValidationException::withMessages($materialErrors);
         }
 
+        if ($usesClassification) {
+            $actionId = isset($data['action_id']) ? (int) $data['action_id'] : null;
+            $indicatorId = isset($data['action_indicator_id']) ? (int) $data['action_indicator_id'] : null;
+            $keepsHistoricalClassification = $voucher !== null
+                && $actionId === $voucher->action_id
+                && $indicatorId === $voucher->action_indicator_id;
+
+            if ($keepsHistoricalClassification) {
+                $data['program_id'] = $voucher->program_id;
+                $data['action_id'] = $voucher->action_id;
+                $data['action_indicator_id'] = $voucher->action_indicator_id;
+            } elseif ($actionId === null) {
+                throw ValidationException::withMessages([
+                    'action_id' => 'Selecciona la acción del vale.',
+                ]);
+            } else {
+                $action = Action::query()
+                    ->whereKey($actionId)
+                    ->where('program_id', $fixedProgram->id)
+                    ->where('is_active', true)
+                    ->first();
+                if ($action === null) {
+                    throw ValidationException::withMessages([
+                        'action_id' => 'Selecciona una acción activa del programa SPM-06.',
+                    ]);
+                }
+                $indicators = $action->indicators()
+                    ->where('is_active', true)
+                    ->orderBy('code')
+                    ->get();
+                if ($indicators->isEmpty()) {
+                    throw ValidationException::withMessages([
+                        'action_id' => 'La acción seleccionada no tiene un indicador disponible.',
+                    ]);
+                }
+                if ($indicators->count() === 1) {
+                    $data['action_indicator_id'] = $indicators->firstOrFail()->id;
+                } elseif ($indicatorId === null) {
+                    throw ValidationException::withMessages([
+                        'action_indicator_id' => 'Selecciona el indicador de la acción.',
+                    ]);
+                } elseif (! $indicators->contains('id', $indicatorId)) {
+                    throw ValidationException::withMessages([
+                        'action_indicator_id' => 'Selecciona un indicador que pertenezca a la acción elegida.',
+                    ]);
+                }
+                $data['program_id'] = $fixedProgram->id;
+            }
+        }
+
         $data['destination_ids'] = array_values(array_map('intval', $data['destination_ids'] ?? []));
         $data['new_destinations'] = array_values(array_filter(array_map(
             fn (string $name): string => trim($name),
@@ -540,17 +610,10 @@ class VoucherController extends Controller
         if ($authorizers->count() === 1) {
             $data['authorized_by_id'] = $authorizers->firstOrFail()->id;
         }
-        if (! $usesProgramAndAction) {
+        if (! $usesClassification) {
             $data['program_id'] = null;
             $data['action_id'] = null;
-        } elseif (! empty($data['action_id'])) {
-            $actionBelongsToProgram = ! empty($data['program_id'])
-                && Action::query()->whereKey($data['action_id'])->where('program_id', $data['program_id'])->exists();
-            if (! $actionBelongsToProgram) {
-                throw ValidationException::withMessages([
-                    'action_id' => 'Selecciona una acción que pertenezca al programa elegido.',
-                ]);
-            }
+            $data['action_indicator_id'] = null;
         }
         $data['folio'] = trim($data['folio']);
 
@@ -576,10 +639,11 @@ class VoucherController extends Controller
             'delivered_by_id.exists' => 'La persona que entregó el material ya no está disponible.',
             'authorized_by_id.required' => 'Selecciona quién autorizó el material.',
             'authorized_by_id.exists' => 'La persona que autorizó el material ya no está disponible.',
-            'program_id.integer' => 'Selecciona un programa válido.',
-            'program_id.exists' => 'El programa seleccionado ya no está disponible.',
+            'action_id.required' => 'Selecciona la acción del vale.',
             'action_id.integer' => 'Selecciona una acción válida.',
             'action_id.exists' => 'La acción seleccionada ya no está disponible.',
+            'action_indicator_id.integer' => 'Selecciona un indicador válido.',
+            'action_indicator_id.exists' => 'El indicador seleccionado ya no está disponible.',
             'destination_ids.array' => 'Selecciona una ubicación válida.',
             'destination_ids.max' => 'Puedes asociar como máximo diez ubicaciones al mismo vale.',
             'destination_ids.*.required' => 'Selecciona una ubicación válida.',

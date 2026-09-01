@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\ActionFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $name
  * @property bool $is_active
  * @property-read Program $program
+ * @property-read Collection<int, ActionIndicator> $indicators
  */
 class Action extends Model
 {
@@ -38,5 +40,11 @@ class Action extends Model
     public function vouchers(): HasMany
     {
         return $this->hasMany(Voucher::class);
+    }
+
+    /** @return HasMany<ActionIndicator, $this> */
+    public function indicators(): HasMany
+    {
+        return $this->hasMany(ActionIndicator::class);
     }
 }

@@ -38,6 +38,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { VoucherDestinationPicker } from '@/components/voucher-destination-picker';
 import type {
     Action,
+    ActionIndicator,
     ChoiceOption,
     Destination,
     Material,
@@ -64,8 +65,8 @@ type FormData = {
     received_by_id: string;
     delivered_by_id: string;
     authorized_by_id: string;
-    program_id: string;
     action_id: string;
+    action_indicator_id: string;
     destination_ids: string[];
     new_destinations: string[];
     usage_description: string;
@@ -82,6 +83,7 @@ export type VoucherFormProps = {
     authorizers: Named[];
     programs: Program[];
     actions: Action[];
+    indicators: ActionIndicator[];
     destinations: Destination[];
     embedded?: boolean;
     onSuccess?: () => void;
@@ -97,6 +99,9 @@ const blankLine = (): Line => ({
     confirmed: false,
 });
 
+const quantityForInput = (quantity: string) =>
+    quantity.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
+
 export default function VoucherForm({
     voucher,
     materials,
@@ -106,6 +111,7 @@ export default function VoucherForm({
     authorizers,
     programs,
     actions,
+    indicators,
     destinations,
     embedded = false,
     onSuccess,
@@ -138,19 +144,16 @@ export default function VoucherForm({
     const initialVoucherTypeId = voucher
         ? String(voucher.voucher_type.id)
         : String(voucherTypes[0]?.id ?? '');
-    const initialUsesProgramAndAction =
+    const initialUsesClassification =
         voucherTypes.find(
             (voucherType) => String(voucherType.id) === initialVoucherTypeId,
-        )?.code === 'warehouse';
-    const defaultProgramId = initialUsesProgramAndAction
-        ? voucher?.program
-            ? String(voucher.program.id)
-            : programs.length === 1
-              ? String(programs[0].id)
-              : ''
+        )?.code === 'warehouse' && (voucher?.direction ?? 'exit') === 'exit';
+    const fixedProgram = programs.find((program) => program.code === 'SPM-06');
+    const initialActionId = initialUsesClassification
+        ? String(voucher?.action?.id ?? '')
         : '';
-    const eligibleDefaultActions = actions.filter(
-        (action) => String(action.program_id) === defaultProgramId,
+    const initialIndicators = indicators.filter(
+        (indicator) => String(indicator.action_id) === initialActionId,
     );
     const form = useForm<FormData>({
         _dialog: embedded,
@@ -171,12 +174,12 @@ export default function VoucherForm({
             : authorizers.length === 1
               ? String(authorizers[0].id)
               : '',
-        program_id: defaultProgramId,
-        action_id: initialUsesProgramAndAction
-            ? voucher?.action
-                ? String(voucher.action.id)
-                : eligibleDefaultActions.length === 1
-                  ? String(eligibleDefaultActions[0].id)
+        action_id: initialActionId,
+        action_indicator_id: initialUsesClassification
+            ? voucher?.indicator
+                ? String(voucher.indicator.id)
+                : !voucher && initialIndicators.length === 1
+                  ? String(initialIndicators[0].id)
                   : ''
             : '',
         destination_ids:
@@ -186,14 +189,19 @@ export default function VoucherForm({
         new_destinations: [],
         usage_description: voucher?.usage_description ?? '',
         notes: voucher?.notes ?? '',
-        items: voucher?.items.map((item) => ({
-            client_id: `saved-${item.id}`,
-            id: item.id,
-            material_id: String(item.material.id),
-            quantity: item.quantity,
-            has_applications: Number(item.used_quantity) > 0,
-            confirmed: true,
-        })) ?? [blankLine()],
+        items: voucher
+            ? [
+                  ...voucher.items.map((item) => ({
+                      client_id: `saved-${item.id}`,
+                      id: item.id,
+                      material_id: String(item.material.id),
+                      quantity: quantityForInput(item.quantity),
+                      has_applications: Number(item.used_quantity) > 0,
+                      confirmed: true,
+                  })),
+                  blankLine(),
+              ]
+            : [blankLine()],
         attachments: [],
     });
     const materialOptions = useMemo<ChoiceOption[]>(
@@ -219,22 +227,13 @@ export default function VoucherForm({
                 })),
         [form.data.voucher_type_id, materials],
     );
-    const programOptions = useMemo<ChoiceOption[]>(
-        () =>
-            programs.map((program) => ({
-                value: String(program.id),
-                label: program.code,
-                meta: program.name ?? undefined,
-                searchTerms: program.name ? [program.name] : [],
-            })),
-        [programs],
-    );
     const actionOptions = useMemo<ChoiceOption[]>(
         () =>
             actions
                 .filter(
                     (action) =>
-                        String(action.program_id) === form.data.program_id,
+                        String(action.program_id) ===
+                        String(fixedProgram?.id ?? ''),
                 )
                 .map((action) => ({
                     value: String(action.id),
@@ -242,13 +241,31 @@ export default function VoucherForm({
                     meta: action.name ?? undefined,
                     searchTerms: action.name ? [action.name] : [],
                 })),
-        [actions, form.data.program_id],
+        [actions, fixedProgram?.id],
     );
-    const usesProgramAndAction =
+    const selectedIndicators = useMemo(
+        () =>
+            indicators.filter(
+                (indicator) =>
+                    String(indicator.action_id) === form.data.action_id,
+            ),
+        [form.data.action_id, indicators],
+    );
+    const indicatorOptions = useMemo<ChoiceOption[]>(
+        () =>
+            selectedIndicators.map((indicator) => ({
+                value: String(indicator.id),
+                label: indicator.code,
+                meta: indicator.name,
+                searchTerms: [indicator.name],
+            })),
+        [selectedIndicators],
+    );
+    const usesClassification =
         voucherTypes.find(
             (voucherType) =>
                 String(voucherType.id) === form.data.voucher_type_id,
-        )?.code === 'warehouse';
+        )?.code === 'warehouse' && form.data.direction === 'exit';
     const errorSignature = Object.entries(form.errors)
         .sort(([firstField], [secondField]) =>
             firstField.localeCompare(secondField),
@@ -333,18 +350,6 @@ export default function VoucherForm({
         );
     };
     const changeVoucherType = (voucherTypeId: string) => {
-        const usesClassification =
-            voucherTypes.find(
-                (voucherType) => String(voucherType.id) === voucherTypeId,
-            )?.code === 'warehouse';
-        const programId = usesClassification
-            ? programs.length === 1
-                ? String(programs[0].id)
-                : ''
-            : '';
-        const eligibleActions = actions.filter(
-            (action) => String(action.program_id) === programId,
-        );
         const allowed = new Set(
             materials
                 .filter((material) =>
@@ -373,11 +378,8 @@ export default function VoucherForm({
         form.setData((current) => ({
             ...current,
             voucher_type_id: voucherTypeId,
-            program_id: programId,
-            action_id:
-                usesClassification && eligibleActions.length === 1
-                    ? String(eligibleActions[0].id)
-                    : '',
+            action_id: '',
+            action_indicator_id: '',
             items,
         }));
 
@@ -388,6 +390,28 @@ export default function VoucherForm({
                     : `Se limpiaron ${removed} materiales que no pertenecen al nuevo tipo de vale.`,
             );
         }
+    };
+    const changeDirection = (direction: 'entry' | 'exit') => {
+        form.setData((current) => ({
+            ...current,
+            direction,
+            action_id: '',
+            action_indicator_id: '',
+        }));
+    };
+    const changeAction = (actionId: string) => {
+        const eligibleIndicators = indicators.filter(
+            (indicator) => String(indicator.action_id) === actionId,
+        );
+        form.clearErrors('action_id', 'action_indicator_id');
+        form.setData((current) => ({
+            ...current,
+            action_id: actionId,
+            action_indicator_id:
+                eligibleIndicators.length === 1
+                    ? String(eligibleIndicators[0].id)
+                    : '',
+        }));
     };
     const focusMaterial = (index: number) => {
         window.setTimeout(
@@ -638,7 +662,7 @@ export default function VoucherForm({
                                             value === 'entry' ||
                                             value === 'exit'
                                         ) {
-                                            form.setData('direction', value);
+                                            changeDirection(value);
                                         }
                                     }}
                                     className="grid w-full grid-cols-2"
@@ -729,58 +753,42 @@ export default function VoucherForm({
                                     )}
                                 />
                             </VoucherField>
-                            {usesProgramAndAction && (
+                            {usesClassification && (
                                 <>
                                     <VoucherField
                                         id="voucher-program"
-                                        label="Programa (opcional)"
-                                        error={form.errors.program_id}
+                                        label="Programa"
                                     >
-                                        <SearchableSelect
+                                        <div
                                             id="voucher-program"
-                                            value={form.data.program_id}
-                                            onValueChange={(value) => {
-                                                form.setData((current) => ({
-                                                    ...current,
-                                                    program_id: value,
-                                                    action_id: '',
-                                                }));
-                                            }}
-                                            options={programOptions}
-                                            placeholder="Sin programa"
-                                            emptyLabel="Sin programa"
-                                            searchPlaceholder="Buscar programa…"
-                                            emptyMessage="No se encontró el programa."
-                                            invalid={Boolean(
-                                                form.errors.program_id,
-                                            )}
-                                            describedBy={errorDescriptionId(
-                                                'voucher-program',
-                                                form.errors.program_id,
-                                            )}
-                                        />
+                                            className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 text-sm"
+                                        >
+                                            <span className="font-mono font-semibold">
+                                                {fixedProgram?.code ?? 'SPM-06'}
+                                            </span>
+                                            <span className="mx-2 text-muted-foreground">
+                                                ·
+                                            </span>
+                                            <span>
+                                                {fixedProgram?.name ??
+                                                    'Alumbrado público'}
+                                            </span>
+                                        </div>
                                     </VoucherField>
                                     <VoucherField
                                         id="voucher-action"
-                                        label="Acción (opcional)"
+                                        label="Acción"
                                         error={form.errors.action_id}
                                     >
                                         <SearchableSelect
                                             id="voucher-action"
                                             value={form.data.action_id}
-                                            onValueChange={(value) =>
-                                                form.setData('action_id', value)
-                                            }
+                                            onValueChange={changeAction}
                                             options={actionOptions}
-                                            placeholder={
-                                                form.data.program_id
-                                                    ? 'Sin acción'
-                                                    : 'Selecciona un programa'
-                                            }
-                                            emptyLabel="Sin acción"
+                                            optionLayout="code-description"
+                                            placeholder="Seleccionar acción"
                                             searchPlaceholder="Buscar acción…"
                                             emptyMessage="No se encontró la acción."
-                                            disabled={!form.data.program_id}
                                             invalid={Boolean(
                                                 form.errors.action_id,
                                             )}
@@ -790,6 +798,43 @@ export default function VoucherForm({
                                             )}
                                         />
                                     </VoucherField>
+                                    {selectedIndicators.length > 1 && (
+                                        <VoucherField
+                                            id="voucher-indicator"
+                                            label="Indicador"
+                                            error={
+                                                form.errors.action_indicator_id
+                                            }
+                                        >
+                                            <SearchableSelect
+                                                id="voucher-indicator"
+                                                value={
+                                                    form.data
+                                                        .action_indicator_id
+                                                }
+                                                onValueChange={(value) =>
+                                                    form.setData(
+                                                        'action_indicator_id',
+                                                        value,
+                                                    )
+                                                }
+                                                options={indicatorOptions}
+                                                optionLayout="code-description"
+                                                placeholder="Seleccionar indicador"
+                                                searchPlaceholder="Buscar indicador…"
+                                                emptyMessage="No se encontró el indicador."
+                                                invalid={Boolean(
+                                                    form.errors
+                                                        .action_indicator_id,
+                                                )}
+                                                describedBy={errorDescriptionId(
+                                                    'voucher-indicator',
+                                                    form.errors
+                                                        .action_indicator_id,
+                                                )}
+                                            />
+                                        </VoucherField>
+                                    )}
                                 </>
                             )}
                             <VoucherField

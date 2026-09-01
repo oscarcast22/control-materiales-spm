@@ -36,6 +36,8 @@ El seeder carga las unidades habituales desde el catálogo versionado. Si el his
 
 El mismo seeder carga 309 ubicaciones y 7 nombres alternativos útiles para búsqueda y deduplicación. El formulario permite buscar una o varias, crear una nueva sin salir del vale y describir por separado el uso o actividad.
 
+También carga el programa fijo SPM-06, 17 acciones y 21 indicadores desde el catálogo JSON versionado. En despliegues normales de producción estos registros se incorporan mediante migraciones pendientes; no se vuelve a ejecutar el seeder. La migración del catálogo sólo agrega esas referencias: no reclasifica vales históricos ni crea marcas de revisión por acción o indicador.
+
 Nelson Treto y Fco. Fierro quedan habilitados inicialmente sólo para entregar material; no aparecen como técnicos que reciben. Cipriano Salas queda como único autorizador y el formulario lo asigna automáticamente mientras sea la única opción activa.
 
 Configure previamente PostgreSQL en `.env`. El comando de usuarios crea una cuenta activa y verificada. No pase la contraseña mediante `--password` en una terminal compartida porque puede quedar en el historial o lista de procesos; utilice el prompt oculto.

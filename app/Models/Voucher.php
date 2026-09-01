@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $authorized_by_id
  * @property int|null $program_id
  * @property int|null $action_id
+ * @property int|null $action_indicator_id
  * @property string|null $usage_description
  * @property string|null $notes
  * @property VoucherStatus $status
@@ -45,6 +46,7 @@ use Illuminate\Support\Carbon;
  * @property-read StorageLocation $location
  * @property-read Program|null $program
  * @property-read Action|null $action
+ * @property-read ActionIndicator|null $actionIndicator
  * @property-read Collection<int, Destination> $destinations
  * @property-read Collection<int, VoucherItem> $items
  * @property-read Collection<int, VoucherAttachment> $attachments
@@ -57,7 +59,7 @@ class Voucher extends Model
 
     protected $fillable = [
         'storage_location_id', 'folio', 'folio_key', 'direction', 'issued_on',
-        'received_by_id', 'delivered_by_id', 'authorized_by_id', 'program_id', 'action_id',
+        'received_by_id', 'delivered_by_id', 'authorized_by_id', 'program_id', 'action_id', 'action_indicator_id',
         'usage_description', 'notes', 'status', 'loaned_to_name', 'loaned_on', 'returned_on',
         'needs_review', 'review_reasons', 'cancelled_at', 'cancelled_by', 'cancellation_reason',
         'created_by', 'updated_by',
@@ -151,6 +153,12 @@ class Voucher extends Model
     public function action(): BelongsTo
     {
         return $this->belongsTo(Action::class);
+    }
+
+    /** @return BelongsTo<ActionIndicator, $this> */
+    public function actionIndicator(): BelongsTo
+    {
+        return $this->belongsTo(ActionIndicator::class);
     }
 
     /** @return BelongsToMany<Destination, $this> */

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Action;
+use App\Models\ActionIndicator;
 use App\Models\Destination;
 use App\Models\Material;
 use App\Models\Person;
@@ -46,9 +47,6 @@ final class CatalogIndexData
                     ->whereIn('code', ['warehouse', 'yard'])
                     ->orderBy('name')
                     ->get(['id', 'name', 'code', 'tracking_started_on', 'is_active'])
-                : [],
-            'programOptions' => fn () => $section === 'programs'
-                ? Program::query()->where('is_active', true)->orderBy('code')->get(['id', 'code', 'name', 'is_active'])
                 : [],
         ];
     }
@@ -172,39 +170,45 @@ final class CatalogIndexData
     }
 
     /** @param array<string, string> $filters
-     * @return array{programs: Collection<int, Program>, actions: Collection<int, Action>}
+     * @return array{programs: Collection<int, Program>, actions: Collection<int, Action>, indicators: Collection<int, ActionIndicator>}
      */
     private function programs(array $filters): array
     {
         $programs = Program::query()
             ->select(['id', 'code', 'name', 'is_active'])
+            ->where('code', 'SPM-06')
             ->withCount('actions')
             ->withExists(['actions', 'vouchers']);
         $actions = Action::query()
             ->select(['id', 'program_id', 'code', 'name', 'is_active'])
+            ->whereHas('program', fn (Builder $query): Builder => $query->where('code', 'SPM-06'))
             ->with('program:id,code,name,is_active')
-            ->withExists('vouchers');
+            ->withCount('indicators');
+        $indicators = ActionIndicator::query()
+            ->select(['id', 'action_id', 'code', 'name', 'is_active'])
+            ->whereHas('action.program', fn (Builder $query): Builder => $query->where('code', 'SPM-06'))
+            ->with('action:id,program_id,code,name,is_active');
 
         if ($filters['status'] !== 'all') {
             $active = $filters['status'] === 'active';
-            $programs->where('is_active', $active);
             $actions->where('is_active', $active);
+            $indicators->where('is_active', $active);
         }
         if ($filters['search'] !== '') {
             $search = '%'.mb_strtolower($filters['search']).'%';
-            $programs->where(fn (Builder $query): Builder => $query
-                ->whereRaw('LOWER(code) LIKE ?', [$search])
-                ->orWhereRaw('LOWER(COALESCE(name, \'\')) LIKE ?', [$search]));
             $actions->where(fn (Builder $query): Builder => $query
                 ->whereRaw('LOWER(code) LIKE ?', [$search])
                 ->orWhereRaw('LOWER(COALESCE(name, \'\')) LIKE ?', [$search]));
+            $indicators->where(fn (Builder $query): Builder => $query
+                ->whereRaw('LOWER(code) LIKE ?', [$search])
+                ->orWhereRaw('LOWER(name) LIKE ?', [$search]));
         }
 
         return [
             'programs' => $programs->orderBy('code')->get()
-                ->each(fn (Program $program) => $this->decorateDeletion($program)),
-            'actions' => $actions->orderBy('code')->get()
-                ->each(fn (Action $action) => $this->decorateDeletion($action)),
+                ->values(),
+            'actions' => $actions->orderBy('code')->get(),
+            'indicators' => $indicators->orderBy('code')->get(),
         ];
     }
 
@@ -277,7 +281,7 @@ final class CatalogIndexData
             ['key' => 'destinations', 'label' => 'Ubicaciones', ...$destinations],
             [
                 'key' => 'programs',
-                'label' => 'Programas y acciones',
+                'label' => 'Programa, acciones e indicadores',
                 'total' => Program::query()->count(),
                 'pending_review' => 0,
                 'secondary_total' => Action::query()->count(),

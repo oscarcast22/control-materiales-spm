@@ -28,6 +28,9 @@
         @if ($voucher['voucher_type']['code'] === 'warehouse')
             <div><strong>Programa:</strong> {{ $voucher['program']['code'] ?? '—' }}</div>
             <div><strong>Acción:</strong> {{ $voucher['action']['code'] ?? '—' }}</div>
+            @if (($voucher['indicator']['code'] ?? null) && $voucher['indicator']['code'] !== ($voucher['action']['code'] ?? null))
+                <div><strong>Indicador:</strong> {{ $voucher['indicator']['code'] }}</div>
+            @endif
         @endif
         @if ($voucher['status'] === 'loaned')<div style="grid-column: 1 / -1"><strong>Prestado a:</strong> {{ $voucher['loaned_to_name'] ?: 'No especificado' }}</div>@endif
         <div style="grid-column: 1 / -1"><strong>Ubicación:</strong> {{ collect($voucher['destinations'])->pluck('name')->implode(', ') ?: '—' }}</div>

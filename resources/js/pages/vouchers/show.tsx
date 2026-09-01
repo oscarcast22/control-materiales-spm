@@ -171,12 +171,17 @@ export default function VoucherShow({
                             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                 <div>
                                     <p className="font-medium">
-                                        Incidencias detectadas al importar
+                                        Datos por revisar
                                     </p>
                                     <ul className="mt-2 flex list-disc flex-col gap-1 pl-5">
                                         {voucher.review_reasons.map(
                                             (reason) => (
-                                                <li key={reason}>{reason}</li>
+                                                <li key={reason}>
+                                                    {reason ===
+                                                    'classification_requires_review'
+                                                        ? 'Confirma la acción y el indicador con el documento físico.'
+                                                        : reason}
+                                                </li>
                                             ),
                                         )}
                                     </ul>
@@ -234,6 +239,14 @@ export default function VoucherShow({
                                     label="Acción"
                                     value={voucher.action?.code ?? '—'}
                                 />
+                                {voucher.indicator &&
+                                    voucher.indicator.code !==
+                                        voucher.action?.code && (
+                                        <Info
+                                            label="Indicador"
+                                            value={voucher.indicator.code}
+                                        />
+                                    )}
                             </>
                         )}
                         <div className="sm:col-span-2 lg:col-span-4">

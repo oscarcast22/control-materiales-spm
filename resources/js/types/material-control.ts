@@ -54,6 +54,14 @@ export type Action = {
     program?: Pick<Program, 'id' | 'code'>;
     deletion?: CatalogDeletion;
 };
+export type ActionIndicator = {
+    id: number;
+    action_id: number;
+    code: string;
+    name: string;
+    is_active?: boolean;
+    action?: Pick<Action, 'id' | 'program_id' | 'code' | 'name' | 'is_active'>;
+};
 
 export type MaterialApplication = {
     id: number;
@@ -97,6 +105,7 @@ export type Voucher = {
     authorized_by?: Named | null;
     program?: Program | null;
     action?: Action | null;
+    indicator?: ActionIndicator | null;
     destinations: Destination[];
     usage_description?: string | null;
     destination_summary?: string | null;

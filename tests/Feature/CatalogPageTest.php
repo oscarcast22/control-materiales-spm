@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Action;
+use App\Models\ActionIndicator;
 use App\Models\AuditEvent;
 use App\Models\Destination;
 use App\Models\InventoryAdjustment;
@@ -44,7 +45,6 @@ class CatalogPageTest extends TestCase
                 ->where('navigation.3.key', 'programs')
                 ->has('units', 0)
                 ->has('voucherTypes', 0)
-                ->has('programOptions', 0)
             );
     }
 
@@ -129,13 +129,9 @@ class CatalogPageTest extends TestCase
             'can_deliver_material' => true,
             'can_authorize_material' => true,
         ]);
-        $program = Program::factory()->create();
-        Action::factory()->create(['program_id' => $program->id]);
-
         foreach ([
             ['units', $unit->id],
             ['people', $person->id],
-            ['programs', $program->id],
         ] as [$type, $id]) {
             $this->actingAs($user)
                 ->post(route('catalogs.toggle', ['type' => $type, 'id' => $id]))
@@ -144,8 +140,21 @@ class CatalogPageTest extends TestCase
 
         $this->assertTrue($unit->fresh()->is_active);
         $this->assertTrue($person->fresh()->is_active);
-        $this->assertTrue($program->fresh()->is_active);
         $this->assertSame(0, AuditEvent::query()->count());
+    }
+
+    public function test_official_classification_structure_cannot_be_created_deleted_or_changed(): void
+    {
+        $user = User::factory()->create();
+        $program = Program::query()->where('code', 'SPM-06')->sole();
+        $action = Action::query()->where('code', 'SPM-06-01')->sole();
+
+        $this->actingAs($user)->post('/catalogs/programs', [])->assertClientError();
+        $this->actingAs($user)->post('/catalogs/actions', [])->assertClientError();
+        $this->actingAs($user)->put("/catalogs/programs/{$program->id}", [])->assertClientError();
+        $this->actingAs($user)->delete("/catalogs/programs/{$program->id}")->assertClientError();
+        $this->actingAs($user)->delete("/catalogs/actions/{$action->id}")->assertClientError();
+        $this->actingAs($user)->post("/catalogs/programs/{$program->id}/toggle")->assertClientError();
     }
 
     public function test_an_unreferenced_unit_can_be_deactivated_and_is_audited(): void
@@ -200,6 +209,48 @@ class CatalogPageTest extends TestCase
         $this->assertTrue($inUseUnit->fresh()->is_active);
     }
 
+    public function test_action_indicator_names_and_states_are_editable_without_breaking_capture(): void
+    {
+        $user = User::factory()->create();
+        $multiAction = Action::query()->where('code', 'SPM-06-06')->sole();
+        [$first, $last] = $multiAction->indicators()->orderBy('code')->get()->all();
+
+        $this->actingAs($user)->put(route('catalogs.indicators.update', $first), [
+            'name' => 'Luminarias de reposición',
+            'is_active' => false,
+        ])->assertSessionHasNoErrors();
+        $this->assertFalse($first->fresh()->is_active);
+        $this->assertSame('Luminarias de reposición', $first->fresh()->name);
+
+        $this->actingAs($user)->put(route('catalogs.indicators.update', $last), [
+            'name' => $last->name,
+            'is_active' => false,
+        ])->assertSessionHasErrors('status');
+        $this->assertTrue($last->fresh()->is_active);
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'updated',
+            'auditable_type' => ActionIndicator::class,
+            'auditable_id' => $first->id,
+            'user_id' => $user->id,
+        ]);
+    }
+
+    public function test_program_catalog_only_exposes_spm_06_and_keeps_it_visible_while_filtering_children(): void
+    {
+        $user = User::factory()->create();
+        Program::factory()->has(Action::factory())->create(['code' => 'SPM-99']);
+
+        $this->actingAs($user)->get(route('catalogs.index', [
+            'section' => 'programs',
+            'search' => 'Cableado subterráneo',
+        ]))->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('catalog.programs', 1)
+            ->where('catalog.programs.0.code', 'SPM-06')
+            ->has('catalog.actions', 0)
+            ->has('catalog.indicators', 1)
+            ->where('catalog.indicators.0.code', 'SPM-06-17-01'));
+    }
+
     public function test_an_unreferenced_catalog_record_can_be_deleted_and_is_audited(): void
     {
         $user = User::factory()->create();
@@ -211,15 +262,11 @@ class CatalogPageTest extends TestCase
             'can_authorize_material' => false,
         ]);
         $destination = Destination::factory()->create();
-        $program = Program::factory()->create();
-        $action = Action::factory()->create(['program_id' => Program::factory()->create()->id]);
 
         foreach ([
             ['materials', $material, Material::class],
             ['people', $person, Person::class],
             ['destinations', $destination, Destination::class],
-            ['actions', $action, Action::class],
-            ['programs', $program, Program::class],
         ] as [$type, $model, $class]) {
             $this->actingAs($user)
                 ->delete(route('catalogs.destroy', ['type' => $type, 'id' => $model->id]))
@@ -250,14 +297,10 @@ class CatalogPageTest extends TestCase
         $deliverer = Person::factory()->create();
         $authorizer = Person::factory()->create();
         $destination = Destination::factory()->create();
-        $program = Program::factory()->create();
-        $action = Action::factory()->create(['program_id' => $program->id]);
         $voucher = Voucher::factory()->create([
             'received_by_id' => $receiver->id,
             'delivered_by_id' => $deliverer->id,
             'authorized_by_id' => $authorizer->id,
-            'program_id' => $program->id,
-            'action_id' => $action->id,
         ]);
         $voucher->destinations()->attach($destination);
         VoucherItem::factory()->create([
@@ -273,8 +316,6 @@ class CatalogPageTest extends TestCase
             ['people', $deliverer],
             ['people', $authorizer],
             ['destinations', $destination],
-            ['programs', $program],
-            ['actions', $action],
         ] as [$type, $model]) {
             $this->actingAs($user)
                 ->delete(route('catalogs.destroy', ['type' => $type, 'id' => $model->id]))
@@ -298,8 +339,8 @@ class CatalogPageTest extends TestCase
             ->delete(route('catalogs.destroy', ['type' => 'units', 'id' => $unit->id]))
             ->assertSessionHasErrors('delete');
         $this->actingAs($user)
-            ->delete(route('catalogs.destroy', ['type' => 'programs', 'id' => $program->id]))
-            ->assertSessionHasErrors('delete');
+            ->delete("/catalogs/programs/{$program->id}")
+            ->assertNotFound();
 
         $adjustment = InventoryAdjustment::factory()->create([
             'material_id' => $material->id,

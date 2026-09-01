@@ -38,7 +38,7 @@ Las consultas de vales y seguimiento comparten el mismo alcance por tipo de vale
 
 Seguimiento y su exportación aceptan el parámetro textual `search`. La búsqueda localiza vales completos por folio, técnico receptor, destino, descripción de actividad o material y se combina con los demás filtros activos.
 
-Catálogos acepta `section=people|materials|destinations|programs` y abre Personas cuando el parámetro falta o es inválido. Personas, Materiales y Ubicaciones se consultan en páginas de 25 registros; Programas y acciones se presentan juntos. `search`, `status` y `review` se aplican en el servidor, con `role` exclusivo de Personas y `voucher_type_id` exclusivo de Materiales. La búsqueda de nombres usa claves normalizadas y alias. Los cambios de filtro y página reemplazan únicamente las props `catalog` y `filters` mediante visitas parciales de Inertia; las unidades, tipos de vale y opciones de programa sólo se cargan para la sección que los necesita.
+Catálogos acepta `section=people|materials|destinations|programs` y abre Personas cuando el parámetro falta o es inválido. Personas, Materiales y Ubicaciones se consultan en páginas de 25 registros; el programa fijo, las acciones y los indicadores se presentan juntos. `search`, `status` y `review` se aplican en el servidor, con `role` exclusivo de Personas y `voucher_type_id` exclusivo de Materiales. La búsqueda de nombres usa claves normalizadas y alias. Los cambios de filtro y página reemplazan únicamente las props `catalog` y `filters` mediante visitas parciales de Inertia; las unidades y tipos de vale sólo se cargan para la sección que los necesita.
 
 ## Relaciones principales
 
@@ -50,6 +50,8 @@ erDiagram
     PROGRAMS ||--o{ VOUCHERS : classifies
     PROGRAMS ||--o{ ACTIONS : contains
     ACTIONS ||--o{ VOUCHERS : classifies
+    ACTIONS ||--|{ ACTION_INDICATORS : defines
+    ACTION_INDICATORS ||--o{ VOUCHERS : classifies
     DESTINATIONS }o--o{ VOUCHERS : locates
     VOUCHERS ||--|{ VOUCHER_ITEMS : contains
     MATERIALS ||--o{ VOUCHER_ITEMS : identifies
@@ -78,7 +80,8 @@ erDiagram
 | `people`                       | Técnicos y personal; sus banderas indican quién recibe, entrega o autoriza.                                        |
 | `person_aliases`               | Escrituras alternativas de una misma persona.                                                                      |
 | `programs`                     | Programa opcional exclusivo del vale de Almacén, inicialmente SPM-06.                                              |
-| `actions`                      | Acción opcional de Almacén subordinada a un programa, inicialmente SPM-06-01.                                      |
+| `actions`                      | Las 17 acciones oficiales subordinadas al programa fijo SPM-06.                                                    |
+| `action_indicators`            | Los 21 indicadores oficiales; cada acción tiene uno o dos y conserva código y nombre breve.                        |
 | `destinations`                 | Ubicaciones geográficas reutilizables, activables y normalizadas.                                                  |
 | `destination_aliases`          | Abreviaturas, nombres alternativos o anteriores que apuntan a una ubicación canónica; nunca contienen actividades. |
 | `destination_voucher`          | Relación de una o varias ubicaciones con cada vale.                                                                |
@@ -99,14 +102,14 @@ erDiagram
 - Una aplicación anulada deja de afectar las sumas, pero permanece auditable.
 - Una partida con aplicaciones vigentes no puede cambiar de material, cantidad ni eliminarse; primero se anulan las aplicaciones con motivo.
 - La unidad de cada partida siempre deriva de la unidad predeterminada del material. Corregir el nombre o la unidad canónica del material se propaga a todos sus vales, conserva la cantidad numérica y deja auditoría.
-- Los códigos de programas y acciones son inmutables después de su creación; sólo puede corregirse su nombre descriptivo.
-- No se puede desactivar una unidad usada por materiales activos, la última persona activa para una función necesaria ni un programa con acciones activas. Primero deben resolverse esas dependencias.
-- Un registro de catálogo sólo se elimina si no referencia vales ni otras dependencias que perderían información: unidades no usadas por materiales, partidas o ajustes reservados; programas sin acciones; y personas que no sean la última persona activa para una función necesaria. La eliminación deja auditoría y la base restringe las referencias históricas.
+- Los códigos y relaciones de SPM-06, acciones e indicadores son inmutables; acciones e indicadores sólo permiten corregir nombre y estado.
+- No se puede desactivar una unidad usada por materiales activos, la última persona activa para una función necesaria, la última acción disponible ni el último indicador de una acción activa.
+- Un registro de catálogo sólo se elimina si no referencia vales ni otras dependencias que perderían información: unidades no usadas por materiales, partidas o ajustes reservados, y personas que no sean la última persona activa para una función necesaria. El programa SPM-06, sus acciones e indicadores no se eliminan desde la aplicación; únicamente se corrigen sus nombres y estados. La eliminación permitida deja auditoría y la base restringe las referencias históricas.
 - Un vale con movimientos vigentes no puede cancelarse.
 - Un cancelado mínimo puede crearse sin movimiento, personas, destino ni partidas para conservar la serie física.
 - Un prestado mínimo sólo conserva tipo, folio, fecha y un nombre libre opcional; nunca se deriva de un vale operativo ni admite partidas.
 - Un vale operativo requiere al menos una ubicación o una descripción de uso o actividad; ambas pueden coexistir.
-- Los vales de Patio siempre conservan `program_id` y `action_id` en `null`; únicamente Almacén admite esa clasificación.
+- Sólo las salidas activas de Almacén conservan `program_id`, `action_id` y `action_indicator_id`. El programa es siempre SPM-06; el indicador debe pertenecer a la acción. Entradas, Patio, cancelados y prestados conservan los tres campos en `null`.
 - Las aplicaciones conservan un resumen del destino existente al momento de registrarse, aunque el vale se edite después.
 - La continuidad numérica inicia por defecto en Almacén `16576` y Patio `3753`; los inicios se configuran por entorno.
 - Sólo las salidas activas desde `2026-01-01` alimentan el seguimiento. Entradas, prestados y cancelados quedan fuera.

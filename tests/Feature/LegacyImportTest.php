@@ -68,6 +68,7 @@ class LegacyImportTest extends TestCase
             $this->assertSame(VoucherDirection::Exit, $active->direction);
             $this->assertSame($catalog['program']->id, $active->program_id);
             $this->assertSame($catalog['action']->id, $active->action_id);
+            $this->assertSame($catalog['action']->indicators()->sole()->id, $active->action_indicator_id);
             $this->assertSame($catalog['authorizer']->id, $active->authorized_by_id);
             $this->assertSame('warehouse', $active->location->code);
             $this->assertSame(2, $active->items()->count());
@@ -217,8 +218,8 @@ class LegacyImportTest extends TestCase
             'can_deliver_material' => false,
             'can_authorize_material' => true,
         ]);
-        $program = Program::factory()->create(['code' => 'SPM-06']);
-        $action = Action::factory()->create(['program_id' => $program->id, 'code' => 'SPM-06-01']);
+        $program = Program::query()->where('code', 'SPM-06')->sole();
+        $action = Action::query()->where('code', 'SPM-06-01')->sole();
         foreach (['Centro', 'Circuito interior', 'Poblado 5 de Mayo', 'Blvd. Guadiana'] as $name) {
             Destination::factory()->create([
                 'name' => $name,

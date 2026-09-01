@@ -37,14 +37,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('catalogs/destinations/{destination}', [CatalogController::class, 'updateDestination'])->name('catalogs.destinations.update');
     Route::post('catalogs/units', [CatalogController::class, 'storeUnit'])->name('catalogs.units.store');
     Route::put('catalogs/units/{unit}', [CatalogController::class, 'updateUnit'])->name('catalogs.units.update');
-    Route::post('catalogs/programs', [CatalogController::class, 'storeProgram'])->name('catalogs.programs.store');
-    Route::put('catalogs/programs/{program}', [CatalogController::class, 'updateProgram'])->name('catalogs.programs.update');
-    Route::post('catalogs/actions', [CatalogController::class, 'storeAction'])->name('catalogs.actions.store');
     Route::put('catalogs/actions/{action}', [CatalogController::class, 'updateAction'])->name('catalogs.actions.update');
+    Route::put('catalogs/indicators/{indicator}', [CatalogController::class, 'updateIndicator'])->name('catalogs.indicators.update');
     Route::delete('catalogs/{type}/{id}', [CatalogController::class, 'destroy'])
-        ->whereIn('type', ['materials', 'people', 'units', 'programs', 'actions', 'destinations'])
+        ->whereIn('type', ['materials', 'people', 'units', 'destinations'])
         ->name('catalogs.destroy');
-    Route::post('catalogs/{type}/{id}/toggle', [CatalogController::class, 'toggle'])->name('catalogs.toggle');
+    Route::post('catalogs/{type}/{id}/toggle', [CatalogController::class, 'toggle'])
+        ->whereIn('type', ['materials', 'people', 'units', 'destinations', 'actions', 'indicators'])
+        ->name('catalogs.toggle');
     Route::post('catalogs/{type}/{source}/merge', [CatalogController::class, 'merge'])->name('catalogs.merge');
 
     Route::get('reports/material-tracking', [ReportController::class, 'tracking'])->name('reports.material-tracking');

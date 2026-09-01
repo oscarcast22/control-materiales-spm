@@ -1,0 +1,103 @@
+{
+    "code": "SPM-06",
+    "name": "Alumbrado público",
+    "actions": [
+        {
+            "code": "SPM-06-01",
+            "name": "Mantenimiento de luminarias del sistema 072",
+            "indicators": [{ "code": "SPM-06-01", "name": "Reportes de luminarias atendidos" }]
+        },
+        {
+            "code": "SPM-06-02",
+            "name": "Mantenimiento de alumbrado en localidades",
+            "indicators": [{ "code": "SPM-06-02", "name": "Localidades atendidas" }]
+        },
+        {
+            "code": "SPM-06-03",
+            "name": "Recorridos para detectar luminarias apagadas",
+            "indicators": [{ "code": "SPM-06-03", "name": "Recorridos habitacionales realizados" }]
+        },
+        {
+            "code": "SPM-06-04",
+            "name": "Rehabilitación de luminarias en vialidades",
+            "indicators": [{ "code": "SPM-06-04", "name": "Luminarias rehabilitadas" }]
+        },
+        {
+            "code": "SPM-06-05",
+            "name": "Mantenimiento integral de alumbrado en jardines",
+            "indicators": [{ "code": "SPM-06-05", "name": "Mantenimientos integrales realizados" }]
+        },
+        {
+            "code": "SPM-06-06",
+            "name": "Reposición de alumbrado por accidentes viales",
+            "indicators": [
+                { "code": "SPM-06-06-01", "name": "Luminarias instaladas por reposición" },
+                { "code": "SPM-06-06-02", "name": "Arbotantes instalados por reposición" }
+            ]
+        },
+        {
+            "code": "SPM-06-07",
+            "name": "Censo de alumbrado público con CFE",
+            "indicators": [{ "code": "SPM-06-07", "name": "Censos de alumbrado público realizados" }]
+        },
+        {
+            "code": "SPM-06-08",
+            "name": "Revisión de proyectos y municipalización",
+            "indicators": [
+                { "code": "SPM-06-08-01", "name": "Proyectos ejecutivos revisados" },
+                { "code": "SPM-06-08-02", "name": "Solicitudes de municipalización revisadas" }
+            ]
+        },
+        {
+            "code": "SPM-06-09",
+            "name": "Mantenimiento preventivo del parque vehicular",
+            "indicators": [{ "code": "SPM-06-09", "name": "Mantenimientos vehiculares realizados" }]
+        },
+        {
+            "code": "SPM-06-10",
+            "name": "Mantenimiento preventivo de arbotantes metálicos",
+            "indicators": [{ "code": "SPM-06-10", "name": "Mantenimientos preventivos realizados" }]
+        },
+        {
+            "code": "SPM-06-11",
+            "name": "Monitoreo y alarmas de telegestión",
+            "indicators": [
+                { "code": "SPM-06-11-01", "name": "Circuitos con falla atendidos" },
+                { "code": "SPM-06-11-02", "name": "Reportes de telegestión atendidos" }
+            ]
+        },
+        {
+            "code": "SPM-06-12",
+            "name": "Instalación de luminarias en zonas sin alumbrado",
+            "indicators": [{ "code": "SPM-06-12", "name": "Luminarias instaladas" }]
+        },
+        {
+            "code": "SPM-06-13",
+            "name": "Instalación de alumbrado decorativo",
+            "indicators": [{ "code": "SPM-06-13", "name": "Figuras decorativas instaladas" }]
+        },
+        {
+            "code": "SPM-06-14",
+            "name": "Atención de solicitudes de alumbrado público",
+            "indicators": [{ "code": "SPM-06-14", "name": "Solicitudes atendidas" }]
+        },
+        {
+            "code": "SPM-06-15",
+            "name": "Reparación de luminarias LED",
+            "indicators": [{ "code": "SPM-06-15", "name": "Reparaciones de luminarias LED realizadas" }]
+        },
+        {
+            "code": "SPM-06-16",
+            "name": "Adquisición de luminarias LED",
+            "indicators": [{ "code": "SPM-06-16", "name": "Luminarias adquiridas" }]
+        },
+        {
+            "code": "SPM-06-17",
+            "name": "Fortalecimiento y conservación de alumbrado",
+            "indicators": [
+                { "code": "SPM-06-17-01", "name": "Cableado subterráneo instalado" },
+                { "code": "SPM-06-17-02", "name": "Arbotantes con base instalados" }
+            ]
+        }
+    ]
+}

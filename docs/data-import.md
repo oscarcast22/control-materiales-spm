@@ -14,7 +14,7 @@ Antes de simular la carga deben existir:
 - materiales, unidades, alias y su disponibilidad por tipo de vale, todos versionados;
 - personas y alias, con funciones separadas para recibir, entregar y autorizar;
 - ubicaciones, alias y el mapeo versionado de textos históricos de destino;
-- el programa SPM-06 y la acción SPM-06-01.
+- el programa SPM-06, sus 17 acciones y sus 21 indicadores; SPM-06-01 tiene un indicador único que el importador asigna automáticamente.
 
 Nelson Treto y Fco. Fierro están habilitados únicamente para entregar. Cipriano Salas es el único autorizador inicial. El importador no crea personas, materiales, programas o acciones a partir de texto desconocido.
 
@@ -65,7 +65,7 @@ La sincronización sólo sustituye `s/e` cuando el catálogo versionado define u
 - Si falta un dato o una referencia de catálogo, no se crea ninguna parte del vale. El renglón queda en `legacy_import_rows` con sus incidencias.
 - Los renglones `CANCELADO` crean un vale mínimo sin personas, destino ni materiales. Reservan el folio y no crean responsabilidad operativa.
 - Un renglón `Prestado` crea un vale histórico mínimo con folio y fecha. Conserva como texto libre el nombre de quien lo tiene cuando existe, pero ese nombre es opcional y no crea personas, movimiento, destinos ni materiales.
-- Sólo los vales de Almacén interpretan programa y acción. Sus valores numéricos se normalizan como códigos completos; por ejemplo, `6` y `1` se resuelven como SPM-06 y SPM-06-01. Los vales de Patio ignoran esas columnas y guardan ambos campos en `null`.
+- Sólo las salidas de Almacén interpretan programa y acción. Sus valores numéricos se normalizan como códigos completos; por ejemplo, `6` y `1` se resuelven como SPM-06 y SPM-06-01. Un indicador único se asigna automáticamente; una acción con varios indicadores sin dato suficiente invalida el renglón en vez de adivinar. Entradas y vales de Patio ignoran la clasificación y guardan los tres campos en `null`.
 - Una frase puede asociar varias ubicaciones y una actividad. Los ocho destinos de agosto están mapeados explícitamente; un texto no clasificado se conserva completo como descripción y marca el vale para revisión.
 - Almacén y Patio mantienen series de folio independientes. Un conflicto existente aborta antes de escribir trazas o vales.
 - No se crean aplicaciones: todo material válido comienza con pendiente igual a entregado.

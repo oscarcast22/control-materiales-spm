@@ -35,6 +35,7 @@ class VoucherFactory extends Factory
             'authorized_by_id' => null,
             'program_id' => null,
             'action_id' => null,
+            'action_indicator_id' => null,
             'usage_description' => fake()->sentence(),
             'notes' => null,
             'status' => VoucherStatus::Active,
