@@ -69,7 +69,7 @@ class MaterialApplicationController extends Controller
             'reference' => ['nullable', 'string', 'max:255'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.voucher_item_id' => ['required', 'integer', 'distinct', 'exists:voucher_items,id'],
-            'items.*.quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,3', 'max:999999999.999'],
+            'items.*.quantity' => ['required', 'integer', 'gt:0', 'max:999999999'],
             'attachment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
         ]);
 
@@ -160,6 +160,142 @@ class MaterialApplicationController extends Controller
         return back()->with('success', count($data['items']) === 1
             ? 'Aplicación registrada correctamente.'
             : 'Aplicaciones registradas correctamente.');
+    }
+
+    public function update(Request $request, MaterialApplicationReport $report): RedirectResponse
+    {
+        $report->load('voucher');
+        Gate::authorize('update', $report->voucher);
+        $data = $request->validate([
+            'occurred_on' => ['required', 'date'],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.voucher_item_id' => ['required', 'integer', 'distinct', 'exists:voucher_items,id'],
+            'items.*.quantity' => ['required', 'integer', 'gte:0', 'max:999999999'],
+        ]);
+
+        $itemRows = VoucherData::itemRows($data['items'] ?? null);
+
+        DB::transaction(function () use ($report, $data, $itemRows, $request): void {
+            $lockedReport = MaterialApplicationReport::query()
+                ->with('voucher.destinations')
+                ->lockForUpdate()
+                ->findOrFail($report->id);
+            $voucher = $lockedReport->voucher;
+
+            if ($voucher->direction !== VoucherDirection::Exit || $voucher->status !== VoucherStatus::Active) {
+                throw ValidationException::withMessages([
+                    'items' => 'Sólo se pueden corregir aplicaciones de vales de salida activos.',
+                ]);
+            }
+
+            $itemIds = array_map(
+                fn (mixed $id): int => (int) $id,
+                array_column($itemRows, 'voucher_item_id'),
+            );
+            $items = VoucherItem::query()
+                ->where('voucher_id', $voucher->id)
+                ->whereKey($itemIds)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            if ($items->count() !== count($itemIds)) {
+                throw ValidationException::withMessages([
+                    'items' => 'Uno o más materiales no pertenecen a este vale.',
+                ]);
+            }
+
+            $activeApplications = MaterialApplication::query()
+                ->where('application_report_id', $lockedReport->id)
+                ->whereNull('voided_at')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('voucher_item_id');
+            $reference = filled($data['reference'] ?? null) ? trim((string) $data['reference']) : null;
+            $reason = 'Corrección sin motivo especificado.';
+            $beforeReport = $lockedReport->toArray();
+
+            foreach ($itemRows as $index => $row) {
+                $item = $items->get((int) $row['voucher_item_id']);
+                $quantity = (float) $row['quantity'];
+                $usedOutsideReport = (float) MaterialApplication::query()
+                    ->where('voucher_item_id', $item->id)
+                    ->whereNull('voided_at')
+                    ->where(fn ($query) => $query
+                        ->whereNull('application_report_id')
+                        ->orWhere('application_report_id', '!=', $lockedReport->id))
+                    ->sum('quantity');
+                $available = (float) $item->quantity - $usedOutsideReport;
+
+                if ($quantity > $available + 0.0001) {
+                    throw ValidationException::withMessages([
+                        "items.{$index}.quantity" => "La cantidad supera el máximo disponible de {$available}.",
+                    ]);
+                }
+
+                $currentCandidate = $activeApplications->get($item->id);
+                $current = $currentCandidate instanceof MaterialApplication ? $currentCandidate : null;
+                $destinationSnapshot = $current instanceof MaterialApplication && $current->destination_snapshot !== null
+                    ? $current->destination_snapshot
+                    : VoucherData::destinationSummary($voucher);
+                $quantityChanged = ! $current || abs((float) $current->quantity - $quantity) > 0.0001;
+
+                if ($current && $quantityChanged) {
+                    $before = $current->toArray();
+                    $current->update([
+                        'voided_at' => now(),
+                        'voided_by' => $request->user()?->id,
+                        'void_reason' => $reason,
+                        'updated_by' => $request->user()?->id,
+                    ]);
+                    AuditEvent::record($current, 'voided_for_correction', $before, $current->fresh()->toArray());
+                }
+
+                if ($quantityChanged && $quantity > 0) {
+                    $replacement = MaterialApplication::create([
+                        'voucher_item_id' => $item->id,
+                        'application_report_id' => $lockedReport->id,
+                        'occurred_on' => $data['occurred_on'],
+                        'quantity' => $quantity,
+                        'reference' => $reference,
+                        'destination_snapshot' => $destinationSnapshot,
+                        'created_by' => $request->user()?->id,
+                        'updated_by' => $request->user()?->id,
+                    ]);
+                    AuditEvent::record($replacement, 'created_as_correction', null, [
+                        ...$replacement->toArray(),
+                        'correction_reason' => $reason,
+                    ]);
+                }
+
+                if ($current && ! $quantityChanged &&
+                    ($current->occurred_on->format('Y-m-d') !== $data['occurred_on'] || $current->reference !== $reference)) {
+                    $before = $current->toArray();
+                    $current->update([
+                        'occurred_on' => $data['occurred_on'],
+                        'reference' => $reference,
+                        'updated_by' => $request->user()?->id,
+                    ]);
+                    AuditEvent::record($current, 'corrected_metadata', $before, [
+                        ...$current->fresh()->toArray(),
+                        'correction_reason' => $reason,
+                    ]);
+                }
+            }
+
+            $lockedReport->update([
+                'occurred_on' => $data['occurred_on'],
+                'reference' => $reference,
+                'updated_by' => $request->user()?->id,
+            ]);
+            AuditEvent::record($lockedReport, 'corrected', $beforeReport, [
+                ...$lockedReport->fresh()->toArray(),
+                'correction_reason' => $reason,
+            ]);
+        });
+
+        return back()->with('success', 'Aplicación corregida; el saldo fue recalculado.');
     }
 
     public function void(Request $request, MaterialApplication $application): RedirectResponse

@@ -1,8 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
-    CircleCheck,
     ClipboardCheck,
+    ClipboardList,
     FileText,
     Pencil,
     Printer,
@@ -16,7 +16,13 @@ import { StatusBadge } from '@/components/status-badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { IconButton } from '@/components/ui/icon-button';
 import {
     Table,
@@ -28,7 +34,12 @@ import {
 } from '@/components/ui/table';
 import { VoucherModalLink } from '@/components/voucher-dialogs';
 import { formatBytes, formatDate, formatQuantity } from '@/lib/format';
-import type { MaterialApplication, Voucher, VoucherItem } from '@/types';
+import { cn } from '@/lib/utils';
+import type {
+    ApplicationReportLine,
+    MaterialApplicationReport,
+    Voucher,
+} from '@/types';
 
 export default function VoucherShow({
     voucher,
@@ -45,6 +56,10 @@ export default function VoucherShow({
         voucher.direction === 'exit' &&
         voucher.status === 'active' &&
         voucher.items.some((item) => Number(item.pending_quantity) > 0);
+    const visibleApplicationReports = voucher.application_reports.filter(
+        (report) =>
+            report.applications.some((application) => !application.voided_at),
+    );
 
     return (
         <>
@@ -229,7 +244,7 @@ export default function VoucherShow({
                             label="Autorizó"
                             value={voucher.authorized_by?.name ?? '—'}
                         />
-                        {voucher.voucher_type.code === 'warehouse' && (
+                        {voucher.direction === 'exit' && (
                             <>
                                 <Info
                                     label="Programa"
@@ -277,8 +292,14 @@ export default function VoucherShow({
                         )}
                     </CardContent>
                 </Card>
-                <div className="flex flex-col gap-5">
-                    {voucher.direction === 'exit' && (
+                {voucher.items.length > 0 && (
+                    <MaterialBalanceCard voucher={voucher} />
+                )}
+                {voucher.direction === 'exit' && (
+                    <section
+                        className="flex flex-col gap-4"
+                        aria-labelledby="service-orders-title"
+                    >
                         <div className="flex flex-col gap-3 border-y border-border-strong bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                             <div className="flex items-start gap-3">
                                 <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary-subtle text-primary">
@@ -288,12 +309,16 @@ export default function VoucherShow({
                                     />
                                 </span>
                                 <div>
-                                    <h2 className="font-semibold">
-                                        Aplicación de materiales
+                                    <h2
+                                        id="service-orders-title"
+                                        className="font-semibold"
+                                    >
+                                        Aplicaciones registradas
                                     </h2>
                                     <p className="mt-0.5 text-sm text-muted-foreground">
-                                        Registra el material utilizado en uno o
-                                        varios trabajos.
+                                        Cada registro reúne la fecha, una orden
+                                        opcional y el desglose de materiales
+                                        utilizados.
                                     </p>
                                 </div>
                             </div>
@@ -315,16 +340,34 @@ export default function VoucherShow({
                                 )}
                             </div>
                         </div>
-                    )}
-                    {voucher.items.map((item) => (
-                        <MaterialCard
-                            key={item.id}
-                            item={item}
-                            active={voucher.status === 'active'}
-                            direction={voucher.direction}
-                        />
-                    ))}
-                </div>
+                        {visibleApplicationReports.length === 0 ? (
+                            <Card>
+                                <CardContent>
+                                    <DataTableSurface label="Aplicaciones registradas">
+                                        <Table>
+                                            <TableBody>
+                                                <TableEmpty
+                                                    colSpan={1}
+                                                    title="Aún no hay aplicaciones"
+                                                    description="Registra una aplicación cuando el técnico documente los materiales utilizados en un trabajo."
+                                                />
+                                            </TableBody>
+                                        </Table>
+                                    </DataTableSurface>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            visibleApplicationReports.map((report) => (
+                                <ApplicationReportCard
+                                    key={report.key}
+                                    report={report}
+                                    voucher={voucher}
+                                    onRefresh={onRefresh}
+                                />
+                            ))
+                        )}
+                    </section>
+                )}
                 {voucher.attachments.length > 0 && (
                     <Card>
                         <CardHeader>
@@ -382,197 +425,239 @@ export default function VoucherShow({
     );
 }
 
-function MaterialCard({
-    item,
-    active,
-    direction,
-}: {
-    item: VoucherItem;
-    active: boolean;
-    direction?: 'entry' | 'exit' | null;
-}) {
+function MaterialBalanceCard({ voucher }: { voucher: Voucher }) {
+    const isEntry = voucher.direction === 'entry';
+
     return (
-        <Card
-            className={
-                item.balance_state === 'anomaly' ? 'border-danger/55' : ''
-            }
-        >
-            <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                    <CardTitle>{item.description}</CardTitle>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Unidad: {item.unit.name} ({item.unit.symbol})
-                    </p>
-                </div>
-                <div
-                    className={`grid gap-4 text-center ${direction === 'entry' ? 'grid-cols-1' : 'grid-cols-3'}`}
-                >
-                    <Quantity
-                        label={direction === 'entry' ? 'Recibido' : 'Entregado'}
-                        value={item.quantity}
-                        unit={item.unit.symbol}
-                    />
-                    {direction === 'exit' && (
-                        <>
-                            <Quantity
-                                label="Aplicado"
-                                value={item.used_quantity}
-                                unit={item.unit.symbol}
-                            />
-                            <Quantity
-                                label="Pendiente"
-                                value={item.pending_quantity}
-                                unit={item.unit.symbol}
-                                strong
-                            />
-                        </>
-                    )}
-                </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>
+                    {isEntry ? 'Material recibido' : 'Saldo por material'}
+                </CardTitle>
+                <CardDescription>
+                    {isEntry
+                        ? 'Cantidades documentadas en este vale de entrada.'
+                        : 'Resumen del material entregado, aplicado y pendiente de comprobar.'}
+                </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-                {item.balance_state === 'anomaly' && (
-                    <Alert variant="destructive">
-                        <AlertDescription>
-                            La aplicación histórica supera la cantidad
-                            entregada. Revisa este renglón.
-                        </AlertDescription>
-                    </Alert>
-                )}
-                {direction === 'exit' &&
-                    active &&
-                    item.balance_state === 'settled' && (
-                        <Alert variant="success">
-                            <CircleCheck aria-hidden="true" />
-                            <AlertDescription>
-                                <p className="font-medium text-foreground">
-                                    Material completamente comprobado
-                                </p>
-                                <p>
-                                    Todo lo entregado fue aplicado; no queda
-                                    saldo por registrar.
-                                </p>
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                {direction === 'exit' && (
-                    <div className="flex flex-col gap-3">
-                        <div>
-                            <h3 className="text-sm font-semibold">
-                                Historial de aplicaciones
-                            </h3>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                Aplicaciones vigentes y anuladas de este
-                                material.
-                            </p>
-                        </div>
-                        <DataTableSurface
-                            label={`Historial de aplicaciones de ${item.description}`}
-                        >
-                            <Table className="min-w-[580px]">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Fecha</TableHead>
-                                        <TableHead>
-                                            Referencia / destino
+            <CardContent>
+                <DataTableSurface label="Saldo por material">
+                    <Table className="min-w-[620px]">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Material</TableHead>
+                                <TableHead>Unidad</TableHead>
+                                <TableHead className="text-right">
+                                    {isEntry ? 'Recibido' : 'Entregado'}
+                                </TableHead>
+                                {!isEntry && (
+                                    <>
+                                        <TableHead className="text-right">
+                                            Aplicado
                                         </TableHead>
                                         <TableHead className="text-right">
-                                            Cantidad
+                                            Pendiente
                                         </TableHead>
-                                        <TableHead>
-                                            <span className="sr-only">
-                                                Acciones
-                                            </span>
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {item.applications.map((row) => (
-                                        <ApplicationRow
-                                            key={row.id}
-                                            row={row}
-                                            unit={item.unit.symbol}
-                                            active={active}
-                                        />
-                                    ))}
-                                    {item.applications.length === 0 && (
-                                        <TableEmpty
-                                            colSpan={4}
-                                            title="Aún no hay aplicaciones"
-                                            description="Registra el material utilizado cuando el técnico documente el trabajo realizado."
-                                        />
+                                        <TableHead>Estado</TableHead>
+                                    </>
+                                )}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {voucher.items.map((item) => (
+                                <TableRow key={item.id}>
+                                    <TableCell className="font-medium">
+                                        {item.description}
+                                    </TableCell>
+                                    <TableCell>
+                                        {item.unit.name} ({item.unit.symbol})
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium tabular-nums">
+                                        {formatQuantity(item.quantity)}{' '}
+                                        {item.unit.symbol}
+                                    </TableCell>
+                                    {!isEntry && (
+                                        <>
+                                            <TableCell className="text-right font-medium tabular-nums">
+                                                {formatQuantity(
+                                                    item.used_quantity,
+                                                )}{' '}
+                                                {item.unit.symbol}
+                                            </TableCell>
+                                            <TableCell
+                                                className={cn(
+                                                    'text-right font-semibold tabular-nums',
+                                                    item.balance_state ===
+                                                        'anomaly'
+                                                        ? 'text-danger'
+                                                        : item.balance_state ===
+                                                            'pending'
+                                                          ? 'text-warning'
+                                                          : 'text-success',
+                                                )}
+                                            >
+                                                {formatQuantity(
+                                                    item.pending_quantity,
+                                                )}{' '}
+                                                {item.unit.symbol}
+                                            </TableCell>
+                                            <TableCell>
+                                                <BalanceBadge
+                                                    state={item.balance_state}
+                                                />
+                                            </TableCell>
+                                        </>
                                     )}
-                                </TableBody>
-                            </Table>
-                        </DataTableSurface>
-                    </div>
-                )}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </DataTableSurface>
             </CardContent>
         </Card>
     );
 }
 
-function ApplicationRow({
-    row,
-    unit,
-    active,
+function BalanceBadge({
+    state,
 }: {
-    row: MaterialApplication;
-    unit: string;
-    active: boolean;
+    state: 'pending' | 'settled' | 'anomaly' | 'received';
+}) {
+    if (state === 'anomaly') {
+        return <Badge variant="destructive">Inconsistencia</Badge>;
+    }
+
+    if (state === 'settled') {
+        return <Badge variant="success">Liquidado</Badge>;
+    }
+
+    return <Badge variant="warning">Pendiente</Badge>;
+}
+
+function ApplicationReportCard({
+    report,
+    voucher,
+    onRefresh,
+}: {
+    report: MaterialApplicationReport;
+    voucher: Voucher;
+    onRefresh?: () => void;
+}) {
+    const activeApplications = report.applications.filter(
+        (application) => !application.voided_at,
+    );
+
+    return (
+        <Card>
+            <CardHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-surface-muted text-text-secondary">
+                        <ClipboardList className="size-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <CardTitle className="text-lg">
+                                {report.service_order
+                                    ? `Orden ${report.service_order}`
+                                    : 'Aplicación sin orden'}
+                            </CardTitle>
+                            <Badge variant="success">Vigente</Badge>
+                            {!report.editable && (
+                                <Badge variant="outline">Histórico</Badge>
+                            )}
+                        </div>
+                        <CardDescription className="mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                            <span>{formatDate(report.occurred_on)}</span>
+                            <span aria-hidden="true">·</span>
+                            <span>
+                                {activeApplications.length}{' '}
+                                {activeApplications.length === 1
+                                    ? 'material aplicado'
+                                    : 'materiales aplicados'}
+                            </span>
+                        </CardDescription>
+                    </div>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {report.attachment && (
+                        <Button variant="outline" size="sm" asChild>
+                            <a
+                                href={`/material-application-attachments/${report.attachment.id}`}
+                            >
+                                <FileText data-icon="inline-start" />
+                                Ver evidencia
+                            </a>
+                        </Button>
+                    )}
+                    {voucher.status === 'active' &&
+                        report.editable &&
+                        report.id && (
+                            <QuickApplicationDialog
+                                voucher={voucher}
+                                report={report}
+                                onSuccess={onRefresh}
+                                trigger={
+                                    <Button variant="outline" size="sm">
+                                        <Pencil data-icon="inline-start" />
+                                        Editar aplicación
+                                    </Button>
+                                }
+                            />
+                        )}
+                </div>
+            </CardHeader>
+            <CardContent>
+                <DataTableSurface
+                    label={`Materiales de ${report.service_order ? `la orden ${report.service_order}` : 'la aplicación sin orden'}`}
+                >
+                    <Table className="min-w-[620px]">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Material</TableHead>
+                                <TableHead className="text-right">
+                                    Cantidad aplicada
+                                </TableHead>
+                                <TableHead>Estado</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {activeApplications.map((application) => (
+                                <ApplicationReportRow
+                                    key={application.id}
+                                    application={application}
+                                />
+                            ))}
+                        </TableBody>
+                    </Table>
+                </DataTableSurface>
+            </CardContent>
+        </Card>
+    );
+}
+
+function ApplicationReportRow({
+    application,
+}: {
+    application: ApplicationReportLine;
 }) {
     return (
-        <TableRow
-            className={`border-b last:border-0 ${row.voided_at ? 'line-through opacity-45' : ''}`}
-        >
-            <TableCell>{formatDate(row.occurred_on)}</TableCell>
+        <TableRow>
             <TableCell>
-                <p>{row.reference || 'Sin orden registrada'}</p>
-                {row.destination_snapshot && (
-                    <p className="text-xs text-muted-foreground">
-                        {row.destination_snapshot}
-                    </p>
-                )}
-                {row.legacy_slot && (
+                <p className="font-medium">{application.material.name}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                    Unidad: {application.unit.name} ({application.unit.symbol})
+                </p>
+                {application.legacy_slot && (
                     <Badge variant="outline" className="mt-1.5">
-                        Histórico {row.legacy_slot}
+                        Histórico {application.legacy_slot}
                     </Badge>
-                )}
-                {row.attachment && (
-                    <a
-                        href={`/material-application-attachments/${row.attachment.id}`}
-                        className="mt-1.5 flex w-fit items-center gap-1.5 text-xs font-medium text-primary underline-offset-4 hover:underline"
-                    >
-                        <FileText className="size-3.5" aria-hidden="true" />
-                        Ver evidencia
-                    </a>
                 )}
             </TableCell>
             <TableCell className="text-right font-medium tabular-nums">
-                {formatQuantity(row.quantity)} {unit}
+                {formatQuantity(application.quantity)} {application.unit.symbol}
             </TableCell>
-            <TableCell className="text-right">
-                {active && !row.voided_at && (
-                    <ConfirmActionDialog
-                        trigger={
-                            <Button size="sm" variant="ghost">
-                                Anular
-                            </Button>
-                        }
-                        title="Anular aplicación"
-                        description="La aplicación dejará de afectar el pendiente, pero seguirá conservada en el historial con su motivo."
-                        confirmLabel="Anular aplicación"
-                        destructive
-                        reasonLabel="Motivo de anulación"
-                        reasonPlaceholder="Explica qué se corrigió en esta aplicación"
-                        onConfirm={(reason) =>
-                            router.post(
-                                `/material-applications/${row.id}/void`,
-                                { reason },
-                                { preserveScroll: true },
-                            )
-                        }
-                    />
-                )}
+            <TableCell>
+                <Badge variant="success">Vigente</Badge>
             </TableCell>
         </TableRow>
     );
@@ -584,31 +669,6 @@ function Info({ label, value }: { label: string; value: string }) {
                 {label}
             </p>
             <p className="mt-1 font-medium">{value}</p>
-        </div>
-    );
-}
-function Quantity({
-    label,
-    value,
-    unit,
-    strong = false,
-}: {
-    label: string;
-    value: string;
-    unit: string;
-    strong?: boolean;
-}) {
-    return (
-        <div>
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p
-                className={
-                    strong ? 'font-semibold text-warning' : 'font-semibold'
-                }
-            >
-                {formatQuantity(value)}{' '}
-                <span className="text-xs font-normal">{unit}</span>
-            </p>
         </div>
     );
 }

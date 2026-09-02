@@ -23,6 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('vouchers/{voucher}/print', [VoucherController::class, 'print'])->name('vouchers.print');
     Route::get('material-applications/vouchers', [MaterialApplicationController::class, 'searchVouchers'])->name('applications.vouchers.search');
     Route::post('material-applications', [MaterialApplicationController::class, 'store'])->name('applications.store');
+    Route::put('material-application-reports/{report}', [MaterialApplicationController::class, 'update'])->name('application-reports.update');
     Route::post('material-applications/{application}/void', [MaterialApplicationController::class, 'void'])->name('applications.void');
     Route::get('material-application-attachments/{attachment}', [MaterialApplicationAttachmentController::class, 'show'])->name('application-attachments.show');
     Route::get('attachments/{attachment}', [VoucherAttachmentController::class, 'show'])->name('attachments.show');

@@ -79,7 +79,7 @@ erDiagram
 | `material_aliases`             | Variantes históricas que apuntan al material canónico.                                                             |
 | `people`                       | Técnicos y personal; sus banderas indican quién recibe, entrega o autoriza.                                        |
 | `person_aliases`               | Escrituras alternativas de una misma persona.                                                                      |
-| `programs`                     | Programa opcional exclusivo del vale de Almacén, inicialmente SPM-06.                                              |
+| `programs`                     | Programa fijo de toda salida activa, de Almacén o Patio, inicialmente SPM-06.                                     |
 | `actions`                      | Las 17 acciones oficiales subordinadas al programa fijo SPM-06.                                                    |
 | `action_indicators`            | Los 21 indicadores oficiales; cada acción tiene uno o dos y conserva código y nombre breve.                        |
 | `destinations`                 | Ubicaciones geográficas reutilizables, activables y normalizadas.                                                  |
@@ -87,7 +87,7 @@ erDiagram
 | `destination_voucher`          | Relación de una o varias ubicaciones con cada vale.                                                                |
 | `vouchers`                     | Cabecera del documento, estado, revisión y responsables.                                                           |
 | `voucher_items`                | Cantidad entregada y referencias al material y unidad canónicos; la descripción se mantiene sincronizada para búsquedas y presentación. |
-| `material_application_reports` | Datos comunes y evidencia opcional de una aplicación capturada en bloque.                                          |
+| `material_application_reports` | Agrupa una aplicación capturada en bloque: fecha, orden de servicio opcional, desglose de materiales y evidencia opcional. |
 | `material_applications`        | Cantidad aplicada a una partida; una anulación conserva fecha, usuario y motivo.                                   |
 | `voucher_attachments`          | Metadatos de evidencia guardada en almacenamiento privado.                                                         |
 | `audit_events`                 | Valores anteriores y posteriores de operaciones sensibles.                                                         |
@@ -97,9 +97,9 @@ erDiagram
 ## Invariantes
 
 - `vouchers(storage_location_id, folio_key)` es único. `folio_key` deriva del folio normalizado.
-- Las cantidades utilizan decimal con tres posiciones y deben ser positivas al capturarse.
+- Las cantidades se almacenan con decimal de tres posiciones por compatibilidad de datos, pero toda captura operativa acepta únicamente números enteros positivos (o cero al anular una aplicación desde su edición).
 - Una aplicación nueva no puede superar el pendiente; las partidas se bloquean durante la transacción para evitar carreras.
-- Una aplicación anulada deja de afectar las sumas, pero permanece auditable.
+- Una aplicación anulada deja de afectar las sumas, pero permanece auditable. Corregir una cantidad anula el valor anterior y crea su reemplazo dentro del mismo grupo de aplicación; si no se indica motivo, se registra “Corrección sin motivo especificado”.
 - Una partida con aplicaciones vigentes no puede cambiar de material, cantidad ni eliminarse; primero se anulan las aplicaciones con motivo.
 - La unidad de cada partida siempre deriva de la unidad predeterminada del material. Corregir el nombre o la unidad canónica del material se propaga a todos sus vales, conserva la cantidad numérica y deja auditoría.
 - Los códigos y relaciones de SPM-06, acciones e indicadores son inmutables; acciones e indicadores sólo permiten corregir nombre y estado.
@@ -109,7 +109,7 @@ erDiagram
 - Un cancelado mínimo puede crearse sin movimiento, personas, destino ni partidas para conservar la serie física.
 - Un prestado mínimo sólo conserva tipo, folio, fecha y un nombre libre opcional; nunca se deriva de un vale operativo ni admite partidas.
 - Un vale operativo requiere al menos una ubicación o una descripción de uso o actividad; ambas pueden coexistir.
-- Sólo las salidas activas de Almacén conservan `program_id`, `action_id` y `action_indicator_id`. El programa es siempre SPM-06; el indicador debe pertenecer a la acción. Entradas, Patio, cancelados y prestados conservan los tres campos en `null`.
+- Toda salida activa de Almacén o Patio conserva `program_id`, `action_id` y `action_indicator_id`. El programa es siempre SPM-06; el indicador debe pertenecer a la acción. Entradas, cancelados y prestados conservan los tres campos en `null`.
 - Las aplicaciones conservan un resumen del destino existente al momento de registrarse, aunque el vale se edite después.
 - La continuidad numérica inicia por defecto en Almacén `16576` y Patio `3753`; los inicios se configuran por entorno.
 - Sólo las salidas activas desde `2026-01-01` alimentan el seguimiento. Entradas, prestados y cancelados quedan fuera.

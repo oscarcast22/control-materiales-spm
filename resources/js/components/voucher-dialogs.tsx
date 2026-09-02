@@ -127,10 +127,31 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
     );
 
     const refreshDetail = useCallback(() => {
-        if (voucherId !== null) {
-            void load('detail', voucherId);
+        if (voucherId === null) {
+            return;
         }
-    }, [load, voucherId]);
+
+        void fetch(`/vouchers/${voucherId}`, {
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+        })
+            .then(async (response) => {
+                if (!response.ok) {
+                    throw new Error(
+                        'No fue posible actualizar el detalle del vale.',
+                    );
+                }
+
+                setPayload((await response.json()) as Payload);
+            })
+            .catch((refreshError) => {
+                setError(
+                    refreshError instanceof Error
+                        ? refreshError.message
+                        : 'No fue posible actualizar el detalle del vale.',
+                );
+            });
+    }, [voucherId]);
 
     return (
         <VoucherDialogsContext.Provider value={value}>

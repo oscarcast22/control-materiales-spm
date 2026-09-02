@@ -13,11 +13,11 @@ La usuaria principal captura y revisa información administrativa. No controla e
 
 ## Flujo principal
 
-1. Se captura un vale con tipo, folio, fecha, movimiento, técnico, persona que entrega, una o varias ubicaciones, una descripción opcional de uso o actividad y una o más partidas. En una salida de Almacén el programa fijo SPM-06 se asigna automáticamente y la acción es obligatoria; el indicador se asigna si es único o se elige cuando la acción tiene dos. Entradas, Patio, cancelados y prestados no conservan esta clasificación. La hora no se transcribe: el sistema conserva automáticamente cuándo se creó el registro.
+1. Se captura un vale con tipo, folio, fecha, movimiento, técnico, persona que entrega, una o varias ubicaciones, una descripción opcional de uso o actividad y una o más partidas. En toda salida, de Almacén o Patio, el programa fijo SPM-06 se asigna automáticamente y la acción es obligatoria; el indicador se asigna si es único o se elige cuando la acción tiene dos. Entradas, cancelados y prestados no conservan esta clasificación. La hora no se transcribe: el sistema conserva automáticamente cuándo se creó el registro.
 2. Cada partida conserva la cantidad entregada y referencia el material y la unidad canónicos del catálogo. Corregir esos catálogos actualiza cómo se muestran todos los vales relacionados; no convierte cantidades.
-3. Posteriormente se registran una o varias **aplicaciones** con fecha, cantidad, referencia opcional y evidencia privada opcional.
+3. Posteriormente se registran una o varias **aplicaciones**. Cada captura agrupa una fecha y el desglose de materiales utilizados; puede incluir una orden de servicio y evidencia privada, ambas opcionales.
 4. La aplicación recalcula el saldo. Un vale queda liquidado cuando todas sus partidas llegan exactamente a cero.
-5. Una aplicación incorrecta se anula con motivo; no se elimina del historial.
+5. Una aplicación incorrecta se corrige o anula desde su edición. Al corregir una cantidad, el valor anterior se conserva anulado y la cantidad corregida se registra como reemplazo auditable; nada se elimina del historial. Si no se especifica motivo, la auditoría registra “Corrección sin motivo especificado”.
 6. Un vale sólo puede cancelarse si no tiene aplicaciones vigentes.
 7. Si el formato físico ya está cancelado, se registra sólo su tipo, folio y fecha; el sistema no exige personas ni materiales.
 8. El resumen avisa los huecos en las series numéricas de Almacén y Patio para facilitar la conciliación de documentos.
@@ -47,7 +47,7 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 - Materiales filtrados estrictamente según el tipo de vale elegido.
 - Registro mínimo y corrección auditada de folios prestados.
 - Varias partidas por vale y adjuntos privados JPG, PNG, WebP o PDF.
-- Captura rápida de varias aplicaciones del mismo vale, con evidencia opcional y anulación auditada.
+- Captura rápida de aplicaciones agrupadas por fecha y orden de servicio opcional, con desglose por material, evidencia opcional y corrección o anulación auditada.
 - Catálogos editables y alias, organizados en Personas, Materiales, Ubicaciones y una sección conjunta de Programa, acciones e indicadores. SPM-06, los códigos y sus relaciones son estructurales; en acciones e indicadores sólo se corrigen nombres y estados con auditoría. Las unidades se administran dentro de Materiales; Almacén y Patio son tipos estructurales fijos y no se administran desde la interfaz. Un registro sólo se elimina de forma permanente si no está asignado a un vale ni tiene dependencias de catálogo que perderían información; los registros con historia se desactivan o corrigen. Los nombres canónicos se reflejan en todos los vales relacionados, y materiales y unidades también normalizan las partidas existentes sin convertir cantidades. La fusión auditada de duplicados permanece como contingencia técnica y no se expone en la interfaz.
 - Catálogo buscable de ubicaciones con alta desde el vale; una actividad no geográfica se conserva por separado como texto libre.
 - Seguimiento desde 2026 por material, técnico y detalle.

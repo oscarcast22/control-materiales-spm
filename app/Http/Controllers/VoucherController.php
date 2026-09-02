@@ -466,7 +466,7 @@ class VoucherController extends Controller
             ->whereKey($request->input('voucher_type_id'))
             ->where('is_active', true)
             ->first();
-        $usesClassification = $selectedVoucherType?->code === 'warehouse'
+        $usesClassification = $selectedVoucherType !== null
             && $request->input('direction') === VoucherDirection::Exit->value;
         $fixedProgram = $usesClassification
             ? Program::query()->where('code', 'SPM-06')->where('is_active', true)->first()
@@ -512,7 +512,7 @@ class VoucherController extends Controller
             'items.*.id' => [$updating ? 'nullable' : 'prohibited', 'integer'],
             'items.*.material_id' => ['required', Rule::exists('materials', 'id')->where('is_active', true)],
             'items.*.unit_id' => ['prohibited'],
-            'items.*.quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,3', 'max:999999999.999'],
+            'items.*.quantity' => ['required', 'integer', 'gt:0', 'max:999999999'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
         ], $this->voucherValidationMessages());
@@ -669,9 +669,8 @@ class VoucherController extends Controller
             'items.*.material_id.exists' => 'El material seleccionado ya no está disponible.',
             'items.*.unit_id.prohibited' => 'La unidad se toma automáticamente del material.',
             'items.*.quantity.required' => 'Escribe la cantidad.',
-            'items.*.quantity.numeric' => 'La cantidad debe ser un número.',
+            'items.*.quantity.integer' => 'La cantidad debe ser un número entero.',
             'items.*.quantity.gt' => 'La cantidad debe ser mayor que cero.',
-            'items.*.quantity.decimal' => 'La cantidad puede tener hasta tres decimales.',
             'items.*.quantity.max' => 'La cantidad es demasiado grande.',
             'attachments.array' => 'Adjunta archivos válidos.',
             'attachments.max' => 'Puedes adjuntar como máximo cinco archivos.',

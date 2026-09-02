@@ -24,7 +24,7 @@ class InventoryAdjustmentController extends Controller
             'unit_id' => ['required', Rule::exists('units', 'id')->where('is_active', true)],
             'occurred_on' => ['required', 'date'],
             'direction' => ['required', Rule::in(['increase', 'decrease'])],
-            'quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,3', 'max:999999999.999'],
+            'quantity' => ['required', 'integer', 'gt:0', 'max:999999999'],
             'reason' => ['required', 'string', 'min:5', 'max:3000'],
         ]);
         $material = Material::query()->findOrFail((int) $data['material_id']);

@@ -81,6 +81,32 @@ export type MaterialApplication = {
     } | null;
 };
 
+export type ApplicationReportLine = {
+    id: number;
+    voucher_item_id: number;
+    material: Named;
+    unit: Unit;
+    quantity: string;
+    legacy_slot?: number | null;
+    voided_at?: string | null;
+    void_reason?: string | null;
+};
+
+export type MaterialApplicationReport = {
+    key: string;
+    id: number | null;
+    occurred_on: string;
+    service_order?: string | null;
+    editable: boolean;
+    applications: ApplicationReportLine[];
+    attachment?: {
+        id: number;
+        original_name: string;
+        mime_type: string;
+        size: number;
+    } | null;
+};
+
 export type VoucherItem = {
     id: number;
     material: Named;
@@ -126,6 +152,7 @@ export type Voucher = {
     cancellation_reason?: string | null;
     items_count: number;
     items: VoucherItem[];
+    application_reports: MaterialApplicationReport[];
     attachments: {
         id: number;
         original_name: string;

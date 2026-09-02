@@ -1,8 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle2, FileUp, Search, Wrench } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import InputError from '@/components/input-error';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,10 +14,16 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    Field,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { formatDate, formatQuantity } from '@/lib/format';
-import type { Voucher, VoucherItem } from '@/types';
+import type { MaterialApplicationReport, Voucher, VoucherItem } from '@/types';
 
 type VoucherOption = {
     id: number;
@@ -45,46 +50,72 @@ const today = () => {
     return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 };
 
-const asOption = (voucher: Voucher): VoucherOption => ({
+const activeQuantity = (
+    report: MaterialApplicationReport | undefined,
+    voucherItemId: number,
+) => {
+    const quantity = report?.applications.find(
+        (application) =>
+            application.voucher_item_id === voucherItemId &&
+            !application.voided_at,
+    )?.quantity;
+
+    return quantity === undefined ? '' : String(Number(quantity));
+};
+
+const asOption = (
+    voucher: Voucher,
+    report?: MaterialApplicationReport,
+): VoucherOption => ({
     id: voucher.id,
     folio: voucher.folio,
     issued_on: voucher.issued_on,
     voucher_type: voucher.voucher_type,
     received_by: voucher.received_by!,
     destination_summary: voucher.destination_summary ?? null,
-    items: voucher.items.filter((item) => Number(item.pending_quantity) > 0),
+    items: report
+        ? voucher.items
+        : voucher.items.filter((item) => Number(item.pending_quantity) > 0),
+});
+
+const initialForm = (
+    voucher?: Voucher,
+    report?: MaterialApplicationReport,
+): ApplicationForm => ({
+    voucher_id: voucher?.id ?? '',
+    occurred_on: report?.occurred_on ?? today(),
+    reference: report?.service_order ?? '',
+    items: voucher
+        ? asOption(voucher, report).items.map((item) => ({
+              voucher_item_id: item.id,
+              quantity: activeQuantity(report, item.id),
+          }))
+        : [],
+    attachment: null,
 });
 
 export function QuickApplicationDialog({
     trigger,
     voucher,
+    report,
     onSuccess,
 }: {
     trigger: ReactNode;
     voucher?: Voucher;
+    report?: MaterialApplicationReport;
     onSuccess?: () => void;
 }) {
+    const editMode = Boolean(report);
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
     const [results, setResults] = useState<VoucherOption[]>([]);
     const [selected, setSelected] = useState<VoucherOption | null>(
-        voucher ? asOption(voucher) : null,
+        voucher ? asOption(voucher, report) : null,
     );
     const [searching, setSearching] = useState(false);
     const [searchError, setSearchError] = useState('');
     const [itemsError, setItemsError] = useState('');
-    const form = useForm<ApplicationForm>({
-        voucher_id: voucher?.id ?? '',
-        occurred_on: today(),
-        reference: '',
-        items: voucher
-            ? asOption(voucher).items.map((item) => ({
-                  voucher_item_id: item.id,
-                  quantity: '',
-              }))
-            : [],
-        attachment: null,
-    });
+    const form = useForm<ApplicationForm>(initialForm(voucher, report));
 
     useEffect(() => {
         if (!open || voucher || selected || search.trim() === '') {
@@ -158,8 +189,8 @@ export function QuickApplicationDialog({
         form.setData('items', []);
     };
 
-    const close = () => {
-        if (form.processing) {
+    const close = (force = false) => {
+        if (form.processing && !force) {
             return;
         }
 
@@ -170,16 +201,26 @@ export function QuickApplicationDialog({
         setItemsError('');
         form.reset();
         form.clearErrors();
-        setSelected(voucher ? asOption(voucher) : null);
+        setSelected(voucher ? asOption(voucher, report) : null);
+    };
+
+    const openDialog = () => {
+        const nextSelected = voucher ? asOption(voucher, report) : null;
+
+        setSelected(nextSelected);
+        form.setData(initialForm(voucher, report));
+        form.clearErrors();
+        setItemsError('');
+        setOpen(true);
     };
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        const appliedItems = form.data.items.filter(
+        const positiveItems = form.data.items.filter(
             (item) => Number(item.quantity) > 0,
         );
 
-        if (appliedItems.length === 0) {
+        if (!editMode && positiveItems.length === 0) {
             setItemsError(
                 'Captura la cantidad aplicada de al menos un material.',
             );
@@ -188,27 +229,42 @@ export function QuickApplicationDialog({
         }
 
         setItemsError('');
-        form.transform((data) => ({ ...data, items: appliedItems }));
-        form.post('/material-applications', {
-            forceFormData: true,
+        form.transform((data) => ({
+            ...data,
+            items: editMode
+                ? data.items.map((item) => ({
+                      ...item,
+                      quantity: item.quantity === '' ? '0' : item.quantity,
+                  }))
+                : positiveItems,
+        }));
+        const options = {
             preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
-                close();
+                close(true);
                 onSuccess?.();
             },
-        });
+        };
+
+        if (editMode && report?.id) {
+            form.put(`/material-application-reports/${report.id}`, options);
+        } else {
+            form.post('/material-applications', {
+                ...options,
+                forceFormData: true,
+            });
+        }
     };
 
-    const selectedCount = useMemo(
-        () =>
-            form.data.items.filter((item) => Number(item.quantity) > 0).length,
-        [form.data.items],
-    );
+    const selectedCount = form.data.items.filter(
+        (item) => Number(item.quantity) > 0,
+    ).length;
 
     return (
         <Dialog
             open={open}
-            onOpenChange={(next) => (next ? setOpen(true) : close())}
+            onOpenChange={(next) => (next ? openDialog() : close())}
         >
             <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent className="max-h-[92vh] overflow-y-auto p-0 sm:max-w-3xl">
@@ -218,10 +274,15 @@ export function QuickApplicationDialog({
                             <Wrench className="size-5" aria-hidden="true" />
                         </span>
                         <div>
-                            <DialogTitle>Registrar aplicación</DialogTitle>
+                            <DialogTitle>
+                                {editMode
+                                    ? 'Editar aplicación'
+                                    : 'Registrar aplicación'}
+                            </DialogTitle>
                             <DialogDescription className="mt-1">
-                                Registra en qué vale y qué cantidades ya fueron
-                                utilizadas.
+                                {editMode
+                                    ? 'Corrige la fecha, la orden o las cantidades aplicadas. El cambio quedará auditado.'
+                                    : 'Registra la orden de servicio y las cantidades utilizadas.'}
                             </DialogDescription>
                         </div>
                     </div>
@@ -229,10 +290,10 @@ export function QuickApplicationDialog({
 
                 {!selected ? (
                     <div className="flex flex-col gap-4 px-5 py-5 sm:px-6">
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="application-voucher-search">
+                        <Field>
+                            <FieldLabel htmlFor="application-voucher-search">
                                 Folio del vale
-                            </Label>
+                            </FieldLabel>
                             <div className="relative">
                                 <Search
                                     className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -250,11 +311,11 @@ export function QuickApplicationDialog({
                                     autoComplete="off"
                                 />
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <FieldDescription>
                                 Sólo aparecen vales de salida activos con
                                 material pendiente.
-                            </p>
-                        </div>
+                            </FieldDescription>
+                        </Field>
 
                         <div
                             className="flex min-h-40 flex-col gap-2"
@@ -308,7 +369,7 @@ export function QuickApplicationDialog({
                                         </Badge>
                                     </button>
                                 ))}
-                            <InputError message={searchError} />
+                            <FieldError>{searchError}</FieldError>
                         </div>
                     </div>
                 ) : (
@@ -344,11 +405,13 @@ export function QuickApplicationDialog({
                                 </div>
                             </section>
 
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="flex flex-col gap-2">
-                                    <Label htmlFor="application-date">
+                            <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                                <Field
+                                    invalid={Boolean(form.errors.occurred_on)}
+                                >
+                                    <FieldLabel htmlFor="application-date">
                                         Fecha de aplicación
-                                    </Label>
+                                    </FieldLabel>
                                     <Input
                                         id="application-date"
                                         type="date"
@@ -364,14 +427,14 @@ export function QuickApplicationDialog({
                                             undefined
                                         }
                                     />
-                                    <InputError
-                                        message={form.errors.occurred_on}
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    <Label htmlFor="application-reference">
+                                    <FieldError>
+                                        {form.errors.occurred_on}
+                                    </FieldError>
+                                </Field>
+                                <Field invalid={Boolean(form.errors.reference)}>
+                                    <FieldLabel htmlFor="application-reference">
                                         Orden de servicio (opcional)
-                                    </Label>
+                                    </FieldLabel>
                                     <Input
                                         id="application-reference"
                                         value={form.data.reference}
@@ -386,11 +449,11 @@ export function QuickApplicationDialog({
                                             !!form.errors.reference || undefined
                                         }
                                     />
-                                    <InputError
-                                        message={form.errors.reference}
-                                    />
-                                </div>
-                            </div>
+                                    <FieldError>
+                                        {form.errors.reference}
+                                    </FieldError>
+                                </Field>
+                            </FieldGroup>
 
                             <section
                                 className="flex flex-col gap-3"
@@ -405,7 +468,7 @@ export function QuickApplicationDialog({
                                     </h3>
                                     <p className="mt-0.5 text-sm text-muted-foreground">
                                         Escribe únicamente las cantidades
-                                        reportadas en esta orden.
+                                        reportadas en esta aplicación.
                                     </p>
                                 </div>
                                 <div className="overflow-hidden rounded-md border">
@@ -416,6 +479,13 @@ export function QuickApplicationDialog({
                                                 string
                                             >
                                         )[`items.${index}.quantity`];
+                                        const registered = Number(
+                                            activeQuantity(report, item.id) ||
+                                                0,
+                                        );
+                                        const maximum =
+                                            Number(item.pending_quantity) +
+                                            registered;
 
                                         return (
                                             <div
@@ -427,25 +497,52 @@ export function QuickApplicationDialog({
                                                         {item.description}
                                                     </p>
                                                     <p className="mt-0.5 text-xs text-muted-foreground">
-                                                        Pendiente:{' '}
-                                                        {formatQuantity(
-                                                            item.pending_quantity,
-                                                        )}{' '}
-                                                        {item.unit.symbol}
+                                                        {editMode ? (
+                                                            <>
+                                                                Registrado:{' '}
+                                                                {formatQuantity(
+                                                                    registered,
+                                                                )}{' '}
+                                                                {
+                                                                    item.unit
+                                                                        .symbol
+                                                                }{' '}
+                                                                · máximo:{' '}
+                                                                {formatQuantity(
+                                                                    maximum,
+                                                                )}{' '}
+                                                                {
+                                                                    item.unit
+                                                                        .symbol
+                                                                }
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                Pendiente:{' '}
+                                                                {formatQuantity(
+                                                                    item.pending_quantity,
+                                                                )}{' '}
+                                                                {
+                                                                    item.unit
+                                                                        .symbol
+                                                                }
+                                                            </>
+                                                        )}
                                                     </p>
                                                 </div>
-                                                <div className="flex flex-col gap-1.5">
-                                                    <Label
+                                                <Field invalid={Boolean(error)}>
+                                                    <FieldLabel
                                                         htmlFor={`application-item-${item.id}`}
                                                         className="sr-only"
                                                     >
                                                         Cantidad aplicada de{' '}
                                                         {item.description}
-                                                    </Label>
+                                                    </FieldLabel>
                                                     <div className="relative">
                                                         <Input
                                                             id={`application-item-${item.id}`}
-                                                            inputMode="decimal"
+                                                            inputMode="numeric"
+                                                            pattern="[0-9]*"
                                                             value={
                                                                 form.data.items[
                                                                     index
@@ -472,7 +569,7 @@ export function QuickApplicationDialog({
                                                                     items,
                                                                 );
                                                             }}
-                                                            placeholder="0.000"
+                                                            placeholder="0"
                                                             aria-invalid={
                                                                 !!error ||
                                                                 undefined
@@ -483,47 +580,59 @@ export function QuickApplicationDialog({
                                                             {item.unit.symbol}
                                                         </span>
                                                     </div>
-                                                    <InputError
-                                                        message={error}
-                                                        className="text-xs"
-                                                    />
-                                                </div>
+                                                    <FieldError className="text-xs">
+                                                        {error}
+                                                    </FieldError>
+                                                </Field>
                                             </div>
                                         );
                                     })}
                                 </div>
-                                <InputError
-                                    message={itemsError || form.errors.items}
-                                />
+                                <FieldError>
+                                    {itemsError || form.errors.items}
+                                </FieldError>
                             </section>
 
-                            <div className="flex flex-col gap-2">
-                                <Label htmlFor="application-attachment">
-                                    Foto o PDF de la orden (opcional)
-                                </Label>
-                                <Input
-                                    id="application-attachment"
-                                    type="file"
-                                    accept=".jpg,.jpeg,.png,.webp,.pdf"
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'attachment',
-                                            event.target.files?.[0] ?? null,
-                                        )
-                                    }
-                                    aria-invalid={
-                                        !!form.errors.attachment || undefined
-                                    }
-                                />
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <FileUp
-                                        className="size-3.5"
-                                        aria-hidden="true"
+                            {editMode ? (
+                                <p className="text-sm text-muted-foreground">
+                                    Las cantidades anteriores se conservarán
+                                    anuladas en el historial. Si dejas todas en
+                                    0, la aplicación quedará anulada.
+                                </p>
+                            ) : (
+                                <Field
+                                    invalid={Boolean(form.errors.attachment)}
+                                >
+                                    <FieldLabel htmlFor="application-attachment">
+                                        Foto o PDF de respaldo (opcional)
+                                    </FieldLabel>
+                                    <Input
+                                        id="application-attachment"
+                                        type="file"
+                                        accept=".jpg,.jpeg,.png,.webp,.pdf"
+                                        onChange={(event) =>
+                                            form.setData(
+                                                'attachment',
+                                                event.target.files?.[0] ?? null,
+                                            )
+                                        }
+                                        aria-invalid={
+                                            !!form.errors.attachment ||
+                                            undefined
+                                        }
                                     />
-                                    Un archivo privado de hasta 10 MB.
-                                </div>
-                                <InputError message={form.errors.attachment} />
-                            </div>
+                                    <FieldDescription className="flex items-center gap-2">
+                                        <FileUp
+                                            className="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                        Un archivo privado de hasta 10 MB.
+                                    </FieldDescription>
+                                    <FieldError>
+                                        {form.errors.attachment}
+                                    </FieldError>
+                                </Field>
+                            )}
                         </div>
 
                         <DialogFooter className="border-t bg-muted/25 px-5 py-4 sm:px-6">
@@ -538,12 +647,18 @@ export function QuickApplicationDialog({
                             </DialogClose>
                             <Button
                                 disabled={
-                                    form.processing || selectedCount === 0
+                                    form.processing ||
+                                    (!editMode && selectedCount === 0)
                                 }
                                 aria-busy={form.processing}
                             >
                                 {form.processing ? (
                                     'Guardando…'
+                                ) : editMode ? (
+                                    <>
+                                        <CheckCircle2 data-icon="inline-start" />
+                                        Guardar corrección
+                                    </>
                                 ) : (
                                     <>
                                         <CheckCircle2 data-icon="inline-start" />

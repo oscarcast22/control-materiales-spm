@@ -144,10 +144,7 @@ export default function VoucherForm({
     const initialVoucherTypeId = voucher
         ? String(voucher.voucher_type.id)
         : String(voucherTypes[0]?.id ?? '');
-    const initialUsesClassification =
-        voucherTypes.find(
-            (voucherType) => String(voucherType.id) === initialVoucherTypeId,
-        )?.code === 'warehouse' && (voucher?.direction ?? 'exit') === 'exit';
+    const initialUsesClassification = (voucher?.direction ?? 'exit') === 'exit';
     const fixedProgram = programs.find((program) => program.code === 'SPM-06');
     const initialActionId = initialUsesClassification
         ? String(voucher?.action?.id ?? '')
@@ -261,11 +258,7 @@ export default function VoucherForm({
             })),
         [selectedIndicators],
     );
-    const usesClassification =
-        voucherTypes.find(
-            (voucherType) =>
-                String(voucherType.id) === form.data.voucher_type_id,
-        )?.code === 'warehouse' && form.data.direction === 'exit';
+    const usesClassification = form.data.direction === 'exit';
     const errorSignature = Object.entries(form.errors)
         .sort(([firstField], [secondField]) =>
             firstField.localeCompare(secondField),
@@ -378,8 +371,6 @@ export default function VoucherForm({
         form.setData((current) => ({
             ...current,
             voucher_type_id: voucherTypeId,
-            action_id: '',
-            action_indicator_id: '',
             items,
         }));
 
@@ -1168,7 +1159,8 @@ export default function VoucherForm({
                                         >
                                             <Input
                                                 id={quantityId}
-                                                inputMode="decimal"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
                                                 value={line.quantity}
                                                 readOnly={hasApplications}
                                                 onChange={(e) =>

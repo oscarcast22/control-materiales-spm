@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
 use App\Models\MaterialApplication;
+use App\Models\MaterialApplicationReport;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
 
@@ -33,6 +34,8 @@ final class VoucherData
         $voucher->loadMissing([
             'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'actionIndicator',
             'destinations', 'items.material', 'items.unit', 'items.applications.report.attachment', 'attachments',
+            'applicationReports.applications.item.material', 'applicationReports.applications.item.unit',
+            'applicationReports.attachment',
         ]);
 
         $isEntry = $voucher->direction === VoucherDirection::Entry;
@@ -80,11 +83,70 @@ final class VoucherData
             'cancellation_reason' => $voucher->cancellation_reason,
             'items_count' => $items->count(),
             'items' => $items,
+            'application_reports' => $detailed ? self::applicationReports($voucher) : [],
             'attachments' => $detailed ? $voucher->attachments->map->only([
                 'id', 'original_name', 'mime_type', 'size', 'created_at',
             ])->values() : [],
             'created_at' => $voucher->created_at?->toIso8601String(),
             'updated_at' => $voucher->updated_at?->toIso8601String(),
+        ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private static function applicationReports(Voucher $voucher): array
+    {
+        $reports = $voucher->applicationReports
+            ->map(fn (MaterialApplicationReport $report): array => [
+                'key' => "report-{$report->id}",
+                'id' => $report->id,
+                'occurred_on' => $report->occurred_on->format('Y-m-d'),
+                'service_order' => $report->reference,
+                'editable' => true,
+                'applications' => $report->applications
+                    ->sortByDesc('id')
+                    ->map(fn (MaterialApplication $application): array => self::applicationLine($application))
+                    ->values(),
+                'attachment' => $report->attachment?->only([
+                    'id', 'original_name', 'mime_type', 'size',
+                ]),
+            ]);
+
+        $reportedIds = $voucher->applicationReports
+            ->flatMap(fn (MaterialApplicationReport $report) => $report->applications->pluck('id'))
+            ->all();
+
+        $legacyApplications = $voucher->items
+            ->flatMap(fn (VoucherItem $item) => $item->applications)
+            ->whereNotIn('id', $reportedIds)
+            ->map(fn (MaterialApplication $application): array => [
+                'key' => "legacy-application-{$application->id}",
+                'id' => null,
+                'occurred_on' => $application->occurred_on->format('Y-m-d'),
+                'service_order' => $application->reference,
+                'editable' => false,
+                'applications' => [self::applicationLine($application)],
+                'attachment' => null,
+            ]);
+
+        return $reports
+            ->concat($legacyApplications)
+            ->sortByDesc('occurred_on')
+            ->values()
+            ->all();
+    }
+
+    /** @return array<string, mixed> */
+    private static function applicationLine(MaterialApplication $application): array
+    {
+        return [
+            'id' => $application->id,
+            'voucher_item_id' => $application->voucher_item_id,
+            'material' => $application->item->material->only(['id', 'name']),
+            'unit' => $application->item->unit->only(['id', 'name', 'symbol']),
+            'quantity' => $application->quantity,
+            'legacy_slot' => $application->legacy_slot,
+            'voided_at' => $application->voided_at?->toIso8601String(),
+            'void_reason' => $application->void_reason,
         ];
     }
 
