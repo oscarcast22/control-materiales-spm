@@ -66,21 +66,24 @@ class MaterialApplicationController extends Controller
         $data = $request->validate([
             'voucher_id' => ['required', 'integer', 'exists:vouchers,id'],
             'occurred_on' => ['required', 'date'],
-            'reference' => ['nullable', 'string', 'max:255'],
+            'reference' => ['required', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:3000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.voucher_item_id' => ['required', 'integer', 'distinct', 'exists:voucher_items,id'],
             'items.*.quantity' => ['required', 'integer', 'gt:0', 'max:999999999'],
             'attachment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
         ]);
 
-        $voucher = Voucher::query()->findOrFail((int) $data['voucher_id']);
-        Gate::authorize('update', $voucher);
+        $user = $request->user();
+        $voucher = Voucher::query()->visibleTo($user)->findOrFail((int) $data['voucher_id']);
+        Gate::authorize('createApplication', $voucher);
         $file = $request->file('attachment');
         $storedPath = $file?->store('application-reports/'.now()->format('Y/m'), 'local');
 
         try {
-            DB::transaction(function () use ($data, $request, $file, $storedPath): void {
-                $voucher = Voucher::query()->with('destinations')->lockForUpdate()->findOrFail((int) $data['voucher_id']);
+            DB::transaction(function () use ($data, $request, $file, $storedPath, $user): void {
+                $voucher = Voucher::query()->visibleTo($user)->with('destinations')->lockForUpdate()->findOrFail((int) $data['voucher_id']);
+                Gate::forUser($user)->authorize('createApplication', $voucher);
                 if ($voucher->direction !== VoucherDirection::Exit || ! in_array($voucher->status->value, VoucherStatus::operationalValues(), true)) {
                     throw ValidationException::withMessages([
                         'voucher_id' => 'Sólo se pueden registrar aplicaciones en vales de salida activos.',
@@ -108,7 +111,8 @@ class MaterialApplicationController extends Controller
                 $report = MaterialApplicationReport::create([
                     'voucher_id' => $voucher->id,
                     'occurred_on' => $data['occurred_on'],
-                    'reference' => filled($data['reference'] ?? null) ? trim((string) $data['reference']) : null,
+                    'reference' => trim((string) $data['reference']),
+                    'notes' => filled($data['notes'] ?? null) ? trim((string) $data['notes']) : null,
                     'created_by' => $request->user()?->id,
                     'updated_by' => $request->user()?->id,
                 ]);
@@ -165,10 +169,12 @@ class MaterialApplicationController extends Controller
     public function update(Request $request, MaterialApplicationReport $report): RedirectResponse
     {
         $report->load('voucher');
-        Gate::authorize('update', $report->voucher);
+        Gate::authorize('update', $report);
         $data = $request->validate([
             'occurred_on' => ['required', 'date'],
-            'reference' => ['nullable', 'string', 'max:255'],
+            'reference' => ['required', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:3000'],
+            'correction_reason' => ['required', 'string', 'min:5', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.voucher_item_id' => ['required', 'integer', 'distinct', 'exists:voucher_items,id'],
             'items.*.quantity' => ['required', 'integer', 'gte:0', 'max:999999999'],
@@ -182,6 +188,7 @@ class MaterialApplicationController extends Controller
                 ->lockForUpdate()
                 ->findOrFail($report->id);
             $voucher = $lockedReport->voucher;
+            Gate::forUser($request->user())->authorize('update', $lockedReport);
 
             if ($voucher->direction !== VoucherDirection::Exit || $voucher->status !== VoucherStatus::Active) {
                 throw ValidationException::withMessages([
@@ -212,8 +219,9 @@ class MaterialApplicationController extends Controller
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('voucher_item_id');
-            $reference = filled($data['reference'] ?? null) ? trim((string) $data['reference']) : null;
-            $reason = 'Corrección sin motivo especificado.';
+            $reference = trim((string) $data['reference']);
+            $notes = filled($data['notes'] ?? null) ? trim((string) $data['notes']) : null;
+            $reason = trim((string) $data['correction_reason']);
             $beforeReport = $lockedReport->toArray();
 
             foreach ($itemRows as $index => $row) {
@@ -287,6 +295,7 @@ class MaterialApplicationController extends Controller
             $lockedReport->update([
                 'occurred_on' => $data['occurred_on'],
                 'reference' => $reference,
+                'notes' => $notes,
                 'updated_by' => $request->user()?->id,
             ]);
             AuditEvent::record($lockedReport, 'corrected', $beforeReport, [
@@ -301,11 +310,12 @@ class MaterialApplicationController extends Controller
     public function void(Request $request, MaterialApplication $application): RedirectResponse
     {
         $application->load('item.voucher');
-        Gate::authorize('update', $application->item->voucher);
+        Gate::authorize('void', $application);
         $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:1000']]);
 
         DB::transaction(function () use ($application, $data, $request): void {
             $locked = MaterialApplication::query()->lockForUpdate()->findOrFail($application->id);
+            Gate::forUser($request->user())->authorize('void', $locked);
             if ($locked->voided_at) {
                 return;
             }

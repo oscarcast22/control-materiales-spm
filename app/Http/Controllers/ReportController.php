@@ -9,7 +9,6 @@ use App\Models\Person;
 use App\Models\StorageLocation;
 use App\Models\Voucher;
 use App\Support\MaterialTracking;
-use App\Support\VoucherData;
 use App\Support\VoucherTypeScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -49,9 +48,9 @@ class ReportController extends Controller
     {
         Gate::authorize('view-reports');
         $filters = $this->trackingFilters($request);
-        $vouchers = $this->trackingVoucherQuery($filters)->get();
+        $vouchers = $this->trackingVoucherQuery($filters, true)->get();
         $tracking = MaterialTracking::make($vouchers, $filters);
-        $itemIds = collect($tracking['rows'])->pluck('id')->all();
+        $itemIds = array_fill_keys(collect($tracking['rows'])->pluck('id')->all(), true);
         $path = tempnam(sys_get_temp_dir(), 'spm-export-');
         abort_if($path === false, 500, 'No fue posible crear el archivo temporal.');
 
@@ -100,19 +99,20 @@ class ReportController extends Controller
             'Folio', 'Material', 'Fecha', 'Cantidad', 'Referencia', 'Destino', 'Notas',
         ]));
         foreach ($vouchers as $voucher) {
-            $data = VoucherData::make($voucher, true);
-            foreach ($data['items'] as $item) {
-                if (! in_array($item['id'], $itemIds, true)) {
+            foreach ($voucher->items as $item) {
+                if (! isset($itemIds[$item->id])) {
                     continue;
                 }
-                foreach ($item['applications'] as $row) {
-                    if ($row['voided_at']) {
+                foreach ($item->applications as $application) {
+                    if ($application->voided_at !== null) {
                         continue;
                     }
                     $writer->addRow(Row::fromValues([
-                        self::safe($data['folio']), self::safe($item['description']), $row['occurred_on'],
-                        (float) $row['quantity'], self::safe($row['reference'] ?? ''), self::safe($row['destination_snapshot'] ?? ''),
-                        self::safe($row['notes'] ?? ''),
+                        self::safe($voucher->folio), self::safe($item->description_snapshot), $application->occurred_on->format('Y-m-d'),
+                        (float) $application->quantity, self::safe($application->reference), self::safe($application->destination_snapshot),
+                        self::safe($application->application_report_id !== null
+                            ? ($application->report->notes ?? $application->notes)
+                            : $application->notes),
                     ]));
                 }
             }
@@ -126,12 +126,18 @@ class ReportController extends Controller
      * @param  array{search: string, from: string, to: string|null, received_by_id: int|null, material_id: int|null, voucher_type_id: int|null, state: string|null, tab: string}  $filters
      * @return Builder<Voucher>
      */
-    private function trackingVoucherQuery(array $filters): Builder
+    private function trackingVoucherQuery(array $filters, bool $includeReportNotes = false): Builder
     {
-        $query = Voucher::query()->with([
-            'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'destinations',
-            'items.material', 'items.unit', 'items.applications.report.attachment',
-        ])->whereIn('status', VoucherStatus::operationalValues())
+        $relations = [
+            'location', 'receivedBy', 'destinations',
+            'items.material', 'items.unit', 'items.applications',
+        ];
+        if ($includeReportNotes) {
+            $relations[] = 'items.applications.report';
+        }
+
+        $query = Voucher::query()->with($relations)
+            ->whereIn('status', VoucherStatus::operationalValues())
             ->where('direction', VoucherDirection::Exit->value)
             ->whereDate('issued_on', '>=', $filters['from']);
 

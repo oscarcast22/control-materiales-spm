@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
+use App\Support\MaterialTracking;
 use App\Support\Normalizer;
 use Database\Factories\VoucherFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -117,6 +118,27 @@ class Voucher extends Model
                         ->where('normalized_name', 'like', "%{$normalizedNeedle}%"));
             }
         });
+    }
+
+    /**
+     * @param  Builder<Voucher>  $query
+     * @return Builder<Voucher>
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->isAdministrator()) {
+            return $query;
+        }
+
+        if (! $user->hasOperationalTechnicianAccess()) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query
+            ->where('received_by_id', $user->person_id)
+            ->where('direction', VoucherDirection::Exit->value)
+            ->where('status', VoucherStatus::Active->value)
+            ->whereDate('issued_on', '>=', MaterialTracking::START_DATE);
     }
 
     /** @return BelongsTo<StorageLocation, $this> */

@@ -1391,7 +1391,7 @@ function VoucherSectionHeading({
 function MaterialLineAction({ children }: { children: ReactNode }) {
     return (
         <div className="flex w-full flex-col gap-2">
-            <span aria-hidden="true" className="h-5" />
+            <span aria-hidden="true" className="h-4" />
             {children}
         </div>
     );

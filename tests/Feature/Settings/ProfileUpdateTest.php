@@ -43,6 +43,37 @@ class ProfileUpdateTest extends TestCase
         $this->assertNull($user->email_verified_at);
     }
 
+    public function test_profile_email_is_trimmed_and_normalized_before_validation(): void
+    {
+        $user = User::factory()->create();
+
+        $this
+            ->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => 'Test User',
+                'email' => '  UPDATED@EXAMPLE.COM  ',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('updated@example.com', $user->refresh()->email);
+    }
+
+    public function test_profile_email_cannot_duplicate_another_address_with_different_case(): void
+    {
+        $user = User::factory()->create(['email' => 'owner@example.com']);
+        User::factory()->create(['email' => 'existing@example.com']);
+
+        $this
+            ->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => 'Test User',
+                'email' => '  EXISTING@EXAMPLE.COM  ',
+            ])
+            ->assertSessionHasErrors('email');
+
+        $this->assertSame('owner@example.com', $user->refresh()->email);
+    }
+
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged()
     {
         $user = User::factory()->create();

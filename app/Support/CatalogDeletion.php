@@ -92,6 +92,9 @@ final class CatalogDeletion
     /** @param array<string, int>|null $activeRoleCounts */
     private function personReason(Person $person, ?array $activeRoleCounts): ?string
     {
+        if ($this->exists($person, 'account')) {
+            return 'No se puede eliminar porque esta persona tiene una cuenta técnica vinculada.';
+        }
         if ($this->exists($person, 'receivedVouchers')
             || $this->exists($person, 'deliveredVouchers')
             || $this->exists($person, 'authorizedVouchers')) {
@@ -172,7 +175,9 @@ final class CatalogDeletion
     {
         if ($model instanceof Material) {
             $model->load(['aliases', 'voucherTypes:id']);
-        } elseif ($model instanceof Person || $model instanceof Destination) {
+        } elseif ($model instanceof Person) {
+            $model->load(['aliases', 'account']);
+        } elseif ($model instanceof Destination) {
             $model->load('aliases');
         }
 

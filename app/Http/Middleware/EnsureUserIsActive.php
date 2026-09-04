@@ -16,13 +16,13 @@ class EnsureUserIsActive
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user() && ! $request->user()->is_active) {
+        if ($request->user() && ! $request->user()->canAccessApplication()) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
             return redirect()->route('login')->withErrors([
-                'email' => 'Esta cuenta se encuentra desactivada.',
+                'login' => 'Esta cuenta no tiene acceso activo. Solicita apoyo a una administradora.',
             ]);
         }
 

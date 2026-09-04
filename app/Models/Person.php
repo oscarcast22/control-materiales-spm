@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_active
  * @property bool $needs_review
  * @property-read Collection<int, PersonAlias> $aliases
+ * @property-read User|null $account
  */
 class Person extends Model
 {
@@ -61,5 +63,11 @@ class Person extends Model
     public function authorizedVouchers(): HasMany
     {
         return $this->hasMany(Voucher::class, 'authorized_by_id');
+    }
+
+    /** @return HasOne<User, $this> */
+    public function account(): HasOne
+    {
+        return $this->hasOne(User::class);
     }
 }

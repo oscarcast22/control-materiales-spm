@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { Palette, ShieldCheck, UserRound } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import { Page, PageHeader } from '@/components/page';
@@ -30,6 +30,11 @@ const sidebarNavItems: NavItem[] = [
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
+    const { auth } = usePage().props;
+    const visibleItems =
+        auth.user.role === 'technician'
+            ? sidebarNavItems.filter((item) => item.title !== 'Perfil')
+            : sidebarNavItems;
 
     return (
         <Page width="content">
@@ -45,7 +50,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                         className="grid grid-cols-3 gap-1 lg:flex lg:flex-col"
                         aria-label="Configuración"
                     >
-                        {sidebarNavItems.map((item, index) => (
+                        {visibleItems.map((item, index) => (
                             <Button
                                 key={`${toUrl(item.href)}-${index}`}
                                 size="sm"

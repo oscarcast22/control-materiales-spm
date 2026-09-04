@@ -61,6 +61,7 @@ type Props = {
             last: number | null;
             missing_count: number;
             missing: number[];
+            missing_truncated: boolean;
         }[];
     };
 };
@@ -149,6 +150,14 @@ export default function Dashboard({
                                                         ),
                                                     )}
                                                 </div>
+                                                {row.missing_truncated && (
+                                                    <p className="mt-2 text-xs text-muted-foreground">
+                                                        Se muestran los primeros{' '}
+                                                        {row.missing.length} de{' '}
+                                                        {row.missing_count}{' '}
+                                                        folios faltantes.
+                                                    </p>
+                                                )}
                                             </div>
                                         ))}
                                 </CollapsibleContent>

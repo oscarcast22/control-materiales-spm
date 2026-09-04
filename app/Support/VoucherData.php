@@ -6,6 +6,7 @@ use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
 use App\Models\MaterialApplication;
 use App\Models\MaterialApplicationReport;
+use App\Models\User;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
 
@@ -29,14 +30,22 @@ final class VoucherData
     }
 
     /** @return array<string, mixed> */
-    public static function make(Voucher $voucher, bool $detailed = false): array
+    public static function make(Voucher $voucher, bool $detailed = false, ?User $user = null): array
     {
-        $voucher->loadMissing([
+        $user ??= auth()->user();
+        $relations = [
             'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'actionIndicator',
-            'destinations', 'items.material', 'items.unit', 'items.applications.report.attachment', 'attachments',
-            'applicationReports.applications.item.material', 'applicationReports.applications.item.unit',
-            'applicationReports.attachment',
-        ]);
+            'destinations', 'items.material', 'items.unit', 'items.applications',
+        ];
+        if ($detailed) {
+            $relations = [
+                ...$relations,
+                'items.applications.report.attachment', 'attachments',
+                'applicationReports.applications.item.material', 'applicationReports.applications.item.unit',
+                'applicationReports.attachment',
+            ];
+        }
+        $voucher->loadMissing($relations);
 
         $isEntry = $voucher->direction === VoucherDirection::Entry;
         $items = $voucher->items->map(fn (VoucherItem $item): array => self::item($item, $detailed, $isEntry))->values();
@@ -83,17 +92,24 @@ final class VoucherData
             'cancellation_reason' => $voucher->cancellation_reason,
             'items_count' => $items->count(),
             'items' => $items,
-            'application_reports' => $detailed ? self::applicationReports($voucher) : [],
+            'application_reports' => $detailed ? self::applicationReports($voucher, $user) : [],
             'attachments' => $detailed ? $voucher->attachments->map->only([
                 'id', 'original_name', 'mime_type', 'size', 'created_at',
             ])->values() : [],
             'created_at' => $voucher->created_at?->toIso8601String(),
             'updated_at' => $voucher->updated_at?->toIso8601String(),
+            'permissions' => [
+                'update' => $user?->can('update', $voucher) ?? false,
+                'cancel' => $user?->can('cancel', $voucher) ?? false,
+                'review' => $user?->can('review', $voucher) ?? false,
+                'print' => $user?->can('print', $voucher) ?? false,
+                'create_application' => $user?->can('createApplication', $voucher) ?? false,
+            ],
         ];
     }
 
     /** @return array<int, array<string, mixed>> */
-    private static function applicationReports(Voucher $voucher): array
+    private static function applicationReports(Voucher $voucher, ?User $user): array
     {
         $reports = $voucher->applicationReports
             ->map(fn (MaterialApplicationReport $report): array => [
@@ -101,10 +117,16 @@ final class VoucherData
                 'id' => $report->id,
                 'occurred_on' => $report->occurred_on->format('Y-m-d'),
                 'service_order' => $report->reference,
-                'editable' => true,
+                'notes' => $report->notes,
+                'editable' => $user?->can('update', $report) ?? false,
+                'permissions' => [
+                    'update' => $user?->can('update', $report) ?? false,
+                    'replace_attachment' => $user?->can('replaceAttachment', $report) ?? false,
+                    'remove_attachment' => $user?->can('removeAttachment', $report) ?? false,
+                ],
                 'applications' => $report->applications
                     ->sortByDesc('id')
-                    ->map(fn (MaterialApplication $application): array => self::applicationLine($application))
+                    ->map(fn (MaterialApplication $application): array => self::applicationLine($application, $user))
                     ->values(),
                 'attachment' => $report->attachment?->only([
                     'id', 'original_name', 'mime_type', 'size',
@@ -123,8 +145,14 @@ final class VoucherData
                 'id' => null,
                 'occurred_on' => $application->occurred_on->format('Y-m-d'),
                 'service_order' => $application->reference,
+                'notes' => $application->notes,
                 'editable' => false,
-                'applications' => [self::applicationLine($application)],
+                'permissions' => [
+                    'update' => false,
+                    'replace_attachment' => false,
+                    'remove_attachment' => false,
+                ],
+                'applications' => [self::applicationLine($application, $user)],
                 'attachment' => null,
             ]);
 
@@ -136,7 +164,7 @@ final class VoucherData
     }
 
     /** @return array<string, mixed> */
-    private static function applicationLine(MaterialApplication $application): array
+    private static function applicationLine(MaterialApplication $application, ?User $user): array
     {
         return [
             'id' => $application->id,
@@ -147,6 +175,9 @@ final class VoucherData
             'legacy_slot' => $application->legacy_slot,
             'voided_at' => $application->voided_at?->toIso8601String(),
             'void_reason' => $application->void_reason,
+            'permissions' => [
+                'void' => $user?->can('void', $application) ?? false,
+            ],
         ];
     }
 
@@ -173,7 +204,9 @@ final class VoucherData
                     'quantity' => $row->quantity,
                     'reference' => $row->reference,
                     'destination_snapshot' => $row->destination_snapshot,
-                    'notes' => $row->notes,
+                    'notes' => $row->application_report_id !== null
+                        ? ($row->report->notes ?? $row->notes)
+                        : $row->notes,
                     'legacy_slot' => $row->legacy_slot,
                     'voided_at' => $row->voided_at?->toIso8601String(),
                     'void_reason' => $row->void_reason,

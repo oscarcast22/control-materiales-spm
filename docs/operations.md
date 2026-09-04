@@ -8,8 +8,8 @@ La topología, el inventario de recursos y el workflow vigente para publicar cam
 
 Los controles ya presentes incluyen:
 
-- registro público deshabilitado y cuentas creadas por consola;
-- contraseña hasheada, rate limiting, correo verificado y cierre de sesión para cuentas inactivas;
+- registro público deshabilitado, cuentas administradoras creadas por consola y accesos técnicos creados desde Personas;
+- contraseña hasheada, login limitado por correo o usuario y cierre de sesión para cuentas, personas o funciones técnicas inactivas;
 - CSRF y cookies HTTP-only/SameSite proporcionados por Laravel;
 - dos factores y passkeys opcionales;
 - gates/policies en operaciones y descargas;
@@ -41,6 +41,14 @@ También carga el programa fijo SPM-06, 17 acciones y 21 indicadores desde el ca
 Nelson Treto y Fco. Fierro quedan habilitados inicialmente sólo para entregar material; no aparecen como técnicos que reciben. Cipriano Salas queda como único autorizador y el formulario lo asigna automáticamente mientras sea la única opción activa.
 
 Configure previamente PostgreSQL en `.env`. El comando de usuarios crea una cuenta activa y verificada. No pase la contraseña mediante `--password` en una terminal compartida porque puede quedar en el historial o lista de procesos; utilice el prompt oculto.
+
+## Cuentas técnicas
+
+Una administradora crea el acceso desde **Catálogos → Personas → Crear acceso**. La persona debe estar activa y conservar la función **Recibe / técnico**. El nombre de usuario se guarda en minúsculas y acepta únicamente letras, números, punto, guion y guion bajo; el correo es opcional.
+
+Desde el mismo control se pueden cambiar username y correo, pausar o reactivar el acceso y restablecer la contraseña. La contraseña anterior no se muestra y los eventos de auditoría nunca guardan contraseñas ni hashes. Una persona vinculada no puede perder su función técnica, desactivarse ni eliminarse. Al fusionar personas, la cuenta sólo se transfiere si el destino no tiene otra cuenta.
+
+Las cuentas con correo pueden usar el enlace automático de recuperación. Una cuenta sin correo debe solicitar el restablecimiento a una administradora. El técnico sí puede cambiar su contraseña actual desde **Seguridad**, pero no puede modificar su username, correo, rol, vínculo o estado.
 
 ## Canonicalización de partidas al actualizar
 
@@ -99,6 +107,7 @@ Si el histórico se cargó antes que el catálogo curado, no volver a importar e
 - Disco privado persistente y sin acceso directo desde el servidor web.
 - Correo real configurado si se habilitará recuperación de contraseña.
 - Al menos dos cuentas administrativas controladas para evitar bloqueo accidental.
+- Cuentas técnicas creadas sólo para personas activas que reciben material; probar acceso y cambio de contraseña antes de entregarlas.
 - Autenticación de dos factores habilitada cuando el entorno lo permita.
 - Límites de tamaño del servidor web compatibles con los 10 MB por adjunto.
 - `php artisan optimize` ejecutado después de desplegar.
@@ -162,6 +171,8 @@ Registrar la versión del commit, fecha, resultado de migraciones, respaldo prev
 ## Recuperación y rollback
 
 - El código puede volver al commit anterior sólo si sus migraciones siguen siendo compatibles.
+- Después de crear una cuenta técnica, no volver únicamente el código a una versión anterior al sistema de roles. Esa versión interpretaría cualquier cuenta activa como administradora. Para volver a ese punto se deben detener las capturas y restaurar juntos el código, la base y los archivos privados desde el mismo respaldo previo al release.
+- El `down()` de la migración de acceso técnico es una medida controlada: primero desactiva las cuentas técnicas, pero al eliminar rol y vínculo con la persona pierde información que un `up()` posterior no puede reconstruir. No sustituye la restauración del respaldo previo.
 - Nunca usar `migrate:fresh` para resolver un despliegue fallido con datos reales.
 - Antes de una migración irreversible, crear y verificar un respaldo.
 - Si la base y el código quedan desalineados, detener la captura, restaurar el conjunto completo y documentar el incidente.
@@ -169,7 +180,7 @@ Registrar la versión del commit, fecha, resultado de migraciones, respaldo prev
 
 ## Riesgos aceptados del MVP
 
-- Una sola clase de usuario activo puede modificar toda la información operativa.
+- La pausa o reasignación incorrecta de una cuenta técnica puede interrumpir la captura de aplicaciones; Catálogos exige preservar el vínculo válido y deja auditoría, pero el procedimiento administrativo sigue siendo crítico.
 - La auditoría no tiene todavía una pantalla administrativa ni almacenamiento inmutable externo.
 - Los adjuntos no pasan por antivirus; sólo se restringen extensión, MIME y tamaño.
 - El despliegue es manual desde una computadora administrativa; todavía no existe CI/CD ni monitoreo externo con alertas.

@@ -48,7 +48,8 @@ class AppServiceProvider extends ServiceProvider
             : null,
         );
 
-        Gate::define('manage-catalogs', fn ($user): bool => (bool) $user->is_active);
-        Gate::define('view-reports', fn ($user): bool => (bool) $user->is_active);
+        Gate::define('manage-catalogs', fn ($user): bool => $user->isAdministrator());
+        Gate::define('view-reports', fn ($user): bool => $user->isAdministrator());
+        Gate::define('manage-accounts', fn ($user): bool => $user->isAdministrator());
     }
 }

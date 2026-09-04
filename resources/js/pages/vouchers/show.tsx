@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
     ClipboardCheck,
@@ -6,8 +6,11 @@ import {
     FileText,
     Pencil,
     Printer,
+    Trash2,
+    Upload,
     Wrench,
 } from 'lucide-react';
+import type { FormEvent } from 'react';
 import { ConfirmActionDialog } from '@/components/confirm-action-dialog';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { Page } from '@/components/page';
@@ -24,6 +27,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { IconButton } from '@/components/ui/icon-button';
+import { Input } from '@/components/ui/input';
 import {
     Table,
     TableBody,
@@ -46,13 +50,16 @@ export default function VoucherShow({
     embedded = false,
     onEdit,
     onRefresh,
+    backUrl = '/vouchers',
 }: {
     voucher: Voucher;
     embedded?: boolean;
     onEdit?: () => void;
     onRefresh?: () => void;
+    backUrl?: string;
 }) {
     const canApply =
+        voucher.permissions.create_application &&
         voucher.direction === 'exit' &&
         voucher.status === 'active' &&
         voucher.items.some((item) => Number(item.pending_quantity) > 0);
@@ -73,7 +80,7 @@ export default function VoucherShow({
                                 variant="ghost"
                                 asChild
                             >
-                                <Link href="/vouchers">
+                                <Link href={backUrl}>
                                     <ArrowLeft />
                                 </Link>
                             </IconButton>
@@ -102,56 +109,60 @@ export default function VoucherShow({
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" asChild>
-                            <a
-                                href={`/vouchers/${voucher.id}/print`}
-                                target="_blank"
-                            >
-                                <Printer data-icon="inline-start" />
-                                Imprimir
-                            </a>
-                        </Button>
-                        {embedded ? (
-                            <Button variant="outline" onClick={onEdit}>
-                                <Pencil data-icon="inline-start" />
-                                Editar
-                            </Button>
-                        ) : (
+                        {voucher.permissions.print && (
                             <Button variant="outline" asChild>
-                                <VoucherModalLink
-                                    mode="edit"
-                                    voucherId={voucher.id}
+                                <a
+                                    href={`/vouchers/${voucher.id}/print`}
+                                    target="_blank"
                                 >
+                                    <Printer data-icon="inline-start" />
+                                    Imprimir
+                                </a>
+                            </Button>
+                        )}
+                        {voucher.permissions.update &&
+                            (embedded ? (
+                                <Button variant="outline" onClick={onEdit}>
                                     <Pencil data-icon="inline-start" />
                                     Editar
-                                </VoucherModalLink>
-                            </Button>
-                        )}
-                        {voucher.status === 'active' && (
-                            <ConfirmActionDialog
-                                trigger={
-                                    <Button variant="destructive">
-                                        Cancelar
-                                    </Button>
-                                }
-                                title="Cancelar vale"
-                                description="La cancelación conserva el folio y deja una traza auditable. No se puede deshacer desde esta pantalla."
-                                confirmLabel="Cancelar vale"
-                                destructive
-                                reasonLabel="Motivo de cancelación"
-                                reasonPlaceholder="Explica por qué se cancela este vale"
-                                onConfirm={(reason) =>
-                                    router.post(
-                                        `/vouchers/${voucher.id}/cancel`,
-                                        { reason, _dialog: embedded },
-                                        {
-                                            preserveScroll: true,
-                                            onSuccess: onRefresh,
-                                        },
-                                    )
-                                }
-                            />
-                        )}
+                                </Button>
+                            ) : (
+                                <Button variant="outline" asChild>
+                                    <VoucherModalLink
+                                        mode="edit"
+                                        voucherId={voucher.id}
+                                    >
+                                        <Pencil data-icon="inline-start" />
+                                        Editar
+                                    </VoucherModalLink>
+                                </Button>
+                            ))}
+                        {voucher.status === 'active' &&
+                            voucher.permissions.cancel && (
+                                <ConfirmActionDialog
+                                    trigger={
+                                        <Button variant="destructive">
+                                            Cancelar
+                                        </Button>
+                                    }
+                                    title="Cancelar vale"
+                                    description="La cancelación conserva el folio y deja una traza auditable. No se puede deshacer desde esta pantalla."
+                                    confirmLabel="Cancelar vale"
+                                    destructive
+                                    reasonLabel="Motivo de cancelación"
+                                    reasonPlaceholder="Explica por qué se cancela este vale"
+                                    onConfirm={(reason) =>
+                                        router.post(
+                                            `/vouchers/${voucher.id}/cancel`,
+                                            { reason, _dialog: embedded },
+                                            {
+                                                preserveScroll: true,
+                                                onSuccess: onRefresh,
+                                            },
+                                        )
+                                    }
+                                />
+                            )}
                     </div>
                 </div>
                 {voucher.status === 'cancelled' && (
@@ -201,31 +212,32 @@ export default function VoucherShow({
                                         )}
                                     </ul>
                                 </div>
-                                {voucher.needs_review && (
-                                    <ConfirmActionDialog
-                                        trigger={
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                            >
-                                                Marcar revisión atendida
-                                            </Button>
-                                        }
-                                        title="Marcar revisión atendida"
-                                        description="Confirma que las incidencias de importación fueron revisadas. El detalle seguirá disponible en el historial del vale."
-                                        confirmLabel="Marcar como atendida"
-                                        onConfirm={() =>
-                                            router.post(
-                                                `/vouchers/${voucher.id}/review`,
-                                                { _dialog: embedded },
-                                                {
-                                                    preserveScroll: true,
-                                                    onSuccess: onRefresh,
-                                                },
-                                            )
-                                        }
-                                    />
-                                )}
+                                {voucher.needs_review &&
+                                    voucher.permissions.review && (
+                                        <ConfirmActionDialog
+                                            trigger={
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                >
+                                                    Marcar revisión atendida
+                                                </Button>
+                                            }
+                                            title="Marcar revisión atendida"
+                                            description="Confirma que las incidencias de importación fueron revisadas. El detalle seguirá disponible en el historial del vale."
+                                            confirmLabel="Marcar como atendida"
+                                            onConfirm={() =>
+                                                router.post(
+                                                    `/vouchers/${voucher.id}/review`,
+                                                    { _dialog: embedded },
+                                                    {
+                                                        preserveScroll: true,
+                                                        onSuccess: onRefresh,
+                                                    },
+                                                )
+                                            }
+                                        />
+                                    )}
                             </div>
                         </AlertDescription>
                     </Alert>
@@ -317,8 +329,8 @@ export default function VoucherShow({
                                     </h2>
                                     <p className="mt-0.5 text-sm text-muted-foreground">
                                         Cada registro reúne la fecha, una orden
-                                        opcional y el desglose de materiales
-                                        utilizados.
+                                        de servicio obligatoria y el desglose de
+                                        materiales utilizados.
                                     </p>
                                 </div>
                             </div>
@@ -391,30 +403,31 @@ export default function VoucherShow({
                                             {formatBytes(file.size)}
                                         </span>
                                     </a>
-                                    {voucher.status === 'active' && (
-                                        <ConfirmActionDialog
-                                            trigger={
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                >
-                                                    Eliminar
-                                                </Button>
-                                            }
-                                            title="Eliminar comprobante"
-                                            description={`Eliminarás “${file.original_name}” de este vale. Esta acción no se puede deshacer.`}
-                                            confirmLabel="Eliminar archivo"
-                                            destructive
-                                            onConfirm={() =>
-                                                router.delete(
-                                                    `/attachments/${file.id}`,
-                                                    {
-                                                        preserveScroll: true,
-                                                    },
-                                                )
-                                            }
-                                        />
-                                    )}
+                                    {voucher.status === 'active' &&
+                                        voucher.permissions.update && (
+                                            <ConfirmActionDialog
+                                                trigger={
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                    >
+                                                        Eliminar
+                                                    </Button>
+                                                }
+                                                title="Eliminar comprobante"
+                                                description={`Eliminarás “${file.original_name}” de este vale. Esta acción no se puede deshacer.`}
+                                                confirmLabel="Eliminar archivo"
+                                                destructive
+                                                onConfirm={() =>
+                                                    router.delete(
+                                                        `/attachments/${file.id}`,
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    )
+                                                }
+                                            />
+                                        )}
                                 </div>
                             ))}
                         </CardContent>
@@ -590,7 +603,7 @@ function ApplicationReportCard({
                         </Button>
                     )}
                     {voucher.status === 'active' &&
-                        report.editable &&
+                        report.permissions.update &&
                         report.id && (
                             <QuickApplicationDialog
                                 voucher={voucher}
@@ -604,8 +617,19 @@ function ApplicationReportCard({
                                 }
                             />
                         )}
+                    {report.id && (
+                        <ApplicationEvidenceActions report={report} />
+                    )}
                 </div>
             </CardHeader>
+            {report.notes && (
+                <div className="border-b bg-muted/20 px-6 py-3 text-sm text-text-secondary">
+                    <span className="font-semibold text-foreground">
+                        Comentarios:{' '}
+                    </span>
+                    {report.notes}
+                </div>
+            )}
             <CardContent>
                 <DataTableSurface
                     label={`Materiales de ${report.service_order ? `la orden ${report.service_order}` : 'la aplicación sin orden'}`}
@@ -632,6 +656,89 @@ function ApplicationReportCard({
                 </DataTableSurface>
             </CardContent>
         </Card>
+    );
+}
+
+function ApplicationEvidenceActions({
+    report,
+}: {
+    report: MaterialApplicationReport;
+}) {
+    const form = useForm<{ attachment: File | null }>({ attachment: null });
+
+    if (
+        !report.id ||
+        (!report.permissions.replace_attachment &&
+            !report.permissions.remove_attachment)
+    ) {
+        return null;
+    }
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+
+        if (!form.data.attachment) {
+            return;
+        }
+
+        form.post(`/material-application-reports/${report.id}/attachment`, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => form.reset(),
+        });
+    };
+
+    return (
+        <div className="flex flex-wrap items-center gap-2">
+            {report.permissions.replace_attachment && (
+                <form onSubmit={submit} className="flex items-center gap-2">
+                    <Input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp,.pdf"
+                        aria-label={
+                            report.attachment
+                                ? 'Seleccionar nueva evidencia'
+                                : 'Seleccionar evidencia'
+                        }
+                        className="h-9 max-w-52 text-xs"
+                        onChange={(event) =>
+                            form.setData(
+                                'attachment',
+                                event.target.files?.[0] ?? null,
+                            )
+                        }
+                    />
+                    <Button
+                        type="submit"
+                        size="sm"
+                        variant="outline"
+                        disabled={!form.data.attachment || form.processing}
+                    >
+                        <Upload data-icon="inline-start" />
+                        {report.attachment ? 'Reemplazar' : 'Agregar'}
+                    </Button>
+                </form>
+            )}
+            {report.attachment && report.permissions.remove_attachment && (
+                <ConfirmActionDialog
+                    trigger={
+                        <Button size="sm" variant="ghost">
+                            <Trash2 data-icon="inline-start" /> Retirar
+                        </Button>
+                    }
+                    title="Retirar evidencia"
+                    description="El archivo dejará de estar disponible y la acción quedará registrada en auditoría."
+                    confirmLabel="Retirar evidencia"
+                    destructive
+                    onConfirm={() =>
+                        router.delete(
+                            `/material-application-reports/${report.id}/attachment`,
+                            { preserveScroll: true },
+                        )
+                    }
+                />
+            )}
+        </div>
     );
 }
 

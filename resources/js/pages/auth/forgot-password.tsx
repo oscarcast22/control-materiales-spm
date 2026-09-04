@@ -21,6 +21,11 @@ export default function ForgotPassword({ status }: { status?: string }) {
             )}
 
             <div className="flex flex-col gap-6">
+                <p className="rounded-lg border bg-muted/40 p-3 text-sm leading-6 text-muted-foreground">
+                    Si tu cuenta técnica no tiene correo, solicita a una
+                    administradora que restablezca tu contraseña desde
+                    Catálogos.
+                </p>
                 <Form {...email.form()}>
                     {({ processing, errors }) => (
                         <>
