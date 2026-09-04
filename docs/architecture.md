@@ -27,6 +27,7 @@ PostgreSQL + almacenamiento privado de adjuntos
 - `Normalizer`: genera claves comparables para folios, materiales, ubicaciones y personas.
 - `VoucherSequence`: detecta huecos numéricos por tipo a partir de los inicios configurados. Las trazas inválidas pueden extender el último folio observado, pero nunca cuentan como folios presentes.
 - `VoucherData`: construye el contrato de presentación de un vale y calcula los estados de sus partidas.
+- `Voucher::visibleTo(User)`: conserva todos los vales para administradores y limita al técnico a salidas activas propias desde el corte de 2026.
 - `MaterialTracking`: aplica el corte de 2026 y agrega partidas por material/unidad o por técnico.
 - `CatalogIndexData`: valida la sección y los filtros de Catálogos, limita las consultas a los datos visibles y construye su navegación y paginación.
 - `LegacyControlWorkbook`: lee únicamente las hojas de Almacén y Patio y selecciona agosto de 2026.
@@ -45,6 +46,7 @@ Catálogos acepta `section=people|materials|destinations|programs` y abre Person
 ```mermaid
 erDiagram
     USERS ||--o{ VOUCHERS : creates_updates
+    PEOPLE ||--o| USERS : technical_account
     STORAGE_LOCATIONS ||--o{ VOUCHERS : contains
     PEOPLE ||--o{ VOUCHERS : receives_delivers_authorizes
     PROGRAMS ||--o{ VOUCHERS : classifies
@@ -71,7 +73,7 @@ erDiagram
 
 | Tabla                          | Responsabilidad                                                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `users`                        | Cuentas autorizadas. `is_active` bloquea inmediatamente el acceso.                                                 |
+| `users`                        | Cuentas autorizadas con rol fijo, usuario opcional, correo opcional y vínculo único a persona para técnicos. `is_active` bloquea inmediatamente el acceso. |
 | `storage_locations`            | Configuración estructural de los tipos de vale Almacén y Patio; no expone rutas de administración.                 |
 | `material_storage_location`    | Relación editable que limita qué materiales se pueden capturar en cada tipo de vale.                               |
 | `units`                        | Unidad estructurada usada para cantidades.                                                                         |
@@ -87,7 +89,7 @@ erDiagram
 | `destination_voucher`          | Relación de una o varias ubicaciones con cada vale.                                                                |
 | `vouchers`                     | Cabecera del documento, estado, revisión y responsables.                                                           |
 | `voucher_items`                | Cantidad entregada y referencias al material y unidad canónicos; la descripción se mantiene sincronizada para búsquedas y presentación. |
-| `material_application_reports` | Agrupa una aplicación capturada en bloque: fecha, orden de servicio opcional, desglose de materiales y evidencia opcional. |
+| `material_application_reports` | Agrupa una aplicación capturada en bloque: fecha, orden de servicio, comentario común, desglose de materiales y evidencia opcional. Los históricos pueden conservar orden nula. |
 | `material_applications`        | Cantidad aplicada a una partida; una anulación conserva fecha, usuario y motivo.                                   |
 | `voucher_attachments`          | Metadatos de evidencia guardada en almacenamiento privado.                                                         |
 | `audit_events`                 | Valores anteriores y posteriores de operaciones sensibles.                                                         |
@@ -98,8 +100,8 @@ erDiagram
 
 - `vouchers(storage_location_id, folio_key)` es único. `folio_key` deriva del folio normalizado.
 - Las cantidades se almacenan con decimal de tres posiciones por compatibilidad de datos, pero toda captura operativa acepta únicamente números enteros positivos (o cero al anular una aplicación desde su edición).
-- Una aplicación nueva no puede superar el pendiente; las partidas se bloquean durante la transacción para evitar carreras.
-- Una aplicación anulada deja de afectar las sumas, pero permanece auditable. Corregir una cantidad anula el valor anterior y crea su reemplazo dentro del mismo grupo de aplicación; si no se indica motivo, se registra “Corrección sin motivo especificado”.
+- Una aplicación nueva requiere orden de servicio y no puede superar el pendiente; las partidas se bloquean durante la transacción para evitar carreras.
+- Una aplicación anulada deja de afectar las sumas, pero permanece auditable. Corregir una cantidad requiere motivo, anula el valor anterior y crea su reemplazo dentro del mismo grupo de aplicación.
 - Una partida con aplicaciones vigentes no puede cambiar de material, cantidad ni eliminarse; primero se anulan las aplicaciones con motivo.
 - La unidad de cada partida siempre deriva de la unidad predeterminada del material. Corregir el nombre o la unidad canónica del material se propaga a todos sus vales, conserva la cantidad numérica y deja auditoría.
 - Los códigos y relaciones de SPM-06, acciones e indicadores son inmutables; acciones e indicadores sólo permiten corregir nombre y estado.
@@ -116,6 +118,7 @@ erDiagram
 - Las agregaciones cuantitativas se separan por `material_id` y `unit_id`.
 - El total abstracto de “materiales” mostrado en la fila resumida de Seguimiento se calcula únicamente en el frontend sobre las partidas filtradas. Es una ayuda visual y no forma parte del contrato agregado, los saldos contables ni el XLSX.
 - Los adjuntos residen en el disco privado y sólo se descargan después de autorizar el vale.
+- Una cuenta técnica requiere `person_id` único, persona activa y función `can_receive_material`. Esa función y el estado de la persona no pueden retirarse mientras exista el vínculo.
 
 ## Estados derivados
 
@@ -133,6 +136,8 @@ Las entradas usan el estado informativo `received`. Los vales cancelados usan `c
 
 ## Seguridad y permisos
 
-Todas las rutas operativas requieren sesión y correo verificado. Las políticas y gates permiten operar únicamente a cuentas activas. El MVP tiene un solo nivel de permisos; cualquier cuenta activa puede gestionar vales, catálogos y reportes. Laravel proporciona CSRF, regeneración de sesión, hashing de contraseñas y rate limiting del acceso. Dos factores y passkeys están disponibles como opciones de la cuenta.
+Todas las rutas operativas requieren sesión; cuando corresponde, Fortify conserva la verificación de correo. El acceso se limita a cuentas activas y acepta correo o username normalizado. Una cuenta técnica sin correo no usa recuperación automática y debe solicitar un restablecimiento administrativo.
 
-Esta arquitectura es suficiente para el MVP de una usuaria, pero no representa separación de funciones. Antes de incorporar almacén, técnicos u otras áreas debe diseñarse un modelo de roles.
+Los roles fijos son `administrator` y `technician`. Los gates globales reservan Catálogos, Seguimiento y administración de cuentas al administrador. Las policies separan consulta, edición, cancelación, revisión, impresión y captura de aplicaciones. No existe un `Gate::before`: cada operación debe estar declarada. El scope limita consultas y las policies vuelven a validar accesos directos.
+
+Un técnico ve solamente “Mis vales”, Seguridad y Apariencia. Puede registrar aplicaciones en sus vales, consultar todo su historial y modificar, anular o gestionar evidencia únicamente en reportes creados por su cuenta mientras el vale continúe asignado y la cuenta/persona sigan habilitadas. Las capacidades compartidas con React sólo ocultan controles; el servidor conserva la decisión definitiva.

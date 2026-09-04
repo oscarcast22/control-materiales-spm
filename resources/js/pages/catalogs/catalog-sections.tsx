@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import {
     Boxes,
+    KeyRound,
     MapPin,
     Pencil,
     Plus,
@@ -12,6 +13,7 @@ import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { DataTableSurface } from '@/components/data-table';
 import InputError from '@/components/input-error';
+import PasswordInput from '@/components/password-input';
 import { SimpleSelect } from '@/components/simple-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -899,6 +901,7 @@ export function PeopleSection({
 }) {
     const [createOpen, setCreateOpen] = useState(false);
     const [editing, setEditing] = useState<Person | null>(null);
+    const [accountPerson, setAccountPerson] = useState<Person | null>(null);
 
     return (
         <SectionShell
@@ -930,14 +933,17 @@ export function PeopleSection({
                             <Table className="table-fixed">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[42%]">
+                                        <TableHead className="w-[32%]">
                                             Nombre
                                         </TableHead>
-                                        <TableHead className="w-[33%]">
+                                        <TableHead className="w-[28%]">
                                             Funciones
                                         </TableHead>
-                                        <TableHead className="w-[25%] text-right">
-                                            Editar
+                                        <TableHead className="w-[20%]">
+                                            Acceso
+                                        </TableHead>
+                                        <TableHead className="w-[20%] text-right">
+                                            Acciones
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -966,8 +972,55 @@ export function PeopleSection({
                                                     )}
                                                 </div>
                                             </TableCell>
+                                            <TableCell className="whitespace-normal">
+                                                {person.account ? (
+                                                    <div>
+                                                        <Badge
+                                                            variant={
+                                                                person.account
+                                                                    .is_active
+                                                                    ? 'success'
+                                                                    : 'secondary'
+                                                            }
+                                                        >
+                                                            {person.account
+                                                                .is_active
+                                                                ? 'Acceso activo'
+                                                                : 'Acceso pausado'}
+                                                        </Badge>
+                                                        <p className="mt-1 font-mono text-xs text-muted-foreground">
+                                                            {
+                                                                person.account
+                                                                    .username
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <Badge variant="outline">
+                                                        Sin cuenta
+                                                    </Badge>
+                                                )}
+                                            </TableCell>
                                             <TableCell>
-                                                <div className="flex justify-end gap-1">
+                                                <div className="flex flex-wrap justify-end gap-1">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            setAccountPerson(
+                                                                person,
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            !person.can_receive_material ||
+                                                            !person.is_active
+                                                        }
+                                                    >
+                                                        <KeyRound aria-hidden="true" />
+                                                        {person.account
+                                                            ? 'Acceso'
+                                                            : 'Crear acceso'}
+                                                    </Button>
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
@@ -1008,8 +1061,27 @@ export function PeopleSection({
                                             ))}
                                         </div>
                                     </MobileDatum>
+                                    <MobileDatum label="Acceso técnico">
+                                        {person.account
+                                            ? `${person.account.username} · ${person.account.is_active ? 'activo' : 'pausado'}`
+                                            : 'Sin cuenta'}
+                                    </MobileDatum>
                                 </div>
                                 <div className="mt-4 flex justify-end gap-1 border-t border-border pt-3">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setAccountPerson(person)}
+                                        disabled={
+                                            !person.can_receive_material ||
+                                            !person.is_active
+                                        }
+                                    >
+                                        <KeyRound aria-hidden="true" />
+                                        {person.account
+                                            ? 'Acceso'
+                                            : 'Crear acceso'}
+                                    </Button>
                                     <Button
                                         size="sm"
                                         variant="outline"
@@ -1034,6 +1106,14 @@ export function PeopleSection({
                     open
                     person={editing}
                     onOpenChange={(open) => !open && setEditing(null)}
+                />
+            )}
+            {accountPerson && (
+                <TechnicianAccountDialog
+                    key={accountPerson.id}
+                    person={accountPerson}
+                    open
+                    onOpenChange={(open) => !open && setAccountPerson(null)}
                 />
             )}
         </SectionShell>
@@ -1119,6 +1199,10 @@ function PersonDialog({
                                 >
                                     <Checkbox
                                         checked={form.data[key]}
+                                        disabled={
+                                            key === 'can_receive_material' &&
+                                            Boolean(person?.account)
+                                        }
                                         onCheckedChange={(value) =>
                                             form.setData(key, Boolean(value))
                                         }
@@ -1168,6 +1252,242 @@ function PersonDialog({
                         </div>
                     </DialogFooter>
                 </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function TechnicianAccountDialog({
+    person,
+    open,
+    onOpenChange,
+}: {
+    person: Person;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const account = person.account;
+    const details = useForm({
+        username: account?.username ?? '',
+        email: account?.email ?? '',
+        is_active: account?.is_active ?? true,
+        password: '',
+        password_confirmation: '',
+    });
+    const reset = useForm({ password: '', password_confirmation: '' });
+    const submitDetails = (event: FormEvent) => {
+        event.preventDefault();
+        const options = {
+            preserveScroll: true,
+            onSuccess: () => onOpenChange(false),
+        };
+
+        if (account) {
+            details.put(`/catalogs/people/${person.id}/account`, options);
+        } else {
+            details.post(`/catalogs/people/${person.id}/account`, options);
+        }
+    };
+    const submitReset = (event: FormEvent) => {
+        event.preventDefault();
+        reset.put(`/catalogs/people/${person.id}/account/password`, {
+            preserveScroll: true,
+            onSuccess: () => reset.reset(),
+        });
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>
+                        {account
+                            ? 'Administrar acceso técnico'
+                            : 'Crear acceso técnico'}
+                    </DialogTitle>
+                    <DialogDescription>
+                        Cuenta vinculada a {person.name}. El nombre de usuario
+                        será el identificador principal para iniciar sesión.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={submitDetails} className="grid gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="technician-username">
+                            Nombre de usuario
+                        </Label>
+                        <Input
+                            id="technician-username"
+                            value={details.data.username}
+                            onChange={(event) =>
+                                details.setData(
+                                    'username',
+                                    event.target.value.toLowerCase(),
+                                )
+                            }
+                            placeholder="nombre.apellido"
+                            autoComplete="off"
+                            required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Sólo letras minúsculas, números, punto, guion y
+                            guion bajo.
+                        </p>
+                        <InputError message={details.errors.username} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="technician-email">
+                            Correo (opcional)
+                        </Label>
+                        <Input
+                            id="technician-email"
+                            type="email"
+                            value={details.data.email}
+                            onChange={(event) =>
+                                details.setData('email', event.target.value)
+                            }
+                            placeholder="nombre@ejemplo.com"
+                            autoComplete="off"
+                        />
+                        <InputError message={details.errors.email} />
+                    </div>
+                    {!account && (
+                        <div className="grid gap-4 rounded-xl border bg-muted/25 p-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="technician-password">
+                                    Contraseña temporal
+                                </Label>
+                                <PasswordInput
+                                    id="technician-password"
+                                    value={details.data.password}
+                                    onChange={(event) =>
+                                        details.setData(
+                                            'password',
+                                            event.target.value,
+                                        )
+                                    }
+                                    autoComplete="new-password"
+                                    required
+                                />
+                                <InputError message={details.errors.password} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="technician-password-confirmation">
+                                    Confirmar contraseña
+                                </Label>
+                                <PasswordInput
+                                    id="technician-password-confirmation"
+                                    value={details.data.password_confirmation}
+                                    onChange={(event) =>
+                                        details.setData(
+                                            'password_confirmation',
+                                            event.target.value,
+                                        )
+                                    }
+                                    autoComplete="new-password"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {account && (
+                        <Label className="flex items-center gap-3 rounded-xl border p-3">
+                            <Checkbox
+                                checked={details.data.is_active}
+                                onCheckedChange={(value) =>
+                                    details.setData('is_active', Boolean(value))
+                                }
+                            />
+                            <span>
+                                <span className="block font-medium">
+                                    Acceso activo
+                                </span>
+                                <span className="block text-xs text-muted-foreground">
+                                    Al pausarlo, la persona no podrá iniciar ni
+                                    conservar sesión.
+                                </span>
+                            </span>
+                        </Label>
+                    )}
+                    <InputError
+                        message={
+                            (details.errors as Record<string, string>).account
+                        }
+                    />
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button disabled={details.processing}>
+                            {account ? 'Guardar acceso' : 'Crear cuenta'}
+                        </Button>
+                    </div>
+                </form>
+                {account && (
+                    <form
+                        onSubmit={submitReset}
+                        className="mt-2 grid gap-4 border-t pt-5"
+                    >
+                        <div>
+                            <h3 className="font-semibold">
+                                Restablecer contraseña
+                            </h3>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Define una nueva contraseña; la anterior nunca
+                                se muestra.
+                            </p>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                            <div className="grid gap-2">
+                                <Label htmlFor="reset-technician-password">
+                                    Nueva contraseña
+                                </Label>
+                                <PasswordInput
+                                    id="reset-technician-password"
+                                    value={reset.data.password}
+                                    onChange={(event) =>
+                                        reset.setData(
+                                            'password',
+                                            event.target.value,
+                                        )
+                                    }
+                                    autoComplete="new-password"
+                                    required
+                                />
+                                <InputError message={reset.errors.password} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="reset-technician-password-confirmation">
+                                    Confirmar
+                                </Label>
+                                <PasswordInput
+                                    id="reset-technician-password-confirmation"
+                                    value={reset.data.password_confirmation}
+                                    onChange={(event) =>
+                                        reset.setData(
+                                            'password_confirmation',
+                                            event.target.value,
+                                        )
+                                    }
+                                    autoComplete="new-password"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <Button
+                            type="submit"
+                            variant="outline"
+                            disabled={reset.processing}
+                            className="justify-self-start"
+                        >
+                            <KeyRound data-icon="inline-start" /> Restablecer
+                            contraseña
+                        </Button>
+                    </form>
+                )}
             </DialogContent>
         </Dialog>
     );

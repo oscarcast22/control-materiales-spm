@@ -30,6 +30,12 @@ export type Person = Named & {
     needs_review?: boolean;
     aliases_count?: number;
     deletion?: CatalogDeletion;
+    account?: {
+        id: number;
+        username: string;
+        email: string | null;
+        is_active: boolean;
+    } | null;
 };
 export type Destination = Named & {
     is_active?: boolean;
@@ -90,6 +96,7 @@ export type ApplicationReportLine = {
     legacy_slot?: number | null;
     voided_at?: string | null;
     void_reason?: string | null;
+    permissions: { void: boolean };
 };
 
 export type MaterialApplicationReport = {
@@ -97,7 +104,13 @@ export type MaterialApplicationReport = {
     id: number | null;
     occurred_on: string;
     service_order?: string | null;
+    notes?: string | null;
     editable: boolean;
+    permissions: {
+        update: boolean;
+        replace_attachment: boolean;
+        remove_attachment: boolean;
+    };
     applications: ApplicationReportLine[];
     attachment?: {
         id: number;
@@ -160,6 +173,13 @@ export type Voucher = {
         size: number;
         created_at: string;
     }[];
+    permissions: {
+        update: boolean;
+        cancel: boolean;
+        review: boolean;
+        print: boolean;
+        create_application: boolean;
+    };
 };
 
 export type InventoryRow = {

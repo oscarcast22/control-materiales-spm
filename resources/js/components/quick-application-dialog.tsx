@@ -22,6 +22,7 @@ import {
     FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { formatDate, formatQuantity } from '@/lib/format';
 import type { MaterialApplicationReport, Voucher, VoucherItem } from '@/types';
 
@@ -39,6 +40,8 @@ type ApplicationForm = {
     voucher_id: number | '';
     occurred_on: string;
     reference: string;
+    notes: string;
+    correction_reason: string;
     items: { voucher_item_id: number; quantity: string }[];
     attachment: File | null;
 };
@@ -85,6 +88,8 @@ const initialForm = (
     voucher_id: voucher?.id ?? '',
     occurred_on: report?.occurred_on ?? today(),
     reference: report?.service_order ?? '',
+    notes: report?.notes ?? '',
+    correction_reason: '',
     items: voucher
         ? asOption(voucher, report).items.map((item) => ({
               voucher_item_id: item.id,
@@ -433,7 +438,7 @@ export function QuickApplicationDialog({
                                 </Field>
                                 <Field invalid={Boolean(form.errors.reference)}>
                                     <FieldLabel htmlFor="application-reference">
-                                        Orden de servicio (opcional)
+                                        Orden de servicio
                                     </FieldLabel>
                                     <Input
                                         id="application-reference"
@@ -445,6 +450,7 @@ export function QuickApplicationDialog({
                                             )
                                         }
                                         placeholder="Ej. A-24391"
+                                        required
                                         aria-invalid={
                                             !!form.errors.reference || undefined
                                         }
@@ -454,6 +460,28 @@ export function QuickApplicationDialog({
                                     </FieldError>
                                 </Field>
                             </FieldGroup>
+
+                            <Field invalid={Boolean(form.errors.notes)}>
+                                <FieldLabel htmlFor="application-notes">
+                                    Comentarios (opcional)
+                                </FieldLabel>
+                                <Textarea
+                                    id="application-notes"
+                                    value={form.data.notes}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'notes',
+                                            event.target.value,
+                                        )
+                                    }
+                                    placeholder="Aclaraciones generales de esta aplicación"
+                                    rows={3}
+                                    aria-invalid={
+                                        !!form.errors.notes || undefined
+                                    }
+                                />
+                                <FieldError>{form.errors.notes}</FieldError>
+                            </Field>
 
                             <section
                                 className="flex flex-col gap-3"
@@ -594,11 +622,40 @@ export function QuickApplicationDialog({
                             </section>
 
                             {editMode ? (
-                                <p className="text-sm text-muted-foreground">
-                                    Las cantidades anteriores se conservarán
-                                    anuladas en el historial. Si dejas todas en
-                                    0, la aplicación quedará anulada.
-                                </p>
+                                <Field
+                                    invalid={Boolean(
+                                        form.errors.correction_reason,
+                                    )}
+                                >
+                                    <FieldLabel htmlFor="application-correction-reason">
+                                        Motivo de la corrección
+                                    </FieldLabel>
+                                    <Textarea
+                                        id="application-correction-reason"
+                                        value={form.data.correction_reason}
+                                        onChange={(event) =>
+                                            form.setData(
+                                                'correction_reason',
+                                                event.target.value,
+                                            )
+                                        }
+                                        placeholder="Explica qué dato se corrige"
+                                        rows={2}
+                                        required
+                                        aria-invalid={
+                                            !!form.errors.correction_reason ||
+                                            undefined
+                                        }
+                                    />
+                                    <FieldDescription>
+                                        Las cantidades anteriores se conservarán
+                                        anuladas en el historial. Si dejas todas
+                                        en 0, la aplicación quedará anulada.
+                                    </FieldDescription>
+                                    <FieldError>
+                                        {form.errors.correction_reason}
+                                    </FieldError>
+                                </Field>
                             ) : (
                                 <Field
                                     invalid={Boolean(form.errors.attachment)}

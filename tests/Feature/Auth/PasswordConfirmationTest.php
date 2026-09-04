@@ -30,4 +30,20 @@ class PasswordConfirmationTest extends TestCase
 
         $response->assertRedirect(route('login'));
     }
+
+    public function test_a_valid_password_can_be_confirmed_with_the_virtual_login_field(): void
+    {
+        $user = User::factory()->create([
+            'username' => 'tecnico.confirmacion',
+            'email' => null,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('password.confirm.store'), [
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+        $this->assertNotNull(session('auth.password_confirmed_at'));
+    }
 }

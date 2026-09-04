@@ -2,41 +2,61 @@
 
 namespace App\Policies;
 
+use App\Enums\VoucherDirection;
+use App\Enums\VoucherStatus;
 use App\Models\User;
 use App\Models\Voucher;
+use App\Support\MaterialTracking;
+use Illuminate\Auth\Access\Response;
 
 class VoucherPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return $user->is_active;
+        return $user->isAdministrator();
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Voucher $voucher): bool
+    public function view(User $user, Voucher $voucher): Response
     {
-        return $user->is_active;
+        if ($user->isAdministrator() || $this->assignedTechnicianCanAccess($user, $voucher)) {
+            return Response::allow();
+        }
+
+        return Response::denyAsNotFound();
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return $user->is_active;
+        return $user->isAdministrator();
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Voucher $voucher): bool
     {
-        return $user->is_active;
+        return $user->isAdministrator();
+    }
+
+    public function cancel(User $user, Voucher $voucher): bool
+    {
+        return $user->isAdministrator();
+    }
+
+    public function review(User $user, Voucher $voucher): bool
+    {
+        return $user->isAdministrator();
+    }
+
+    public function print(User $user, Voucher $voucher): bool
+    {
+        return $user->isAdministrator();
+    }
+
+    public function createApplication(User $user, Voucher $voucher): bool
+    {
+        if ($voucher->direction !== VoucherDirection::Exit || $voucher->status !== VoucherStatus::Active) {
+            return false;
+        }
+
+        return $user->isAdministrator() || $this->assignedTechnicianCanAccess($user, $voucher);
     }
 
     /**
@@ -61,5 +81,14 @@ class VoucherPolicy
     public function forceDelete(User $user, Voucher $voucher): bool
     {
         return false;
+    }
+
+    private function assignedTechnicianCanAccess(User $user, Voucher $voucher): bool
+    {
+        return $user->hasOperationalTechnicianAccess()
+            && $voucher->received_by_id === $user->person_id
+            && $voucher->direction === VoucherDirection::Exit
+            && $voucher->status === VoucherStatus::Active
+            && $voucher->issued_on->toDateString() >= MaterialTracking::START_DATE;
     }
 }

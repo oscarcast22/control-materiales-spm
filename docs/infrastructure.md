@@ -291,6 +291,14 @@ Si falla la activación remota:
 5. si el esquema y los datos deben retroceder, detener la captura y restaurar
    juntos el dump y los adjuntos del mismo respaldo.
 
+Una vez creada cualquier cuenta técnica, está prohibido volver sólo el symlink
+a una versión anterior al sistema de roles: ese código trataría toda cuenta
+activa como administradora. El rollback completo debe recuperar el release, el
+dump y los archivos privados del mismo respaldo previo. El `down()` de la
+migración desactiva primero las cuentas técnicas como protección, pero elimina
+su rol y vínculo con la persona; ejecutar después `up()` no reconstruye esos
+datos.
+
 Los releases anteriores se conservan en `/srv/control-materiales/releases/`.
 Cambiar manualmente el symlink sin revisar compatibilidad de migraciones puede
 dejar el código y la base desalineados. Debe tratarse como una intervención de

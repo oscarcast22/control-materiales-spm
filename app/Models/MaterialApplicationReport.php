@@ -14,6 +14,8 @@ use Illuminate\Support\Carbon;
  * @property int $voucher_id
  * @property Carbon $occurred_on
  * @property string|null $reference
+ * @property string|null $notes
+ * @property int|null $created_by
  * @property-read Voucher $voucher
  * @property-read Collection<int, MaterialApplication> $applications
  * @property-read MaterialApplicationAttachment|null $attachment
@@ -21,7 +23,7 @@ use Illuminate\Support\Carbon;
 class MaterialApplicationReport extends Model
 {
     protected $fillable = [
-        'voucher_id', 'occurred_on', 'reference', 'created_by', 'updated_by',
+        'voucher_id', 'occurred_on', 'reference', 'notes', 'created_by', 'updated_by',
     ];
 
     protected function casts(): array

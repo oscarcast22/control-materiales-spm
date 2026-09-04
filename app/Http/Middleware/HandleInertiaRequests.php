@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Voucher;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,6 +41,13 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+            ],
+            'capabilities' => [
+                'manage_catalogs' => fn (): bool => $request->user()?->can('manage-catalogs') ?? false,
+                'view_reports' => fn (): bool => $request->user()?->can('view-reports') ?? false,
+                'manage_accounts' => fn (): bool => $request->user()?->can('manage-accounts') ?? false,
+                'manage_vouchers' => fn (): bool => $request->user()?->can('create', Voucher::class) ?? false,
+                'view_my_vouchers' => fn (): bool => $request->user()?->hasOperationalTechnicianAccess() ?? false,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

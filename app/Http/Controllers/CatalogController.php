@@ -238,6 +238,12 @@ class CatalogController extends Controller
         if (! $data['can_receive_material'] && ! $data['can_deliver_material'] && ! $data['can_authorize_material']) {
             throw ValidationException::withMessages(['name' => 'Selecciona al menos una función para la persona.']);
         }
+        if ($person->account()->exists()
+            && (! $data['can_receive_material'] || (array_key_exists('is_active', $data) && ! $data['is_active']))) {
+            throw ValidationException::withMessages([
+                'can_receive_material' => 'Conserva activa la función “Recibe / técnico” mientras exista una cuenta vinculada.',
+            ]);
+        }
         $key = Normalizer::key($data['name']);
         $duplicate = Person::query()->where('normalized_name', $key)->whereKeyNot($person->id)->exists();
         $foreignAlias = PersonAlias::query()
@@ -260,6 +266,14 @@ class CatalogController extends Controller
                 'normalized_name' => $key,
                 'needs_review' => false,
             ]);
+            $account = $person->account()->lockForUpdate()->first();
+            if ($account !== null && $account->name !== $person->name) {
+                $accountBefore = $account->only(['id', 'name', 'username', 'email', 'role', 'person_id', 'is_active']);
+                $account->update(['name' => $person->name]);
+                AuditEvent::record($account, 'technician_account_updated', $accountBefore, $account->fresh()->only([
+                    'id', 'name', 'username', 'email', 'role', 'person_id', 'is_active',
+                ]));
+            }
             PersonAlias::firstOrCreate(
                 ['normalized_alias' => $key],
                 ['person_id' => $person->id, 'alias' => $data['name']],
@@ -402,6 +416,11 @@ class CatalogController extends Controller
         }
 
         if ($model instanceof Person) {
+            if ($model->account()->exists()) {
+                throw ValidationException::withMessages([
+                    'status' => 'No se puede desactivar una persona que tiene una cuenta técnica vinculada.',
+                ]);
+            }
             $requiredRoles = collect([
                 'can_receive_material' => 'recibir material',
                 'can_deliver_material' => 'entregar material',
@@ -488,8 +507,18 @@ class CatalogController extends Controller
     private function mergePeople(int $sourceId, int $targetId): void
     {
         DB::transaction(function () use ($sourceId, $targetId): void {
-            $source = Person::query()->with('aliases')->lockForUpdate()->findOrFail($sourceId);
-            $target = Person::query()->lockForUpdate()->findOrFail($targetId);
+            $source = Person::query()->with(['aliases', 'account'])->lockForUpdate()->findOrFail($sourceId);
+            $target = Person::query()->with('account')->lockForUpdate()->findOrFail($targetId);
+            if ($source->account !== null && $target->account !== null) {
+                throw ValidationException::withMessages([
+                    'target_id' => 'No se pueden fusionar dos personas que ya tienen cuentas técnicas.',
+                ]);
+            }
+            if ($source->account !== null && ! $target->is_active) {
+                throw ValidationException::withMessages([
+                    'target_id' => 'Activa primero a la persona destino para transferirle la cuenta técnica.',
+                ]);
+            }
             Voucher::query()->where('received_by_id', $source->id)->update(['received_by_id' => $target->id]);
             Voucher::query()->where('delivered_by_id', $source->id)->update(['delivered_by_id' => $target->id]);
             Voucher::query()->where('authorized_by_id', $source->id)->update(['authorized_by_id' => $target->id]);
@@ -506,6 +535,14 @@ class CatalogController extends Controller
                 'can_deliver_material' => $target->can_deliver_material || $source->can_deliver_material,
                 'can_authorize_material' => $target->can_authorize_material || $source->can_authorize_material,
             ]);
+            if ($source->account !== null) {
+                $account = $source->account;
+                $beforeAccount = $account->only(['id', 'name', 'username', 'email', 'role', 'person_id', 'is_active']);
+                $account->update(['person_id' => $target->id, 'name' => $target->name]);
+                AuditEvent::record($account, 'technician_account_transferred', $beforeAccount, $account->fresh()->only([
+                    'id', 'name', 'username', 'email', 'role', 'person_id', 'is_active',
+                ]));
+            }
             AuditEvent::record($target, 'merged_person', $source->toArray(), $target->toArray());
             $source->delete();
         });

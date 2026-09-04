@@ -2,15 +2,17 @@
 
 namespace App\Support;
 
-use App\Models\LegacyImportRow;
 use App\Models\StorageLocation;
+use Illuminate\Support\Collection;
 
 final class VoucherSequence
 {
+    private const MISSING_PREVIEW_LIMIT = 100;
+
     /**
      * @return array{
      *   total_missing: int,
-     *   types: list<array{voucher_type: array{id: int, name: string, code: string}, start: int, last: int|null, missing_count: int, missing: list<int>}>
+     *   types: list<array{voucher_type: array{id: int, name: string, code: string}, start: int, last: int|null, missing_count: int, missing: list<int>, missing_truncated: bool}>
      * }
      */
     public function summary(?int $voucherTypeId = null): array
@@ -18,15 +20,6 @@ final class VoucherSequence
         /** @var array<string, int> $starts */
         $starts = config('material-control.voucher_sequence_starts', []);
         $types = [];
-        $tracedFolios = LegacyImportRow::query()
-            ->whereNull('imported_id')
-            ->get(['sheet_name', 'raw_data'])
-            ->groupBy(fn (LegacyImportRow $row): string => match (Normalizer::key($row->sheet_name)) {
-                'vale de almacen' => 'warehouse',
-                'vale de patio' => 'yard',
-                default => '',
-            });
-
         $locations = StorageLocation::query()
             ->whereIn('code', array_keys($starts))
             ->when($voucherTypeId !== null, fn ($query) => $query->whereKey($voucherTypeId))
@@ -44,22 +37,19 @@ final class VoucherSequence
                 ->unique()
                 ->sort()
                 ->values();
-            $observedInInvalidTraces = $tracedFolios->get($location->code, collect())
-                ->map(fn (LegacyImportRow $row): string => trim((string) ($row->raw_data['folio'] ?? '')))
-                ->filter(fn (string $folio): bool => ctype_digit($folio))
-                ->map(fn (string $folio): int => (int) $folio)
-                ->filter(fn (int $folio): bool => $folio >= $start);
-            $last = $present->merge($observedInInvalidTraces)->max();
-            $missing = $last === null
+            $last = $present->max();
+            $missingCount = $last === null ? 0 : max(0, $last - $start + 1 - $present->count());
+            $missing = $last === null || $missingCount === 0
                 ? []
-                : array_values(array_diff(range($start, $last), $present->all()));
+                : $this->missingPreview($present, $start, $last);
 
             $types[] = [
                 'voucher_type' => $location->only(['id', 'name', 'code']),
                 'start' => $start,
                 'last' => $last,
-                'missing_count' => count($missing),
+                'missing_count' => $missingCount,
                 'missing' => $missing,
+                'missing_truncated' => $missingCount > count($missing),
             ];
         }
 
@@ -67,5 +57,34 @@ final class VoucherSequence
             'total_missing' => array_sum(array_column($types, 'missing_count')),
             'types' => $types,
         ];
+    }
+
+    /**
+     * @param  Collection<int, int>  $present
+     * @return list<int>
+     */
+    private function missingPreview(Collection $present, int $start, int $last): array
+    {
+        $missing = [];
+        $next = $start;
+
+        foreach ($present as $folio) {
+            if ($folio > $next) {
+                $end = min($folio - 1, $next + self::MISSING_PREVIEW_LIMIT - count($missing) - 1);
+                $missing = [...$missing, ...range($next, $end)];
+                if (count($missing) === self::MISSING_PREVIEW_LIMIT) {
+                    return $missing;
+                }
+            }
+
+            $next = max($next, $folio + 1);
+        }
+
+        if ($next <= $last && count($missing) < self::MISSING_PREVIEW_LIMIT) {
+            $end = min($last, $next + self::MISSING_PREVIEW_LIMIT - count($missing) - 1);
+            $missing = [...$missing, ...range($next, $end)];
+        }
+
+        return $missing;
     }
 }

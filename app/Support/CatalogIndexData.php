@@ -148,7 +148,8 @@ final class CatalogIndexData
                 'can_authorize_material', 'is_active', 'needs_review',
             ])
             ->withCount('aliases')
-            ->withExists(['receivedVouchers', 'deliveredVouchers', 'authorizedVouchers']);
+            ->with('account:id,person_id,username,email,is_active')
+            ->withExists(['receivedVouchers', 'deliveredVouchers', 'authorizedVouchers', 'account']);
 
         $this->applyCommonFilters($query, $filters);
         $this->applyNormalizedSearch($query, $filters['search']);

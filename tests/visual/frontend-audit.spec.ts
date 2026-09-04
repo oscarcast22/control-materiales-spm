@@ -5,6 +5,8 @@ import type { Locator, Page, Request } from '@playwright/test';
 
 const email = process.env.VISUAL_EMAIL;
 const password = process.env.VISUAL_PASSWORD;
+const technicianUsername = process.env.VISUAL_TECH_USERNAME;
+const technicianPassword = process.env.VISUAL_TECH_PASSWORD;
 const evidenceDir = path.resolve('storage/logs/visual-audit');
 
 type AuditViewport = {
@@ -119,7 +121,7 @@ async function assertVoucherModalSelectScroll(page: Page) {
     const dialog = page.getByRole('dialog', { name: 'Capturar vale' });
 
     await expect(dialog).toBeVisible();
-    await dialog.getByLabel('Material 1').click();
+    await dialog.getByRole('combobox', { name: 'Material 1' }).click();
 
     const commandList = page.locator('[data-slot="command-list"]');
 
@@ -181,7 +183,7 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             fullPage: true,
         });
 
-        await page.getByLabel('Correo electrónico').fill(email!);
+        await page.getByLabel('Correo o usuario').fill(email!);
         await page.locator('input[name="password"]').fill(password!);
         await page.locator('[data-test="login-button"]').click();
         await page.waitForURL('**/dashboard');
@@ -268,11 +270,15 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                     await expect(
                         page.locator('#voucher-form-error-summary'),
                     ).toHaveCount(0);
-                    await expect(page.getByLabel('Material 1')).toBeFocused();
+                    await expect(
+                        page.getByRole('combobox', { name: 'Material 1' }),
+                    ).toBeFocused();
                 }
 
                 if (viewport.theme === 'light' && viewport.width >= 900) {
-                    await page.getByLabel('Material 1').click();
+                    await page
+                        .getByRole('combobox', { name: 'Material 1' })
+                        .click();
                     const firstMaterial = page.getByRole('option').first();
 
                     if (await firstMaterial.isVisible()) {
@@ -286,7 +292,11 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
 
                         const [materialBox, quantityBox, actionBox] =
                             await Promise.all([
-                                page.getByLabel('Material 1').boundingBox(),
+                                page
+                                    .getByRole('combobox', {
+                                        name: 'Material 1',
+                                    })
+                                    .boundingBox(),
                                 quantity.boundingBox(),
                                 confirmMaterial.boundingBox(),
                             ]);
@@ -888,6 +898,111 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             ),
             `Errores de consola en ${viewport.name}`,
         ).toEqual([]);
+
+        await context.close();
+    }
+});
+
+test('recorrido visual del acceso técnico en escritorio y móvil', async ({
+    browser,
+}) => {
+    test.setTimeout(90_000);
+    test.skip(
+        !technicianUsername || !technicianPassword,
+        'Faltan VISUAL_TECH_USERNAME y VISUAL_TECH_PASSWORD.',
+    );
+    await mkdir(evidenceDir, { recursive: true });
+
+    for (const viewport of [
+        { name: 'technician-desktop', width: 1440, height: 1000 },
+        { name: 'technician-mobile', width: 390, height: 844 },
+    ]) {
+        const context = await browser.newContext({
+            viewport: { width: viewport.width, height: viewport.height },
+        });
+        const page = await context.newPage();
+
+        await page.goto('/login');
+        await page.getByLabel('Correo o usuario').fill(technicianUsername!);
+        await page.locator('input[name="password"]').fill(technicianPassword!);
+        await page.locator('[data-test="login-button"]').click();
+        await page.waitForURL('**/mis-vales');
+        await page.waitForLoadState('networkidle');
+
+        await expect(
+            page.getByRole('heading', { name: 'Mis vales', exact: true }),
+        ).toBeVisible();
+
+        if (viewport.width >= 1024) {
+            await expect(
+                page.getByRole('link', { name: 'Mis vales', exact: true }),
+            ).toBeVisible();
+        } else {
+            await page
+                .getByRole('button', { name: 'Abrir navegación' })
+                .click();
+            await expect(
+                page.getByRole('link', { name: 'Mis vales', exact: true }),
+            ).toBeVisible();
+            await page.locator('[data-slot="sheet-overlay"]').click({
+                position: { x: viewport.width - 10, y: 20 },
+            });
+            await expect(
+                page.locator('[data-sidebar="sidebar"][data-mobile="true"]'),
+            ).toBeHidden();
+            await page.waitForTimeout(350);
+        }
+
+        await expect(
+            page.getByRole('link', { name: 'Resumen', exact: true }),
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole('link', { name: 'Vales', exact: true }),
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole('link', { name: 'Seguimiento', exact: true }),
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole('link', { name: 'Catálogos', exact: true }),
+        ).toHaveCount(0);
+        await assertPageFrame(page, '/mis-vales');
+        await page.screenshot({
+            path: path.join(evidenceDir, `${viewport.name}--my-vouchers.png`),
+            fullPage: true,
+        });
+
+        const detail = page
+            .getByRole('link', {
+                name: 'Ver detalle y aplicaciones',
+            })
+            .first();
+
+        await expect(detail).toBeVisible();
+        await detail.click();
+        await page.waitForLoadState('networkidle');
+        await expect(
+            page.getByRole('button', { name: 'Registrar aplicación' }),
+        ).toBeVisible();
+        await expect(
+            page.getByText(
+                'Cada registro reúne la fecha, una orden de servicio obligatoria y el desglose de materiales utilizados.',
+            ),
+        ).toBeVisible();
+        await expect(page.getByText(/orden opcional/i)).toHaveCount(0);
+        await expect(page.getByRole('link', { name: 'Imprimir' })).toHaveCount(
+            0,
+        );
+        await expect(
+            page.getByRole('button', { name: 'Cancelar' }),
+        ).toHaveCount(0);
+        await assertPageFrame(page, '/mis-vales/{voucher}');
+        await page.screenshot({
+            path: path.join(
+                evidenceDir,
+                `${viewport.name}--voucher-detail.png`,
+            ),
+            fullPage: true,
+        });
 
         await context.close();
     }

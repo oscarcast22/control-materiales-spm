@@ -271,7 +271,7 @@ class VoucherController extends Controller
 
     public function cancel(Request $request, Voucher $voucher): RedirectResponse
     {
-        Gate::authorize('update', $voucher);
+        Gate::authorize('cancel', $voucher);
         abort_unless($voucher->status === VoucherStatus::Active, 422, 'Sólo un vale activo se puede cancelar.');
         $validated = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:1000']]);
 
@@ -297,7 +297,7 @@ class VoucherController extends Controller
 
     public function review(Request $request, Voucher $voucher): RedirectResponse
     {
-        Gate::authorize('update', $voucher);
+        Gate::authorize('review', $voucher);
 
         DB::transaction(function () use ($voucher): void {
             $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
@@ -314,7 +314,7 @@ class VoucherController extends Controller
 
     public function print(Voucher $voucher): View
     {
-        Gate::authorize('view', $voucher);
+        Gate::authorize('print', $voucher);
 
         return view('vouchers.print', ['voucher' => VoucherData::make($voucher, true)]);
     }

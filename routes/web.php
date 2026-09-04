@@ -4,16 +4,22 @@ use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MaterialApplicationAttachmentController;
 use App\Http\Controllers\MaterialApplicationController;
+use App\Http\Controllers\MyVoucherController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TechnicianAccountController;
 use App\Http\Controllers\VoucherAttachmentController;
 use App\Http\Controllers\VoucherController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'))->name('home');
+Route::get('/', fn () => auth()->check()
+    ? redirect()->route(auth()->user()->isTechnician() ? 'my-vouchers.index' : 'dashboard')
+    : redirect()->route('login'))->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('mis-vales', [MyVoucherController::class, 'index'])->name('my-vouchers.index');
+    Route::get('mis-vales/{voucher}', [MyVoucherController::class, 'show'])->name('my-vouchers.show');
 
     Route::resource('vouchers', VoucherController::class)->except('destroy');
     Route::post('vouchers/cancelled', [VoucherController::class, 'storeCancelled'])->name('vouchers.cancelled.store');
@@ -26,6 +32,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('material-application-reports/{report}', [MaterialApplicationController::class, 'update'])->name('application-reports.update');
     Route::post('material-applications/{application}/void', [MaterialApplicationController::class, 'void'])->name('applications.void');
     Route::get('material-application-attachments/{attachment}', [MaterialApplicationAttachmentController::class, 'show'])->name('application-attachments.show');
+    Route::post('material-application-reports/{report}/attachment', [MaterialApplicationAttachmentController::class, 'store'])->name('application-attachments.store');
+    Route::delete('material-application-reports/{report}/attachment', [MaterialApplicationAttachmentController::class, 'destroy'])->name('application-attachments.destroy');
     Route::get('attachments/{attachment}', [VoucherAttachmentController::class, 'show'])->name('attachments.show');
     Route::delete('attachments/{attachment}', [VoucherAttachmentController::class, 'destroy'])->name('attachments.destroy');
 
@@ -34,6 +42,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('catalogs/materials/{material}', [CatalogController::class, 'updateMaterial'])->name('catalogs.materials.update');
     Route::post('catalogs/people', [CatalogController::class, 'storePerson'])->name('catalogs.people.store');
     Route::put('catalogs/people/{person}', [CatalogController::class, 'updatePerson'])->name('catalogs.people.update');
+    Route::post('catalogs/people/{person}/account', [TechnicianAccountController::class, 'store'])->name('catalogs.people.account.store');
+    Route::put('catalogs/people/{person}/account', [TechnicianAccountController::class, 'update'])->name('catalogs.people.account.update');
+    Route::put('catalogs/people/{person}/account/password', [TechnicianAccountController::class, 'resetPassword'])->name('catalogs.people.account.password');
     Route::post('catalogs/destinations', [CatalogController::class, 'storeDestination'])->name('catalogs.destinations.store');
     Route::put('catalogs/destinations/{destination}', [CatalogController::class, 'updateDestination'])->name('catalogs.destinations.update');
     Route::post('catalogs/units', [CatalogController::class, 'storeUnit'])->name('catalogs.units.store');
