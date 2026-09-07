@@ -9,6 +9,7 @@ use App\Models\MaterialApplicationReport;
 use App\Models\User;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
+use Illuminate\Support\Collection;
 
 final class VoucherData
 {
@@ -61,6 +62,8 @@ final class VoucherData
                 : ($items->isNotEmpty() && $items->every(fn (array $item): bool => (float) $item['pending_quantity'] === 0.0)
                     ? 'settled'
                     : 'pending')))));
+        $balancesApply = in_array($balanceState, ['pending', 'settled', 'anomaly'], true);
+        $registeredQuantity = self::sumItemValues($items, 'quantity');
 
         return [
             'id' => $voucher->id,
@@ -91,6 +94,11 @@ final class VoucherData
             'review_reasons' => $voucher->review_reasons ?? [],
             'cancellation_reason' => $voucher->cancellation_reason,
             'items_count' => $items->count(),
+            'material_totals' => [
+                'registered_quantity' => $registeredQuantity,
+                'applied_quantity' => $balancesApply ? self::sumItemValues($items, 'used_quantity') : null,
+                'pending_quantity' => $balancesApply ? self::sumItemValues($items, 'pending_quantity') : null,
+            ],
             'items' => $items,
             'application_reports' => $detailed ? self::applicationReports($voucher, $user) : [],
             'attachments' => $detailed ? $voucher->attachments->map->only([
@@ -106,6 +114,19 @@ final class VoucherData
                 'create_application' => $user?->can('createApplication', $voucher) ?? false,
             ],
         ];
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $items
+     */
+    private static function sumItemValues(Collection $items, string $key): string
+    {
+        return number_format(
+            $items->sum(fn (array $item): float => (float) ($item[$key] ?? 0)),
+            3,
+            '.',
+            '',
+        );
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -174,7 +195,7 @@ final class VoucherData
             'id' => $application->id,
             'voucher_item_id' => $application->voucher_item_id,
             'material' => $application->item->material->only(['id', 'name']),
-            'unit' => $application->item->unit->only(['id', 'name', 'symbol']),
+            'unit' => $application->item->unit->only(['id', 'name', 'symbol', 'decimal_places']),
             'quantity' => $application->quantity,
             'legacy_slot' => $application->legacy_slot,
             'voided_at' => $application->voided_at?->toIso8601String(),
@@ -194,7 +215,7 @@ final class VoucherData
         return [
             'id' => $item->id,
             'material' => $item->material->only(['id', 'name']),
-            'unit' => $item->unit->only(['id', 'name', 'symbol']),
+            'unit' => $item->unit->only(['id', 'name', 'symbol', 'decimal_places']),
             'description' => $item->description_snapshot,
             'quantity' => $item->quantity,
             'used_quantity' => $used,

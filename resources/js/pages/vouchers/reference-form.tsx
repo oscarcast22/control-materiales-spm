@@ -41,7 +41,6 @@ export default function VoucherReferenceForm({
         voucher_type_id: String(voucher.voucher_type.id),
         folio: voucher.folio,
         issued_on: voucher.issued_on,
-        loaned_to_name: voucher.loaned_to_name ?? '',
     });
 
     useEffect(() => {
@@ -50,16 +49,12 @@ export default function VoucherReferenceForm({
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        form.transform((data) =>
-            voucher.status === 'loaned'
-                ? data
-                : {
-                      _dialog: data._dialog,
-                      voucher_type_id: data.voucher_type_id,
-                      folio: data.folio,
-                      issued_on: data.issued_on,
-                  },
-        );
+        form.transform((data) => ({
+            _dialog: data._dialog,
+            voucher_type_id: data.voucher_type_id,
+            folio: data.folio,
+            issued_on: data.issued_on,
+        }));
         form.put(`/vouchers/${voucher.id}`, {
             preserveScroll: true,
             onSuccess,
@@ -152,36 +147,6 @@ export default function VoucherReferenceForm({
                             />
                             <InputError message={form.errors.issued_on} />
                         </Field>
-                        {voucher.status === 'loaned' && (
-                            <Field
-                                data-invalid={
-                                    Boolean(form.errors.loaned_to_name) ||
-                                    undefined
-                                }
-                            >
-                                <FieldLabel htmlFor="reference-loaned-to">
-                                    Prestado a (opcional)
-                                </FieldLabel>
-                                <Input
-                                    id="reference-loaned-to"
-                                    value={form.data.loaned_to_name}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'loaned_to_name',
-                                            event.target.value,
-                                        )
-                                    }
-                                    placeholder="Nombre libre"
-                                    aria-invalid={
-                                        Boolean(form.errors.loaned_to_name) ||
-                                        undefined
-                                    }
-                                />
-                                <InputError
-                                    message={form.errors.loaned_to_name}
-                                />
-                            </Field>
-                        )}
                     </FieldGroup>
                 </CardContent>
             </Card>
@@ -202,7 +167,7 @@ export default function VoucherReferenceForm({
             ) : (
                 <PageHeader
                     title={`Corregir folio ${voucher.folio}`}
-                    description={`Actualiza únicamente los datos de referencia del vale ${voucher.status === 'loaned' ? 'prestado' : 'cancelado'}.`}
+                    description="Actualiza únicamente los datos de referencia del vale cancelado."
                     actions={
                         <>
                             {!embedded && (

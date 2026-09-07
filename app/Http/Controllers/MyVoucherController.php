@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\VoucherStatus;
 use App\Models\Voucher;
 use App\Support\MaterialApplicationFormOptions;
 use App\Support\VoucherData;
@@ -20,17 +21,25 @@ class MyVoucherController extends Controller
         $user = $request->user();
         abort_unless($user?->hasOperationalTechnicianAccess(), 404);
         $data = $request->validate([
-            'tab' => ['nullable', Rule::in(['pending', 'settled'])],
+            'tab' => ['nullable', Rule::in(['pending', 'history', 'settled'])],
             'search' => ['nullable', 'string', 'max:100'],
         ]);
-        $tab = $data['tab'] ?? 'pending';
+        $tab = ($data['tab'] ?? 'pending') === 'settled' ? 'history' : ($data['tab'] ?? 'pending');
         $search = trim((string) ($data['search'] ?? ''));
         $baseQuery = Voucher::query()->visibleTo($user);
         $pendingCount = (clone $baseQuery)->whereHas('items', fn (Builder $item) => $this->unsettled($item))->count();
         $settledCount = (clone $baseQuery)->whereDoesntHave('items', fn (Builder $item) => $this->unsettled($item))->count();
+        $loanedCount = Voucher::query()
+            ->visibleInTechnicianHistory($user)
+            ->where('status', VoucherStatus::Loaned->value)
+            ->count();
 
         $query = Voucher::query()
-            ->visibleTo($user)
+            ->when(
+                $tab === 'history',
+                fn (Builder $builder) => $builder->visibleInTechnicianHistory($user),
+                fn (Builder $builder) => $builder->visibleTo($user),
+            )
             ->withCount('items')
             ->with([
                 'location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'actionIndicator',
@@ -39,8 +48,16 @@ class MyVoucherController extends Controller
         if ($search !== '') {
             $query->searchText($search);
         }
-        if ($tab === 'settled') {
-            $query->whereDoesntHave('items', fn (Builder $item) => $this->unsettled($item));
+        if ($tab === 'history') {
+            $query->where(function (Builder $history): void {
+                $history
+                    ->where('status', VoucherStatus::Loaned->value)
+                    ->orWhere(function (Builder $settled): void {
+                        $settled
+                            ->where('status', VoucherStatus::Active->value)
+                            ->whereDoesntHave('items', fn (Builder $item) => $this->unsettled($item));
+                    });
+            });
         } else {
             $query->whereHas('items', fn (Builder $item) => $this->unsettled($item));
         }
@@ -51,7 +68,7 @@ class MyVoucherController extends Controller
         return Inertia::render('my-vouchers/index', [
             'vouchers' => $vouchers,
             'filters' => ['tab' => $tab, 'search' => $search],
-            'counts' => ['pending' => $pendingCount, 'settled' => $settledCount],
+            'counts' => ['pending' => $pendingCount, 'history' => $settledCount + $loanedCount],
         ]);
     }
 
@@ -59,13 +76,20 @@ class MyVoucherController extends Controller
     {
         $user = $request->user();
         abort_unless($user?->hasOperationalTechnicianAccess(), 404);
-        $model = Voucher::query()->visibleTo($user)->findOrFail($voucher);
+        $model = Voucher::query()->visibleInTechnicianHistory($user)->findOrFail($voucher);
         Gate::authorize('view', $model);
+
+        $belongsInHistory = $model->status === VoucherStatus::Loaned
+            || ! $model->items()->whereRaw(
+                'quantity != (select COALESCE(SUM(quantity), 0) from material_applications where material_applications.voucher_item_id = voucher_items.id and voided_at is null)'
+            )->exists();
 
         return Inertia::render('vouchers/show', [
             'voucher' => VoucherData::make($model, true, $user),
             'applicationFormOptions' => MaterialApplicationFormOptions::make(),
-            'backUrl' => route('my-vouchers.index'),
+            'backUrl' => route('my-vouchers.index', [
+                'tab' => $belongsInHistory ? 'history' : 'pending',
+            ]),
         ]);
     }
 

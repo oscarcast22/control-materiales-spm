@@ -10,6 +10,7 @@ use App\Models\AuditEvent;
 use App\Models\Destination;
 use App\Models\DestinationAlias;
 use App\Models\Material;
+use App\Models\MaterialApplication;
 use App\Models\Person;
 use App\Models\Program;
 use App\Models\StorageLocation;
@@ -18,6 +19,7 @@ use App\Models\VoucherAttachment;
 use App\Models\VoucherItem;
 use App\Support\MaterialApplicationFormOptions;
 use App\Support\Normalizer;
+use App\Support\QuantityPrecision;
 use App\Support\VoucherData;
 use App\Support\VoucherTypeScope;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,7 +44,7 @@ class VoucherController extends Controller
         Gate::authorize('viewAny', Voucher::class);
         $voucherTypeId = $voucherTypeScope->resolve($request);
         $query = Voucher::query()
-            ->withCount('items')
+            ->select('vouchers.*')
             ->with(['location', 'receivedBy', 'deliveredBy', 'authorizedBy', 'program', 'action', 'actionIndicator', 'destinations', 'items.material', 'items.unit', 'items.applications']);
 
         if ($search = trim((string) $request->string('search'))) {
@@ -80,7 +82,7 @@ class VoucherController extends Controller
             });
         }
 
-        $sort = in_array($request->string('sort')->value(), ['issued_on', 'folio', 'voucher_type', 'received_by', 'items_count'], true)
+        $sort = in_array($request->string('sort')->value(), ['issued_on', 'folio', 'voucher_type', 'received_by', 'delivered', 'used', 'pending'], true)
             ? $request->string('sort')->value()
             : 'folio';
         $sortDirection = $request->string('sort_direction')->value() === 'asc' ? 'asc' : 'desc';
@@ -107,11 +109,14 @@ class VoucherController extends Controller
     {
         Gate::authorize('create', Voucher::class);
 
-        $data = ['voucher' => null, ...$this->catalogData()];
+        $isLoaned = $request->string('kind')->value() === 'loaned';
+        $data = $isLoaned
+            ? ['voucher' => null, 'formKind' => 'loaned', ...$this->loanedCatalogData()]
+            : ['voucher' => null, 'formKind' => 'operational', ...$this->catalogData()];
 
         return $request->expectsJson()
             ? response()->json($data)
-            : Inertia::render('vouchers/form', $data);
+            : Inertia::render($isLoaned ? 'vouchers/loaned-form' : 'vouchers/form', $data);
     }
 
     public function store(Request $request): RedirectResponse
@@ -185,30 +190,24 @@ class VoucherController extends Controller
     public function storeLoaned(Request $request): RedirectResponse
     {
         Gate::authorize('create', Voucher::class);
-        $data = $request->validate([
-            'voucher_type_id' => ['required', 'integer', Rule::exists('storage_locations', 'id')->where('is_active', true)],
-            'folio' => ['required', 'string', 'max:50'],
-            'issued_on' => ['required', 'date'],
-            'loaned_to_name' => ['nullable', 'string', 'max:255'],
-        ]);
-        $data['folio'] = trim($data['folio']);
-        $this->ensureUniqueFolio($data['folio'], (int) $data['voucher_type_id']);
+        $data = $this->validateLoanedVoucher($request);
+        $this->ensureUniqueFolio($data['folio'], (int) $data['storage_location_id']);
 
         $voucher = DB::transaction(function () use ($data, $request): Voucher {
             $voucher = Voucher::create([
-                'storage_location_id' => $data['voucher_type_id'],
+                'storage_location_id' => $data['storage_location_id'],
                 'folio' => $data['folio'],
                 'folio_key' => Normalizer::folio($data['folio']),
                 'issued_on' => $data['issued_on'],
+                'received_by_id' => $data['received_by_id'],
                 'status' => VoucherStatus::Loaned,
-                'loaned_to_name' => filled($data['loaned_to_name'] ?? null)
-                    ? trim((string) $data['loaned_to_name'])
-                    : null,
+                'loaned_to_name' => $data['loaned_to_name'],
                 'loaned_on' => $data['issued_on'],
                 'created_by' => $request->user()?->id,
                 'updated_by' => $request->user()?->id,
             ]);
-            AuditEvent::record($voucher, 'created_loaned', null, $voucher->toArray());
+            $this->syncItems($voucher, $data['items'], $request);
+            AuditEvent::record($voucher, 'created_loaned', null, $this->voucherAuditData($voucher));
 
             return $voucher;
         });
@@ -232,16 +231,31 @@ class VoucherController extends Controller
     public function edit(Request $request, Voucher $voucher): Response|JsonResponse
     {
         Gate::authorize('update', $voucher);
-        $data = $voucher->status === VoucherStatus::Active
-            ? ['voucher' => VoucherData::make($voucher, true), ...$this->catalogData($voucher)]
-            : ['voucher' => VoucherData::make($voucher, true), 'voucherTypes' => $this->voucherTypesForCorrection($voucher)];
+        $data = match ($voucher->status) {
+            VoucherStatus::Active => [
+                'voucher' => VoucherData::make($voucher, true),
+                'formKind' => 'operational',
+                ...$this->catalogData($voucher),
+            ],
+            VoucherStatus::Loaned => [
+                'voucher' => VoucherData::make($voucher, true),
+                'formKind' => 'loaned',
+                ...$this->loanedCatalogData($voucher),
+            ],
+            VoucherStatus::Cancelled => [
+                'voucher' => VoucherData::make($voucher, true),
+                'voucherTypes' => $this->voucherTypesForCorrection($voucher),
+            ],
+        };
 
         if ($request->expectsJson()) {
             return response()->json($data);
         }
 
         return Inertia::render(
-            $voucher->status === VoucherStatus::Active ? 'vouchers/form' : 'vouchers/reference-form',
+            $voucher->status === VoucherStatus::Cancelled
+                ? 'vouchers/reference-form'
+                : ($voucher->status === VoucherStatus::Loaned ? 'vouchers/loaned-form' : 'vouchers/form'),
             $data,
         );
     }
@@ -249,6 +263,9 @@ class VoucherController extends Controller
     public function update(Request $request, Voucher $voucher): RedirectResponse
     {
         Gate::authorize('update', $voucher);
+        if ($voucher->status === VoucherStatus::Loaned) {
+            return $this->updateLoanedVoucher($request, $voucher);
+        }
         if ($voucher->status !== VoucherStatus::Active) {
             return $this->updateMinimalVoucher($request, $voucher);
         }
@@ -352,9 +369,7 @@ class VoucherController extends Controller
             })],
             'folio' => ['required', 'string', 'max:50'],
             'issued_on' => ['required', 'date'],
-            'loaned_to_name' => $voucher->status === VoucherStatus::Loaned
-                ? ['nullable', 'string', 'max:255']
-                : ['prohibited'],
+            'loaned_to_name' => ['prohibited'],
         ]);
         $data['folio'] = trim($data['folio']);
         $this->ensureUniqueFolio($data['folio'], (int) $data['voucher_type_id'], $voucher);
@@ -370,17 +385,37 @@ class VoucherController extends Controller
                 'issued_on' => $data['issued_on'],
                 'updated_by' => $request->user()?->id,
             ];
-            if ($locked->status === VoucherStatus::Loaned) {
-                $values['loaned_to_name'] = filled($data['loaned_to_name'] ?? null)
-                    ? trim((string) $data['loaned_to_name'])
-                    : null;
-                $values['loaned_on'] = $data['issued_on'];
-            }
             $locked->update($values);
             AuditEvent::record($locked, 'updated_minimal', $before, $locked->fresh()->toArray());
         });
 
         return $this->mutationResponse($request, $voucher, "Folio {$data['folio']} corregido correctamente.");
+    }
+
+    private function updateLoanedVoucher(Request $request, Voucher $voucher): RedirectResponse
+    {
+        $data = $this->validateLoanedVoucher($request, $voucher);
+        $this->ensureUniqueFolio($data['folio'], (int) $data['storage_location_id'], $voucher);
+
+        DB::transaction(function () use ($voucher, $data, $request): void {
+            $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
+            abort_unless($locked->status === VoucherStatus::Loaned, 409, 'El estado del vale cambió; vuelve a abrir la edición.');
+            $before = $this->voucherAuditData($locked);
+            $locked->update([
+                'storage_location_id' => $data['storage_location_id'],
+                'folio' => $data['folio'],
+                'folio_key' => Normalizer::folio($data['folio']),
+                'issued_on' => $data['issued_on'],
+                'received_by_id' => $data['received_by_id'],
+                'loaned_to_name' => $data['loaned_to_name'],
+                'loaned_on' => $data['issued_on'],
+                'updated_by' => $request->user()?->id,
+            ]);
+            $this->syncItems($locked, $data['items'], $request);
+            AuditEvent::record($locked, 'updated_loaned', $before, $this->voucherAuditData($locked));
+        });
+
+        return $this->mutationResponse($request, $voucher, "Vale prestado {$data['folio']} actualizado correctamente.");
     }
 
     /** @return Collection<int, StorageLocation> */
@@ -432,7 +467,40 @@ class VoucherController extends Controller
             return;
         }
 
-        $query->orderBy($sort === 'items_count' ? 'items_count' : 'issued_on', $direction);
+        if (in_array($sort, ['delivered', 'used', 'pending'], true)) {
+            $column = match ($sort) {
+                'delivered' => 'registered_quantity_sort',
+                'used' => 'applied_quantity_sort',
+                'pending' => 'pending_quantity_sort',
+            };
+            $aggregate = match ($sort) {
+                'delivered' => VoucherItem::query()
+                    ->selectRaw('COALESCE(SUM(voucher_items.quantity), 0)')
+                    ->whereColumn('voucher_items.voucher_id', 'vouchers.id'),
+                'used' => MaterialApplication::query()
+                    ->selectRaw('COALESCE(SUM(material_applications.quantity), 0)')
+                    ->join('voucher_items', 'voucher_items.id', '=', 'material_applications.voucher_item_id')
+                    ->whereColumn('voucher_items.voucher_id', 'vouchers.id')
+                    ->whereNull('material_applications.voided_at'),
+                'pending' => VoucherItem::query()
+                    ->selectRaw('COALESCE(SUM(voucher_items.quantity - COALESCE((SELECT SUM(material_applications.quantity) FROM material_applications WHERE material_applications.voucher_item_id = voucher_items.id AND material_applications.voided_at IS NULL), 0)), 0)')
+                    ->whereColumn('voucher_items.voucher_id', 'vouchers.id'),
+            };
+            $query->addSelect([$column => $aggregate]);
+
+            if ($sort !== 'delivered') {
+                $query->orderByRaw(
+                    'CASE WHEN vouchers.status = ? AND vouchers.direction = ? AND EXISTS (SELECT 1 FROM voucher_items WHERE voucher_items.voucher_id = vouchers.id) THEN 0 ELSE 1 END',
+                    [VoucherStatus::Active->value, VoucherDirection::Exit->value],
+                );
+            }
+
+            $query->orderBy($column, $direction);
+
+            return;
+        }
+
+        $query->orderBy('issued_on', $direction);
     }
 
     private function mutationResponse(Request $request, Voucher $voucher, string $message): RedirectResponse
@@ -483,10 +551,103 @@ class VoucherController extends Controller
     }
 
     /** @return array<string, mixed> */
+    private function loanedCatalogData(?Voucher $voucher = null): array
+    {
+        $currentMaterialIds = $voucher?->items()->pluck('material_id')->all() ?? [];
+        $materials = Material::query()
+            ->with(['defaultUnit', 'voucherTypes:id,name,code'])
+            ->where(function (Builder $query) use ($currentMaterialIds): void {
+                $query->where('is_active', true);
+                if ($currentMaterialIds !== []) {
+                    $query->orWhereIn('id', $currentMaterialIds);
+                }
+            })
+            ->orderBy('name')
+            ->get();
+
+        return [
+            'materials' => $materials,
+            'voucherTypes' => $voucher === null
+                ? StorageLocation::query()->where('is_active', true)->orderBy('name')->get()
+                : $this->voucherTypesForCorrection($voucher),
+            'receivers' => $this->peopleForRole('can_receive_material', $voucher?->received_by_id),
+        ];
+    }
+
+    /** @return array{storage_location_id: int, folio: string, issued_on: string, received_by_id: int|null, loaned_to_name: string|null, items: array<int, array<string, mixed>>} */
+    private function validateLoanedVoucher(Request $request, ?Voucher $voucher = null): array
+    {
+        $updating = $voucher !== null;
+        $currentMaterialIds = $voucher?->items()->pluck('material_id')->all() ?? [];
+        $existingItems = $voucher?->items()->get(['id', 'material_id', 'quantity'])->keyBy('id') ?? collect();
+        $data = $request->validate([
+            'voucher_type_id' => ['required', 'integer', Rule::exists('storage_locations', 'id')->where(function ($query) use ($voucher): void {
+                $query->where('is_active', true);
+                if ($voucher !== null) {
+                    $query->orWhere('id', $voucher->storage_location_id);
+                }
+            })],
+            'folio' => ['required', 'string', 'max:50'],
+            'issued_on' => ['required', 'date'],
+            'received_by_id' => ['nullable', 'integer', $this->personRoleRule('can_receive_material', $voucher?->received_by_id)],
+            'loaned_to_name' => ['nullable', 'string', 'max:255'],
+            'items' => ['nullable', 'array'],
+            'items.*.id' => [$updating ? 'nullable' : 'prohibited', 'integer'],
+            'items.*.material_id' => ['required', 'integer', Rule::exists('materials', 'id')->where(function ($query) use ($currentMaterialIds): void {
+                $query->where('is_active', true);
+                if ($currentMaterialIds !== []) {
+                    $query->orWhereIn('id', $currentMaterialIds);
+                }
+            })],
+            'items.*.unit_id' => ['prohibited'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:'.QuantityPrecision::MAX_VALUE],
+        ], $this->voucherValidationMessages());
+
+        $eligibleMaterials = Material::query()
+            ->with('defaultUnit:id,name,symbol,decimal_places')
+            ->whereHas('voucherTypes', fn (Builder $query) => $query->whereKey($data['voucher_type_id']))
+            ->where(function (Builder $query) use ($currentMaterialIds): void {
+                $query->where('is_active', true);
+                if ($currentMaterialIds !== []) {
+                    $query->orWhereIn('id', $currentMaterialIds);
+                }
+            })
+            ->get(['id', 'default_unit_id'])
+            ->keyBy('id');
+        $materialErrors = [];
+        foreach ($data['items'] ?? [] as $index => $item) {
+            $material = $eligibleMaterials->get((int) $item['material_id']);
+            $existing = isset($item['id']) ? $existingItems->get((int) $item['id']) : null;
+            $keepsHistoricalQuantity = $existing instanceof VoucherItem
+                && $existing->material_id === (int) $item['material_id']
+                && abs((float) $existing->quantity - (float) $item['quantity']) < 0.0001;
+            if ($material === null) {
+                $materialErrors["items.{$index}.material_id"] = 'Este material no está disponible para el tipo de vale seleccionado.';
+            } elseif (! $keepsHistoricalQuantity
+                && ! QuantityPrecision::accepts($item['quantity'], $material->defaultUnit->decimal_places)) {
+                $materialErrors["items.{$index}.quantity"] = QuantityPrecision::message($material->defaultUnit);
+            }
+        }
+        if ($materialErrors !== []) {
+            throw ValidationException::withMessages($materialErrors);
+        }
+
+        return [
+            'storage_location_id' => (int) $data['voucher_type_id'],
+            'folio' => trim((string) $data['folio']),
+            'issued_on' => $data['issued_on'],
+            'received_by_id' => filled($data['received_by_id'] ?? null) ? (int) $data['received_by_id'] : null,
+            'loaned_to_name' => filled($data['loaned_to_name'] ?? null) ? trim((string) $data['loaned_to_name']) : null,
+            'items' => VoucherData::itemRows($data['items'] ?? []),
+        ];
+    }
+
+    /** @return array<string, mixed> */
     private function validateVoucher(Request $request, ?Voucher $voucher = null): array
     {
         $updating = $voucher !== null;
         $currentDestinationIds = $voucher?->destinations()->pluck('destinations.id')->all() ?? [];
+        $existingItems = $voucher?->items()->get(['id', 'material_id', 'quantity'])->keyBy('id') ?? collect();
         $selectedVoucherType = StorageLocation::query()
             ->whereKey($request->input('voucher_type_id'))
             ->where('is_active', true)
@@ -537,20 +698,28 @@ class VoucherController extends Controller
             'items.*.id' => [$updating ? 'nullable' : 'prohibited', 'integer'],
             'items.*.material_id' => ['required', Rule::exists('materials', 'id')->where('is_active', true)],
             'items.*.unit_id' => ['prohibited'],
-            'items.*.quantity' => ['required', 'integer', 'gt:0', 'max:999999999'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:'.QuantityPrecision::MAX_VALUE],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
         ], $this->voucherValidationMessages());
 
-        $eligibleMaterialIds = Material::query()
+        $eligibleMaterials = Material::query()
+            ->with('defaultUnit:id,name,symbol,decimal_places')
             ->whereHas('voucherTypes', fn (Builder $query) => $query->whereKey($data['voucher_type_id']))
-            ->pluck('id')
-            ->map(fn (int $id): int => $id)
-            ->all();
+            ->get(['id', 'default_unit_id'])
+            ->keyBy('id');
         $materialErrors = [];
         foreach ($data['items'] as $index => $item) {
-            if (! in_array((int) $item['material_id'], $eligibleMaterialIds, true)) {
+            $material = $eligibleMaterials->get((int) $item['material_id']);
+            $existing = isset($item['id']) ? $existingItems->get((int) $item['id']) : null;
+            $keepsHistoricalQuantity = $existing instanceof VoucherItem
+                && $existing->material_id === (int) $item['material_id']
+                && abs((float) $existing->quantity - (float) $item['quantity']) < 0.0001;
+            if ($material === null) {
                 $materialErrors["items.{$index}.material_id"] = 'Este material no está disponible para el tipo de vale seleccionado.';
+            } elseif (! $keepsHistoricalQuantity
+                && ! QuantityPrecision::accepts($item['quantity'], $material->defaultUnit->decimal_places)) {
+                $materialErrors["items.{$index}.quantity"] = QuantityPrecision::message($material->defaultUnit);
             }
         }
         if ($materialErrors !== []) {
@@ -694,7 +863,7 @@ class VoucherController extends Controller
             'items.*.material_id.exists' => 'El material seleccionado ya no está disponible.',
             'items.*.unit_id.prohibited' => 'La unidad se toma automáticamente del material.',
             'items.*.quantity.required' => 'Escribe la cantidad.',
-            'items.*.quantity.integer' => 'La cantidad debe ser un número entero.',
+            'items.*.quantity.numeric' => 'La cantidad debe ser un número válido.',
             'items.*.quantity.gt' => 'La cantidad debe ser mayor que cero.',
             'items.*.quantity.max' => 'La cantidad es demasiado grande.',
             'attachments.array' => 'Adjunta archivos válidos.',

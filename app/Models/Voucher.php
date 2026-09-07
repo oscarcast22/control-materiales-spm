@@ -165,6 +165,30 @@ class Voucher extends Model
             ->whereDate('issued_on', '>=', MaterialTracking::START_DATE);
     }
 
+    /**
+     * @param  Builder<Voucher>  $query
+     * @return Builder<Voucher>
+     */
+    public function scopeVisibleInTechnicianHistory(Builder $query, User $user): Builder
+    {
+        if (! $user->hasOperationalTechnicianAccess()) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query
+            ->where('received_by_id', $user->person_id)
+            ->whereDate('issued_on', '>=', MaterialTracking::START_DATE)
+            ->where(function (Builder $visibility): void {
+                $visibility
+                    ->where(function (Builder $operational): void {
+                        $operational
+                            ->where('direction', VoucherDirection::Exit->value)
+                            ->where('status', VoucherStatus::Active->value);
+                    })
+                    ->orWhere('status', VoucherStatus::Loaned->value);
+            });
+    }
+
     /** @return BelongsTo<StorageLocation, $this> */
     public function location(): BelongsTo
     {

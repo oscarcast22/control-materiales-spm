@@ -37,6 +37,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { VoucherDestinationPicker } from '@/components/voucher-destination-picker';
+import {
+    isPositiveQuantity,
+    quantityForInput,
+    quantityInput,
+} from '@/lib/quantity';
 import type {
     Action,
     ActionIndicator,
@@ -100,9 +105,6 @@ const blankLine = (): Line => ({
     quantity: '',
     confirmed: false,
 });
-
-const quantityForInput = (quantity: string) =>
-    quantity.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
 
 export default function VoucherForm({
     voucher,
@@ -416,7 +418,7 @@ export default function VoucherForm({
     const confirmLine = (index: number) => {
         const line = form.data.items[index];
 
-        if (!line || !isCompleteMaterial(line)) {
+        if (!line || !isCompleteMaterial(line, materials)) {
             const focusId = line?.material_id
                 ? `item-${index}-quantity`
                 : `item-${index}-material`;
@@ -465,14 +467,14 @@ export default function VoucherForm({
 
         if (draftIndex !== -1) {
             const draft = form.data.items[draftIndex];
-            const focusId = isCompleteMaterial(draft)
+            const focusId = isCompleteMaterial(draft, materials)
                 ? `item-${draftIndex}-confirm`
                 : draft.material_id
                   ? `item-${draftIndex}-quantity`
                   : `item-${draftIndex}-material`;
             form.setError(
                 'items',
-                isCompleteMaterial(draft)
+                isCompleteMaterial(draft, materials)
                     ? 'Confirma el material pendiente antes de guardar.'
                     : 'Completa y confirma el material pendiente antes de guardar.',
             );
@@ -1128,6 +1130,7 @@ export default function VoucherForm({
                                     )?.default_unit;
                                     const materialId = `item-${index}-material`;
                                     const quantityId = `item-${index}-quantity`;
+                                    const quantityConfig = quantityInput(unit);
 
                                     return (
                                         <fieldset
@@ -1188,10 +1191,15 @@ export default function VoucherForm({
                                             <VoucherField
                                                 id={quantityId}
                                                 label={
-                                                    <span className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                                                        <span>Cantidad</span>
+                                                    <span className="flex min-w-0 items-baseline gap-1.5 overflow-hidden">
+                                                        <span className="shrink-0">
+                                                            Cantidad
+                                                        </span>
                                                         {unit && (
-                                                            <span className="text-xs font-medium text-muted-foreground">
+                                                            <span
+                                                                className="min-w-0 truncate text-xs font-medium text-muted-foreground"
+                                                                title={`Unidad: ${unit.name} (${unit.symbol})`}
+                                                            >
                                                                 Unidad:{' '}
                                                                 {unit.name} (
                                                                 {unit.symbol})
@@ -1203,8 +1211,12 @@ export default function VoucherForm({
                                             >
                                                 <Input
                                                     id={quantityId}
-                                                    inputMode="numeric"
-                                                    pattern="[0-9]*"
+                                                    inputMode={
+                                                        quantityConfig.inputMode
+                                                    }
+                                                    pattern={
+                                                        quantityConfig.pattern
+                                                    }
                                                     value={line.quantity}
                                                     readOnly={hasApplications}
                                                     onChange={(e) =>
@@ -1213,13 +1225,15 @@ export default function VoucherForm({
                                                                 e.target.value,
                                                         })
                                                     }
-                                                    placeholder="0"
+                                                    placeholder={
+                                                        quantityConfig.placeholder
+                                                    }
                                                     aria-invalid={
                                                         Boolean(
                                                             quantityError,
                                                         ) || undefined
                                                     }
-                                                    aria-describedby={errorDescriptionId(
+                                                    aria-describedby={fieldDescriptionIds(
                                                         quantityId,
                                                         quantityError,
                                                     )}
@@ -1246,7 +1260,10 @@ export default function VoucherForm({
                                                         Eliminar material
                                                     </Button>
                                                 </MaterialLineAction>
-                                            ) : isCompleteMaterial(line) ? (
+                                            ) : isCompleteMaterial(
+                                                  line,
+                                                  materials,
+                                              ) ? (
                                                 <MaterialLineAction>
                                                     <Button
                                                         id={`item-${index}-confirm`}
@@ -1519,21 +1536,22 @@ function hasMaterialValues(line: Line) {
     return Boolean(line.material_id || line.quantity.trim());
 }
 
-function isCompleteMaterial(line: Line) {
-    const quantity = Number(line.quantity);
+function isCompleteMaterial(line: Line, materials: Material[]) {
+    const unit = materials.find(
+        (material) => String(material.id) === line.material_id,
+    )?.default_unit;
 
     return (
         line.material_id !== '' &&
         line.quantity.trim() !== '' &&
-        Number.isFinite(quantity) &&
-        quantity > 0
+        isPositiveQuantity(line.quantity, unit)
     );
 }
 
 function fieldDescriptionIds(
     id: string,
     error: string | undefined,
-    hasDescription: boolean,
+    hasDescription = false,
 ) {
     return (
         [

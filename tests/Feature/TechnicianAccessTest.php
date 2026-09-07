@@ -212,6 +212,23 @@ class TechnicianAccessTest extends TestCase
         $entry->voucher->update(['direction' => VoucherDirection::Entry]);
         $cancelled = $this->voucherItem($person, '2026-03-01', 2);
         $cancelled->voucher->update(['status' => VoucherStatus::Cancelled]);
+        $loaned = Voucher::factory()->create([
+            'folio' => 'MIO-PRESTADO',
+            'folio_key' => 'mioprestado',
+            'issued_on' => '2026-03-02',
+            'received_by_id' => $person->id,
+            'delivered_by_id' => null,
+            'direction' => null,
+            'status' => VoucherStatus::Loaned,
+            'loaned_to_name' => 'Responsable externo',
+        ]);
+        VoucherItem::factory()->create([
+            'voucher_id' => $loaned->id,
+            'material_id' => $settled->material_id,
+            'unit_id' => $settled->unit_id,
+            'description_snapshot' => $settled->description_snapshot,
+            'quantity' => 7,
+        ]);
 
         $this->actingAs($technician)->get(route('my-vouchers.index'))
             ->assertInertia(fn (Assert $page) => $page
@@ -219,12 +236,28 @@ class TechnicianAccessTest extends TestCase
                 ->has('vouchers.data', 1)
                 ->where('vouchers.data.0.folio', 'MIO-1')
                 ->where('counts.pending', 1)
-                ->where('counts.settled', 1));
+                ->where('counts.history', 2));
+
+        $this->actingAs($technician)->get(route('my-vouchers.index', ['tab' => 'history']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filters.tab', 'history')
+                ->has('vouchers.data', 2)
+                ->where('vouchers.data.0.folio', 'MIO-2')
+                ->where('vouchers.data.1.folio', 'MIO-PRESTADO')
+                ->where('vouchers.data.1.balance_state', 'loaned'));
 
         $this->actingAs($technician)->get(route('my-vouchers.index', ['tab' => 'settled']))
+            ->assertInertia(fn (Assert $page) => $page->where('filters.tab', 'history'));
+
+        $this->actingAs($technician)->get(route('my-vouchers.show', $loaned))
             ->assertInertia(fn (Assert $page) => $page
-                ->has('vouchers.data', 1)
-                ->where('vouchers.data.0.folio', 'MIO-2'));
+                ->where('voucher.status', 'loaned')
+                ->where('voucher.loaned_to_name', 'Responsable externo')
+                ->where('voucher.permissions.create_application', false)
+                ->where('voucher.permissions.update', false));
+        $this->actingAs(User::factory()->technician($other)->create())
+            ->get(route('my-vouchers.show', $loaned))
+            ->assertNotFound();
 
         $this->actingAs($technician)->get(route('my-vouchers.index', ['search' => 'MIO-777']))
             ->assertInertia(fn (Assert $page) => $page

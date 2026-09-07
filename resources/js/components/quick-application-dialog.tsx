@@ -24,6 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate, formatQuantity } from '@/lib/format';
+import { quantityInput } from '@/lib/quantity';
 import type {
     MaterialApplicationFormOptions,
     MaterialApplicationReport,
@@ -597,6 +598,11 @@ export function QuickApplicationDialog({
                                             const maximum =
                                                 Number(item.pending_quantity) +
                                                 registered;
+                                            const quantityConfig =
+                                                quantityInput(item.unit);
+                                            const errorId = error
+                                                ? `application-item-${item.id}-error`
+                                                : undefined;
 
                                             return (
                                                 <div
@@ -657,8 +663,12 @@ export function QuickApplicationDialog({
                                                         <div className="relative">
                                                             <Input
                                                                 id={`application-item-${item.id}`}
-                                                                inputMode="numeric"
-                                                                pattern="[0-9]*"
+                                                                inputMode={
+                                                                    quantityConfig.inputMode
+                                                                }
+                                                                pattern={
+                                                                    quantityConfig.pattern
+                                                                }
                                                                 value={
                                                                     form.data
                                                                         .items[
@@ -691,12 +701,17 @@ export function QuickApplicationDialog({
                                                                         items,
                                                                     );
                                                                 }}
-                                                                placeholder="0"
+                                                                placeholder={
+                                                                    quantityConfig.placeholder
+                                                                }
                                                                 aria-invalid={
                                                                     !!error ||
                                                                     undefined
                                                                 }
                                                                 className="pr-14 text-right tabular-nums"
+                                                                aria-describedby={
+                                                                    errorId
+                                                                }
                                                             />
                                                             <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
                                                                 {
@@ -705,7 +720,10 @@ export function QuickApplicationDialog({
                                                                 }
                                                             </span>
                                                         </div>
-                                                        <FieldError className="text-xs">
+                                                        <FieldError
+                                                            id={errorId}
+                                                            className="text-xs"
+                                                        >
                                                             {error}
                                                         </FieldError>
                                                     </Field>

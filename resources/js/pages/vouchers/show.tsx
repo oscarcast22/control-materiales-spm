@@ -89,7 +89,7 @@ export default function VoucherShow({
                             )}
                         </span>
                     }
-                    description={`${voucher.voucher_type.name} · ${voucher.direction === 'entry' ? 'Entrada' : voucher.direction === 'exit' ? 'Salida' : 'Sin movimiento'} del ${formatDate(voucher.issued_on)}`}
+                    description={`${voucher.voucher_type.name} · ${voucher.status === 'loaned' ? 'Prestado' : voucher.direction === 'entry' ? 'Entrada' : voucher.direction === 'exit' ? 'Salida' : 'Sin movimiento'} del ${formatDate(voucher.issued_on)}`}
                     actions={
                         <>
                             {voucher.permissions.update && (
@@ -145,11 +145,13 @@ export default function VoucherShow({
                                 </div>
                                 <p className="mt-1 text-muted-foreground">
                                     {voucher.voucher_type.name} ·{' '}
-                                    {voucher.direction === 'entry'
-                                        ? 'Entrada'
-                                        : voucher.direction === 'exit'
-                                          ? 'Salida'
-                                          : 'Sin movimiento'}{' '}
+                                    {voucher.status === 'loaned'
+                                        ? 'Prestado'
+                                        : voucher.direction === 'entry'
+                                          ? 'Entrada'
+                                          : voucher.direction === 'exit'
+                                            ? 'Salida'
+                                            : 'Sin movimiento'}{' '}
                                     del {formatDate(voucher.issued_on)}
                                 </p>
                             </div>
@@ -216,8 +218,9 @@ export default function VoucherShow({
                                 {voucher.loaned_on
                                     ? formatDate(voucher.loaned_on)
                                     : '—'}
-                                . Este folio sólo conserva la continuidad de la
-                                numeración y no genera seguimiento de material.
+                                . Conserva responsables y materiales como
+                                referencia, sin generar saldos pendientes ni
+                                permitir aplicaciones.
                             </p>
                         </AlertDescription>
                     </Alert>
@@ -276,17 +279,31 @@ export default function VoucherShow({
                 <Card>
                     <CardContent className="grid gap-5 pt-6 sm:grid-cols-2 lg:grid-cols-4">
                         <Info
-                            label="Recibió"
+                            label={
+                                voucher.status === 'loaned'
+                                    ? 'Técnico asignado'
+                                    : 'Recibió'
+                            }
                             value={voucher.received_by?.name ?? '—'}
                         />
-                        <Info
-                            label="Entregó"
-                            value={voucher.delivered_by?.name ?? '—'}
-                        />
-                        <Info
-                            label="Autorizó"
-                            value={voucher.authorized_by?.name ?? '—'}
-                        />
+                        {voucher.status === 'loaned' && (
+                            <Info
+                                label="Persona responsable"
+                                value={voucher.loaned_to_name ?? '—'}
+                            />
+                        )}
+                        {voucher.status !== 'loaned' && (
+                            <>
+                                <Info
+                                    label="Entregó"
+                                    value={voucher.delivered_by?.name ?? '—'}
+                                />
+                                <Info
+                                    label="Autorizó"
+                                    value={voucher.authorized_by?.name ?? '—'}
+                                />
+                            </>
+                        )}
                         {voucher.direction === 'exit' && (
                             <>
                                 <Info
@@ -307,16 +324,21 @@ export default function VoucherShow({
                                     )}
                             </>
                         )}
-                        <div className="sm:col-span-2 lg:col-span-4">
-                            <Info
-                                label="Ubicación"
-                                value={
-                                    voucher.destinations
-                                        .map((destination) => destination.name)
-                                        .join(', ') || '—'
-                                }
-                            />
-                        </div>
+                        {voucher.status !== 'loaned' && (
+                            <div className="sm:col-span-2 lg:col-span-4">
+                                <Info
+                                    label="Ubicación"
+                                    value={
+                                        voucher.destinations
+                                            .map(
+                                                (destination) =>
+                                                    destination.name,
+                                            )
+                                            .join(', ') || '—'
+                                    }
+                                />
+                            </div>
+                        )}
                         {voucher.usage_description && (
                             <div className="sm:col-span-2 lg:col-span-4">
                                 <Info
@@ -475,6 +497,52 @@ function MaterialBalanceCard({ voucher }: { voucher: Voucher }) {
     const isEntry = voucher.direction === 'entry';
     const isCancelledExit =
         voucher.status === 'cancelled' && voucher.direction === 'exit';
+
+    if (voucher.status === 'loaned') {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Material prestado</CardTitle>
+                    <CardDescription>
+                        Cantidades conservadas como referencia administrativa;
+                        no generan saldo ni admiten aplicaciones.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <DataTableSurface label="Material prestado">
+                        <Table className="min-w-[520px]">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Material</TableHead>
+                                    <TableHead>Unidad</TableHead>
+                                    <TableHead className="text-right">
+                                        Cantidad prestada
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {voucher.items.map((item) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell className="font-medium">
+                                            {item.description}
+                                        </TableCell>
+                                        <TableCell>
+                                            {item.unit.name} ({item.unit.symbol}
+                                            )
+                                        </TableCell>
+                                        <TableCell className="text-right font-semibold tabular-nums">
+                                            {formatQuantity(item.quantity)}{' '}
+                                            {item.unit.symbol}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </DataTableSurface>
+                </CardContent>
+            </Card>
+        );
+    }
 
     if (voucher.status === 'cancelled') {
         return (

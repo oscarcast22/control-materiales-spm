@@ -169,6 +169,86 @@ class MaterialControlTest extends TestCase
         ]);
     }
 
+    public function test_decimal_quantities_follow_the_material_unit_in_vouchers_loans_and_applications(): void
+    {
+        $user = User::factory()->create();
+        [$technician, $issuer, $unit, $material] = $this->catalogs();
+        $unit->update(['name' => 'Metro', 'symbol' => 'm', 'decimal_places' => 1]);
+        $location = StorageLocation::factory()->create(['code' => 'warehouse']);
+        $material->voucherTypes()->sync([$location->id]);
+        $action = Action::query()->where('code', 'SPM-06-01')->sole();
+        $payload = [
+            'voucher_type_id' => $location->id,
+            'direction' => VoucherDirection::Exit->value,
+            'issued_on' => '2026-09-07',
+            'received_by_id' => $technician->id,
+            'delivered_by_id' => $issuer->id,
+            'action_id' => $action->id,
+            'usage_description' => 'Prueba de cantidades decimales',
+            'items' => [['material_id' => $material->id, 'quantity' => '2.555']],
+        ];
+
+        $this->actingAs($user)->post(route('vouchers.store'), [
+            ...$payload,
+            'folio' => 'DEC-1',
+        ])->assertSessionHasNoErrors();
+
+        $voucher = Voucher::query()->where('folio', 'DEC-1')->sole();
+        $item = $voucher->items()->sole();
+        $this->assertSame('2.555', $item->quantity);
+        $this->assertSame(1, VoucherData::make($voucher)['items'][0]['unit']['decimal_places']);
+
+        $this->actingAs($user)->post(route('applications.store'), [
+            'voucher_id' => $voucher->id,
+            'occurred_on' => '2026-09-07',
+            'reference' => 'OS-DEC-1',
+            'service_order_type' => ServiceOrderType::Normal->value,
+            'items' => [['voucher_item_id' => $item->id, 'quantity' => '1.234']],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('1.234', $item->fresh()->usedQuantity());
+        $this->assertSame('1.321', $item->fresh()->pendingQuantity());
+
+        $this->actingAs($user)->post(route('vouchers.store'), [
+            ...$payload,
+            'folio' => 'DEC-2',
+            'items' => [['material_id' => $material->id, 'quantity' => '2.55']],
+        ])->assertSessionHasNoErrors();
+        $this->assertSame('2.550', Voucher::query()->where('folio', 'DEC-2')->sole()->items()->sole()->quantity);
+
+        $this->actingAs($user)->post(route('applications.store'), [
+            'voucher_id' => $voucher->id,
+            'occurred_on' => '2026-09-07',
+            'reference' => 'OS-DEC-2',
+            'service_order_type' => ServiceOrderType::Normal->value,
+            'items' => [['voucher_item_id' => $item->id, 'quantity' => '1.25']],
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($user)->post(route('vouchers.store'), [
+            ...$payload,
+            'folio' => 'DEC-4',
+            'items' => [['material_id' => $material->id, 'quantity' => '2.5555']],
+        ])->assertSessionHasErrors('items.0.quantity');
+
+        $this->actingAs($user)->post(route('applications.store'), [
+            'voucher_id' => $voucher->id,
+            'occurred_on' => '2026-09-07',
+            'reference' => 'OS-DEC-4',
+            'service_order_type' => ServiceOrderType::Normal->value,
+            'items' => [['voucher_item_id' => $item->id, 'quantity' => '0.0001']],
+        ])->assertSessionHasErrors('items.0.quantity');
+
+        $this->actingAs($user)->post(route('vouchers.loaned.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => 'DEC-3',
+            'issued_on' => '2026-09-07',
+            'items' => [['material_id' => $material->id, 'quantity' => '3.125']],
+        ])->assertSessionHasNoErrors();
+
+        $loaned = Voucher::query()->where('folio', 'DEC-3')->sole();
+        $this->assertSame('3.125', $loaned->items()->sole()->quantity);
+    }
+
     public function test_a_cancelled_folio_can_be_registered_without_people_or_materials(): void
     {
         $user = User::factory()->create();
@@ -350,6 +430,100 @@ class MaterialControlTest extends TestCase
             ->where('filters.sort_direction', 'asc')
             ->where('vouchers.data.0.folio', '2')
             ->where('vouchers.data.1.folio', '10'));
+    }
+
+    public function test_voucher_index_exposes_and_sorts_material_totals_without_assigning_balances_to_non_operational_vouchers(): void
+    {
+        $user = User::factory()->create();
+        $location = StorageLocation::factory()->create(['code' => 'warehouse']);
+        $unit = Unit::factory()->create();
+        $material = Material::factory()->create(['default_unit_id' => $unit->id]);
+
+        $makeVoucher = function (
+            string $folio,
+            int $quantity,
+            VoucherStatus $status = VoucherStatus::Active,
+            ?VoucherDirection $direction = VoucherDirection::Exit,
+        ) use ($location, $unit, $material): VoucherItem {
+            $voucher = Voucher::factory()->create([
+                'storage_location_id' => $location->id,
+                'folio' => $folio,
+                'folio_key' => Normalizer::folio($folio),
+                'status' => $status,
+                'direction' => $direction,
+            ]);
+
+            return VoucherItem::factory()->create([
+                'voucher_id' => $voucher->id,
+                'material_id' => $material->id,
+                'unit_id' => $unit->id,
+                'description_snapshot' => $material->name,
+                'quantity' => $quantity,
+            ]);
+        };
+
+        $pending = $makeVoucher('TOTAL-10', 10);
+        MaterialApplication::factory()->create(['voucher_item_id' => $pending->id, 'quantity' => 6]);
+        MaterialApplication::factory()->create([
+            'voucher_item_id' => $pending->id,
+            'quantity' => 2,
+            'voided_at' => now(),
+        ]);
+
+        $settled = $makeVoucher('TOTAL-5', 5);
+        MaterialApplication::factory()->create(['voucher_item_id' => $settled->id, 'quantity' => 5]);
+
+        $anomaly = $makeVoucher('TOTAL-2', 2);
+        MaterialApplication::factory()->create(['voucher_item_id' => $anomaly->id, 'quantity' => 3]);
+
+        $makeVoucher('ENTRY-20', 20, VoucherStatus::Active, VoucherDirection::Entry);
+        $makeVoucher('LOANED-15', 15, VoucherStatus::Loaned, null);
+        $makeVoucher('CANCELLED-12', 12, VoucherStatus::Cancelled, VoucherDirection::Exit);
+
+        $this->actingAs($user)->get(route('vouchers.index', [
+            'sort' => 'delivered',
+            'sort_direction' => 'desc',
+        ]))->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('filters.sort', 'delivered')
+            ->where('vouchers.data.0.folio', 'ENTRY-20')
+            ->where('vouchers.data.1.folio', 'LOANED-15')
+            ->where('vouchers.data.2.folio', 'CANCELLED-12')
+            ->where('vouchers.data.3.material_totals.registered_quantity', '10.000')
+            ->where('vouchers.data.3.material_totals.applied_quantity', '6.000')
+            ->where('vouchers.data.3.material_totals.pending_quantity', '4.000')
+            ->where('vouchers.data.0.material_totals.applied_quantity', null)
+            ->where('vouchers.data.1.material_totals.pending_quantity', null)
+            ->where('vouchers.data.2.material_totals.pending_quantity', null));
+
+        $this->actingAs($user)->get(route('vouchers.index', [
+            'sort' => 'delivered',
+            'sort_direction' => 'asc',
+        ]))->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('vouchers.data.0.folio', 'TOTAL-2')
+            ->where('vouchers.data.1.folio', 'TOTAL-5')
+            ->where('vouchers.data.2.folio', 'TOTAL-10'));
+
+        foreach ([
+            ['used', 'desc', ['TOTAL-10', 'TOTAL-5', 'TOTAL-2']],
+            ['used', 'asc', ['TOTAL-2', 'TOTAL-5', 'TOTAL-10']],
+            ['pending', 'desc', ['TOTAL-10', 'TOTAL-5', 'TOTAL-2']],
+            ['pending', 'asc', ['TOTAL-2', 'TOTAL-5', 'TOTAL-10']],
+        ] as [$sort, $direction, $folios]) {
+            $this->actingAs($user)->get(route('vouchers.index', [
+                'sort' => $sort,
+                'sort_direction' => $direction,
+            ]))->assertOk()->assertInertia(fn (Assert $page) => $page
+                ->where('filters.sort', $sort)
+                ->where('filters.sort_direction', $direction)
+                ->where('vouchers.data.0.folio', $folios[0])
+                ->where('vouchers.data.1.folio', $folios[1])
+                ->where('vouchers.data.2.folio', $folios[2]));
+        }
+
+        $this->actingAs($user)->get(route('vouchers.index', [
+            'sort' => 'items_count',
+        ]))->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('filters.sort', 'folio'));
     }
 
     public function test_destinations_can_be_created_reviewed_and_deduplicated_from_catalogs(): void
@@ -1030,16 +1204,21 @@ class MaterialControlTest extends TestCase
         $this->assertSame(VoucherStatus::Active, $item->voucher->fresh()->status);
     }
 
-    public function test_a_loaned_folio_is_minimal_editable_and_never_operational(): void
+    public function test_a_loaned_folio_can_store_optional_responsibility_and_material_without_becoming_operational(): void
     {
         $user = User::factory()->create();
+        [$technician, , $unit, $material, $unavailableMaterial] = $this->catalogs();
         $location = StorageLocation::factory()->create(['code' => 'warehouse']);
+        $material->voucherTypes()->sync([$location->id]);
+        $unavailableMaterial->voucherTypes()->detach($location->id);
 
         $response = $this->actingAs($user)->post(route('vouchers.loaned.store'), [
             'voucher_type_id' => $location->id,
             'folio' => '16582',
             'issued_on' => '2026-08-27',
             'loaned_to_name' => 'Marco Ruiz',
+            'received_by_id' => $technician->id,
+            'items' => [['material_id' => $material->id, 'quantity' => 4]],
         ])->assertSessionHasNoErrors();
 
         $voucher = Voucher::query()->sole();
@@ -1047,31 +1226,61 @@ class MaterialControlTest extends TestCase
         $this->assertSame(VoucherStatus::Loaned, $voucher->status);
         $this->assertSame('Marco Ruiz', $voucher->loaned_to_name);
         $this->assertNull($voucher->direction);
-        $this->assertNull($voucher->received_by_id);
+        $this->assertSame($technician->id, $voucher->received_by_id);
         $this->assertNull($voucher->delivered_by_id);
         $this->assertNull($voucher->authorized_by_id);
-        $this->assertSame(0, $voucher->items()->count());
+        $item = $voucher->items()->sole();
+        $this->assertSame($material->id, $item->material_id);
+        $this->assertSame($unit->id, $item->unit_id);
+        $this->assertSame('4.000', $item->quantity);
+        $this->assertSame('loaned', VoucherData::make($voucher)['balance_state']);
         $this->assertDatabaseHas('audit_events', [
             'event' => 'created_loaned',
             'auditable_type' => Voucher::class,
             'auditable_id' => $voucher->id,
         ]);
+        $this->actingAs($user)->post(route('applications.store'), [
+            'voucher_id' => $voucher->id,
+            'occurred_on' => '2026-08-29',
+            'reference' => 'OS-LOANED',
+            'service_order_type' => ServiceOrderType::Normal->value,
+            'items' => [['voucher_item_id' => $item->id, 'quantity' => 1]],
+        ])->assertForbidden();
 
         $this->actingAs($user)->put(route('vouchers.update', $voucher), [
             'voucher_type_id' => $location->id,
             'folio' => '16583',
             'issued_on' => '2026-08-28',
             'loaned_to_name' => '',
+            'received_by_id' => '',
+            'items' => [],
         ])->assertSessionHasNoErrors();
         $voucher->refresh();
         $this->assertSame('16583', $voucher->folio);
         $this->assertNull($voucher->loaned_to_name);
+        $this->assertNull($voucher->received_by_id);
+        $this->assertSame(0, $voucher->items()->count());
         $this->assertSame('2026-08-28', $voucher->loaned_on?->toDateString());
         $this->assertDatabaseHas('audit_events', [
-            'event' => 'updated_minimal',
+            'event' => 'updated_loaned',
             'auditable_type' => Voucher::class,
             'auditable_id' => $voucher->id,
         ]);
+
+        $this->actingAs($user)->post(route('vouchers.loaned.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => '16584',
+            'issued_on' => '2026-08-29',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(2, Voucher::query()->count());
+
+        $this->actingAs($user)->post(route('vouchers.loaned.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => '16585',
+            'issued_on' => '2026-08-29',
+            'items' => [['material_id' => $unavailableMaterial->id, 'quantity' => 1]],
+        ])->assertSessionHasErrors('items.0.material_id');
+        $this->assertSame(2, Voucher::query()->count());
 
         $this->actingAs($user)->post(route('vouchers.cancel', $voucher), [
             'reason' => 'No corresponde',
@@ -1083,6 +1292,7 @@ class MaterialControlTest extends TestCase
         $this->actingAs($user)->getJson(route('applications.vouchers.search', ['search' => '16583']))
             ->assertOk()
             ->assertJsonCount(0, 'data');
+
     }
 
     public function test_voucher_attachments_are_private_and_downloadable_only_after_authentication(): void
@@ -1523,6 +1733,7 @@ class MaterialControlTest extends TestCase
         $this->actingAs($user)->put(route('catalogs.units.update', $metre), [
             'name' => 'Metro lineal',
             'symbol' => 'ml',
+            'decimal_places' => 1,
         ])->assertSessionHasNoErrors();
         $voucherData = VoucherData::make($voucher->fresh(), true);
         $this->assertSame('Metro lineal', $voucherData['items'][0]['unit']['name']);

@@ -87,8 +87,10 @@ class VoucherPolicy
     {
         return $user->hasOperationalTechnicianAccess()
             && $voucher->received_by_id === $user->person_id
-            && $voucher->direction === VoucherDirection::Exit
-            && $voucher->status === VoucherStatus::Active
-            && $voucher->issued_on->toDateString() >= MaterialTracking::START_DATE;
+            && $voucher->issued_on->toDateString() >= MaterialTracking::START_DATE
+            && (
+                $voucher->status === VoucherStatus::Loaned
+                || ($voucher->direction === VoucherDirection::Exit && $voucher->status === VoucherStatus::Active)
+            );
     }
 }

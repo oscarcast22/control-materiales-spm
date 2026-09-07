@@ -4,6 +4,7 @@ import {
     ArrowRight,
     CheckCircle2,
     Search,
+    Send,
     Wrench,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -19,13 +20,13 @@ import type { Paginated, Voucher } from '@/types';
 
 type Props = {
     vouchers: Paginated<Voucher>;
-    filters: { tab: 'pending' | 'settled'; search: string };
-    counts: { pending: number; settled: number };
+    filters: { tab: 'pending' | 'history'; search: string };
+    counts: { pending: number; history: number };
 };
 
 export default function MyVouchers({ vouchers, filters, counts }: Props) {
     const [search, setSearch] = useState(filters.search);
-    const visit = (tab: 'pending' | 'settled', nextSearch = search) => {
+    const visit = (tab: 'pending' | 'history', nextSearch = search) => {
         router.get(
             '/mis-vales',
             { tab, search: nextSearch || undefined },
@@ -74,11 +75,11 @@ export default function MyVouchers({ vouchers, filters, counts }: Props) {
                         <button
                             type="button"
                             role="tab"
-                            aria-selected={filters.tab === 'settled'}
-                            onClick={() => visit('settled')}
-                            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${filters.tab === 'settled' ? 'bg-surface-raised text-success shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            aria-selected={filters.tab === 'history'}
+                            onClick={() => visit('history')}
+                            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${filters.tab === 'history' ? 'bg-surface-raised text-success shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                            Liquidados · {counts.settled}
+                            Historial · {counts.history}
                         </button>
                     </div>
                     <form
@@ -96,7 +97,7 @@ export default function MyVouchers({ vouchers, filters, counts }: Props) {
                                     setSearch(event.target.value)
                                 }
                                 className="pl-9"
-                                placeholder="Buscar folio, orden, material o destino"
+                                placeholder="Buscar folio, responsable, material o destino"
                                 aria-label="Buscar en mis vales"
                             />
                         </div>
@@ -112,7 +113,7 @@ export default function MyVouchers({ vouchers, filters, counts }: Props) {
                                 aria-hidden="true"
                             />
                         ) : (
-                            <Wrench
+                            <Send
                                 className="mx-auto size-10 text-muted-foreground"
                                 aria-hidden="true"
                             />
@@ -122,12 +123,12 @@ export default function MyVouchers({ vouchers, filters, counts }: Props) {
                                 ? 'No hay coincidencias'
                                 : filters.tab === 'pending'
                                   ? 'No tienes material pendiente'
-                                  : 'Aún no hay vales liquidados'}
+                                  : 'Aún no hay vales en tu historial'}
                         </h2>
                         <p className="mx-auto mt-1 max-w-lg text-sm text-muted-foreground">
                             {filters.tab === 'pending'
                                 ? 'Los vales con saldo o inconsistencias aparecerán aquí.'
-                                : 'Cuando documentes todo el material entregado, el vale pasará a este historial.'}
+                                : 'Aquí aparecerán tus vales liquidados y los vales prestados que te hayan asignado.'}
                         </p>
                     </div>
                 ) : (
@@ -166,8 +167,10 @@ export default function MyVouchers({ vouchers, filters, counts }: Props) {
                                 </CardHeader>
                                 <CardContent className="px-5 py-4">
                                     <p className="line-clamp-2 text-sm text-text-secondary">
-                                        {voucher.destination_summary ??
-                                            'Sin destino o actividad registrada'}
+                                        {voucher.status === 'loaned'
+                                            ? `Persona responsable: ${voucher.loaned_to_name ?? 'no especificada'}`
+                                            : (voucher.destination_summary ??
+                                              'Sin destino o actividad registrada')}
                                     </p>
                                     <div className="mt-4 divide-y rounded-xl border">
                                         {voucher.items.map((item) => (
@@ -180,27 +183,42 @@ export default function MyVouchers({ vouchers, filters, counts }: Props) {
                                                 </span>
                                                 <span
                                                     className={
-                                                        item.balance_state ===
-                                                        'anomaly'
-                                                            ? 'font-semibold text-danger tabular-nums'
-                                                            : 'font-semibold text-warning tabular-nums'
+                                                        voucher.status ===
+                                                        'loaned'
+                                                            ? 'font-semibold text-foreground tabular-nums'
+                                                            : item.balance_state ===
+                                                                'anomaly'
+                                                              ? 'font-semibold text-danger tabular-nums'
+                                                              : 'font-semibold text-warning tabular-nums'
                                                     }
                                                 >
                                                     {formatQuantity(
-                                                        item.pending_quantity,
+                                                        voucher.status ===
+                                                            'loaned'
+                                                            ? item.quantity
+                                                            : item.pending_quantity,
                                                     )}{' '}
                                                     {item.unit.symbol}{' '}
-                                                    pendientes
+                                                    {voucher.status === 'loaned'
+                                                        ? 'prestados'
+                                                        : 'pendientes'}
                                                 </span>
                                             </div>
                                         ))}
+                                        {voucher.items.length === 0 && (
+                                            <p className="px-3 py-3 text-sm text-muted-foreground">
+                                                Sin material registrado
+                                            </p>
+                                        )}
                                     </div>
                                     <Button
                                         asChild
                                         className="mt-4 w-full sm:w-auto"
                                     >
                                         <Link href={`/mis-vales/${voucher.id}`}>
-                                            Ver detalle y aplicaciones{' '}
+                                            {voucher.status === 'loaned'
+                                                ? 'Ver detalle'
+                                                : 'Ver detalle y aplicaciones'}{' '}
                                             <ArrowRight data-icon="inline-end" />
                                         </Link>
                                     </Button>

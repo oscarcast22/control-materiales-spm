@@ -20,16 +20,18 @@ import {
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { VoucherFormProps } from '@/pages/vouchers/form';
+import type { LoanedVoucherFormProps } from '@/pages/vouchers/loaned-form';
 import type { VoucherReferenceFormProps } from '@/pages/vouchers/reference-form';
 import type { MaterialApplicationFormOptions, Voucher } from '@/types';
 
 const VoucherForm = lazy(() => import('@/pages/vouchers/form'));
+const LoanedVoucherForm = lazy(() => import('@/pages/vouchers/loaned-form'));
 const VoucherReferenceForm = lazy(
     () => import('@/pages/vouchers/reference-form'),
 );
 const VoucherShow = lazy(() => import('@/pages/vouchers/show'));
 
-type DialogMode = 'create' | 'detail' | 'edit';
+type DialogMode = 'create' | 'createLoaned' | 'detail' | 'edit';
 type FormPayload = Omit<
     VoucherFormProps,
     'embedded' | 'onSuccess' | 'onDirtyChange' | 'onCancel'
@@ -38,14 +40,20 @@ type ReferencePayload = Omit<
     VoucherReferenceFormProps,
     'embedded' | 'onSuccess' | 'onDirtyChange' | 'onCancel'
 >;
+type LoanedFormPayload = Omit<
+    LoanedVoucherFormProps,
+    'embedded' | 'onSuccess' | 'onDirtyChange' | 'onCancel'
+>;
 type DetailPayload = {
     voucher: Voucher;
     applicationFormOptions: MaterialApplicationFormOptions;
 };
-type Payload = FormPayload | ReferencePayload | DetailPayload;
+type Payload =
+    FormPayload | LoanedFormPayload | ReferencePayload | DetailPayload;
 
 type VoucherDialogsContextValue = {
     openCreate: () => void;
+    openCreateLoaned: () => void;
     openDetail: (voucherId: number) => void;
     openEdit: (voucherId: number) => void;
 };
@@ -70,7 +78,9 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
         const path =
             nextMode === 'create'
                 ? '/vouchers/create'
-                : `/vouchers/${id}${nextMode === 'edit' ? '/edit' : ''}`;
+                : nextMode === 'createLoaned'
+                  ? '/vouchers/create?kind=loaned'
+                  : `/vouchers/${id}${nextMode === 'edit' ? '/edit' : ''}`;
 
         setMode(nextMode);
         setVoucherId(id ?? null);
@@ -150,6 +160,7 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
     const value = useMemo<VoucherDialogsContextValue>(
         () => ({
             openCreate: () => void load('create'),
+            openCreateLoaned: () => void load('createLoaned'),
             openDetail: (id) => void load('detail', id),
             openEdit: (id) => void load('edit', id),
         }),
@@ -196,9 +207,11 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
                             <DialogTitle>
                                 {mode === 'create'
                                     ? 'Capturar vale'
-                                    : mode === 'edit'
-                                      ? 'Editar vale'
-                                      : 'Detalle del vale'}
+                                    : mode === 'createLoaned'
+                                      ? 'Registrar folio prestado'
+                                      : mode === 'edit'
+                                        ? 'Editar vale'
+                                        : 'Detalle del vale'}
                             </DialogTitle>
                             <DialogDescription>
                                 Ventana de gestión de vales de material.
@@ -245,11 +258,32 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
                         {!loading &&
                             !error &&
                             payload &&
+                            mode === 'createLoaned' && (
+                                <LoanedVoucherForm
+                                    {...(payload as LoanedFormPayload)}
+                                    embedded
+                                    onSuccess={success}
+                                    onDirtyChange={setDirty}
+                                    onCancel={close}
+                                />
+                            )}
+                        {!loading &&
+                            !error &&
+                            payload &&
                             mode === 'edit' &&
                             ((payload as { voucher: Voucher }).voucher
                                 .status === 'active' ? (
                                 <VoucherForm
                                     {...(payload as FormPayload)}
+                                    embedded
+                                    onSuccess={success}
+                                    onDirtyChange={setDirty}
+                                    onCancel={backToDetail}
+                                />
+                            ) : (payload as { voucher: Voucher }).voucher
+                                  .status === 'loaned' ? (
+                                <LoanedVoucherForm
+                                    {...(payload as LoanedFormPayload)}
                                     embedded
                                     onSuccess={success}
                                     onDirtyChange={setDirty}
@@ -336,7 +370,9 @@ export function VoucherModalLink({
     const href =
         mode === 'create'
             ? '/vouchers/create'
-            : `/vouchers/${voucherId}${mode === 'edit' ? '/edit' : ''}`;
+            : mode === 'createLoaned'
+              ? '/vouchers/create?kind=loaned'
+              : `/vouchers/${voucherId}${mode === 'edit' ? '/edit' : ''}`;
     const open = (event: MouseEvent<HTMLAnchorElement>) => {
         event.stopPropagation();
 
@@ -354,6 +390,8 @@ export function VoucherModalLink({
 
         if (mode === 'create') {
             dialogs.openCreate();
+        } else if (mode === 'createLoaned') {
+            dialogs.openCreateLoaned();
         } else if (mode === 'edit' && voucherId !== undefined) {
             dialogs.openEdit(voucherId);
         } else if (voucherId !== undefined) {
