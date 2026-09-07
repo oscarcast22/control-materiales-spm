@@ -20,6 +20,7 @@ class UnitFactory extends Factory
         return [
             'name' => fake()->unique()->word(),
             'symbol' => fake()->unique()->lexify('???'),
+            'decimal_places' => 0,
             'is_active' => true,
         ];
     }

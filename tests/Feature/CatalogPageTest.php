@@ -9,6 +9,7 @@ use App\Models\Destination;
 use App\Models\InventoryAdjustment;
 use App\Models\Material;
 use App\Models\MaterialAlias;
+use App\Models\MaterialApplication;
 use App\Models\Person;
 use App\Models\Program;
 use App\Models\StorageLocation;
@@ -186,6 +187,7 @@ class CatalogPageTest extends TestCase
             ->put(route('catalogs.units.update', $unit), [
                 'name' => 'Unidad corregida',
                 'symbol' => 'uc',
+                'decimal_places' => 1,
                 'is_active' => false,
             ])
             ->assertSessionHasNoErrors();
@@ -202,6 +204,7 @@ class CatalogPageTest extends TestCase
             ->put(route('catalogs.units.update', $inUseUnit), [
                 'name' => $inUseUnit->name,
                 'symbol' => $inUseUnit->symbol,
+                'decimal_places' => $inUseUnit->decimal_places,
                 'is_active' => false,
             ])
             ->assertSessionHasErrors('status');
@@ -232,6 +235,59 @@ class CatalogPageTest extends TestCase
             'auditable_type' => ActionIndicator::class,
             'auditable_id' => $first->id,
             'user_id' => $user->id,
+        ]);
+    }
+
+    public function test_unit_precision_is_configurable_and_cannot_hide_fractional_history(): void
+    {
+        $user = User::factory()->create();
+        $decimalUnit = Unit::factory()->create([
+            'name' => 'Metro',
+            'symbol' => 'm',
+            'decimal_places' => 1,
+        ]);
+        $integerUnit = Unit::factory()->create([
+            'name' => 'Pieza',
+            'symbol' => 'pza',
+            'decimal_places' => 0,
+        ]);
+        $material = Material::factory()->create(['default_unit_id' => $decimalUnit->id]);
+        $voucherType = StorageLocation::factory()->create();
+        $material->voucherTypes()->sync([$voucherType->id]);
+        $item = VoucherItem::factory()->create([
+            'material_id' => $material->id,
+            'unit_id' => $decimalUnit->id,
+            'quantity' => 2.5,
+        ]);
+        MaterialApplication::factory()->create([
+            'voucher_item_id' => $item->id,
+            'quantity' => 1.5,
+        ]);
+
+        $this->actingAs($user)->put(route('catalogs.units.update', $decimalUnit), [
+            'name' => $decimalUnit->name,
+            'symbol' => $decimalUnit->symbol,
+            'decimal_places' => 0,
+            'is_active' => true,
+        ])->assertSessionHasErrors('decimal_places');
+        $this->assertSame(1, $decimalUnit->fresh()->decimal_places);
+
+        $this->actingAs($user)->put(route('catalogs.materials.update', $material), [
+            'name' => $material->name,
+            'default_unit_id' => $integerUnit->id,
+            'voucher_type_ids' => [$voucherType->id],
+        ])->assertSessionHasErrors('default_unit_id');
+        $this->assertSame($decimalUnit->id, $material->fresh()->default_unit_id);
+        $this->assertSame($decimalUnit->id, $item->fresh()->unit_id);
+
+        $this->actingAs($user)->post(route('catalogs.units.store'), [
+            'name' => 'Litro de prueba',
+            'symbol' => 'Lt',
+            'decimal_places' => 1,
+        ])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('units', [
+            'symbol' => 'Lt',
+            'decimal_places' => 1,
         ]);
     }
 

@@ -37,7 +37,7 @@ class ReportController extends Controller
             'cutoff' => MaterialTracking::START_DATE,
             'receivers' => fn () => Person::query()->where('can_receive_material', true)->orderBy('name')->get(['id', 'name']),
             'materials' => fn () => Material::query()
-                ->with('defaultUnit:id,name,symbol')
+                ->with('defaultUnit:id,name,symbol,decimal_places')
                 ->orderBy('name')
                 ->get(['id', 'name', 'default_unit_id']),
             'voucherTypes' => fn () => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'tracking_started_on']),

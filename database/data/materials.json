@@ -44,7 +44,7 @@
     },
     {
         "name": "ACEITE ATF",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -52,7 +52,7 @@
     },
     {
         "name": "ACEITE H 300 GRUA",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [
             "ACEITE H-300"
         ],
@@ -62,7 +62,7 @@
     },
     {
         "name": "ACEITE HIDRAULICO",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -70,7 +70,7 @@
     },
     {
         "name": "ACEITE MOTOR A GASOLINA",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [
             "ACEITE PARA MOTOR A GASOLINA"
         ],
@@ -290,7 +290,7 @@
     },
     {
         "name": "ANTICONGELANTE",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -4602,7 +4602,7 @@
     },
     {
         "name": "LIQUIDO PARA FRENOS",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -5444,7 +5444,7 @@
     },
     {
         "name": "PINTURA AMARILLO",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -5453,7 +5453,7 @@
     },
     {
         "name": "PINTURA AZUL MARINO",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -5462,7 +5462,7 @@
     },
     {
         "name": "PINTURA DORADO",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -5471,7 +5471,7 @@
     },
     {
         "name": "PINTURA ESMALTE BLANCA",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [
             "PINTURA DE ESMALTE BLANCO"
         ],
@@ -5481,7 +5481,7 @@
     },
     {
         "name": "PINTURA ESMALTE NEGRA",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -5489,7 +5489,7 @@
     },
     {
         "name": "PINTURA ESMALTE VERDE",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -5497,7 +5497,7 @@
     },
     {
         "name": "PINTURA GRIS",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -5506,7 +5506,7 @@
     },
     {
         "name": "PINTURA NEGRA",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -5515,7 +5515,7 @@
     },
     {
         "name": "PINTURA VINILICA BLANCA",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [],
         "voucher_types": [
             "warehouse"
@@ -6976,7 +6976,7 @@
     },
     {
         "name": "THINNER",
-        "unit": "s/e",
+        "unit": "L",
         "aliases": [
             "thiner"
         ],

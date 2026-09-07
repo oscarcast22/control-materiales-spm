@@ -12,6 +12,7 @@ use App\Models\MaterialApplicationReport;
 use App\Models\Voucher;
 use App\Models\VoucherItem;
 use App\Support\Normalizer;
+use App\Support\QuantityPrecision;
 use App\Support\VoucherData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -76,7 +77,7 @@ class MaterialApplicationController extends Controller
             'notes' => ['nullable', 'string', 'max:3000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.voucher_item_id' => ['required', 'integer', 'distinct', 'exists:voucher_items,id'],
-            'items.*.quantity' => ['required', 'integer', 'gt:0', 'max:999999999'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:'.QuantityPrecision::MAX_VALUE],
             'attachment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
         ], $this->applicationValidationMessages());
 
@@ -101,7 +102,7 @@ class MaterialApplicationController extends Controller
                     array_column($data['items'], 'voucher_item_id'),
                 );
                 $items = VoucherItem::query()
-                    ->with('applications')
+                    ->with(['applications', 'unit'])
                     ->where('voucher_id', $voucher->id)
                     ->whereKey($itemIds)
                     ->lockForUpdate()
@@ -128,6 +129,11 @@ class MaterialApplicationController extends Controller
 
                 foreach ($data['items'] as $index => $row) {
                     $item = $items->get((int) $row['voucher_item_id']);
+                    if (! QuantityPrecision::accepts($row['quantity'], $item->unit->decimal_places)) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.quantity" => QuantityPrecision::message($item->unit),
+                        ]);
+                    }
                     $pending = (float) $item->pendingQuantity();
                     if ((float) $row['quantity'] > $pending + 0.0001) {
                         throw ValidationException::withMessages([
@@ -187,7 +193,7 @@ class MaterialApplicationController extends Controller
             'correction_reason' => ['required', 'string', 'min:5', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.voucher_item_id' => ['required', 'integer', 'distinct', 'exists:voucher_items,id'],
-            'items.*.quantity' => ['required', 'integer', 'gte:0', 'max:999999999'],
+            'items.*.quantity' => ['required', 'numeric', 'gte:0', 'max:'.QuantityPrecision::MAX_VALUE],
         ], $this->applicationValidationMessages());
 
         $itemRows = VoucherData::itemRows($data['items'] ?? null);
@@ -211,6 +217,7 @@ class MaterialApplicationController extends Controller
                 array_column($itemRows, 'voucher_item_id'),
             );
             $items = VoucherItem::query()
+                ->with('unit')
                 ->where('voucher_id', $voucher->id)
                 ->whereKey($itemIds)
                 ->lockForUpdate()
@@ -256,6 +263,12 @@ class MaterialApplicationController extends Controller
                 $currentCandidate = $activeApplications->get($item->id);
                 $current = $currentCandidate instanceof MaterialApplication ? $currentCandidate : null;
                 $quantityChanged = ! $current || abs((float) $current->quantity - $quantity) > 0.0001;
+
+                if ($quantityChanged && ! QuantityPrecision::accepts($row['quantity'], $item->unit->decimal_places)) {
+                    throw ValidationException::withMessages([
+                        "items.{$index}.quantity" => QuantityPrecision::message($item->unit),
+                    ]);
+                }
 
                 if ($current && $quantityChanged) {
                     $before = $current->toArray();
@@ -329,6 +342,11 @@ class MaterialApplicationController extends Controller
             'location.max' => 'La ubicación o dirección no puede tener más de 500 caracteres.',
             'notes.string' => 'Los detalles deben ser texto.',
             'notes.max' => 'Los detalles no pueden tener más de 3,000 caracteres.',
+            'items.*.quantity.required' => 'Escribe la cantidad aplicada.',
+            'items.*.quantity.numeric' => 'La cantidad aplicada debe ser un número válido.',
+            'items.*.quantity.gt' => 'La cantidad aplicada debe ser mayor que cero.',
+            'items.*.quantity.gte' => 'La cantidad aplicada no puede ser negativa.',
+            'items.*.quantity.max' => 'La cantidad aplicada es demasiado grande.',
         ];
     }
 

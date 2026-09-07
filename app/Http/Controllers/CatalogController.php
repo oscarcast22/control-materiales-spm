@@ -17,6 +17,7 @@ use App\Models\VoucherItem;
 use App\Support\CatalogDeletion;
 use App\Support\CatalogIndexData;
 use App\Support\Normalizer;
+use App\Support\QuantityPrecision;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -153,6 +154,13 @@ class CatalogController extends Controller
 
         DB::transaction(function () use ($material, $data, $key, $request): void {
             $locked = Material::query()->lockForUpdate()->findOrFail($material->id);
+            $targetUnit = Unit::query()->findOrFail((int) $data['default_unit_id']);
+            if ($locked->default_unit_id !== $targetUnit->id
+                && QuantityPrecision::materialHasIncompatibleHistory($locked, $targetUnit->decimal_places)) {
+                throw ValidationException::withMessages([
+                    'default_unit_id' => "No puedes cambiar este material a {$targetUnit->name}: existen cantidades históricas que requieren decimales.",
+                ]);
+            }
             $before = [
                 ...$locked->toArray(),
                 'voucher_type_ids' => $locked->voucherTypes()->pluck('storage_locations.id')->all(),
@@ -290,6 +298,7 @@ class CatalogController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'symbol' => ['required', 'string', 'max:20', Rule::unique('units', 'symbol')],
+            'decimal_places' => ['required', 'integer', Rule::in([0, 1])],
         ]);
         $model = Unit::create($data);
         AuditEvent::record($model, 'created', null, $model->toArray());
@@ -303,13 +312,29 @@ class CatalogController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'symbol' => ['required', 'string', 'max:20', Rule::unique('units', 'symbol')->ignore($unit)],
+            'decimal_places' => ['required', 'integer', Rule::in([0, 1])],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        $before = $unit->toArray();
-        $this->statusAttributes($unit, $data);
-        $unit->update($data);
-        AuditEvent::record($unit, 'updated', $before, $unit->fresh()->toArray());
+        DB::transaction(function () use ($unit, $data): void {
+            $locked = Unit::query()->lockForUpdate()->findOrFail($unit->id);
+            $decimalPlaces = (int) $data['decimal_places'];
+            if ($decimalPlaces < $locked->decimal_places
+                && QuantityPrecision::unitHasIncompatibleHistory($locked, $decimalPlaces)) {
+                throw ValidationException::withMessages([
+                    'decimal_places' => 'Esta unidad conserva cantidades históricas con decimales. No se puede cambiar a sólo enteros.',
+                ]);
+            }
+
+            $before = $locked->toArray();
+            $locked->update([
+                'name' => $data['name'],
+                'symbol' => $data['symbol'],
+                'decimal_places' => $decimalPlaces,
+                ...$this->statusAttributes($locked, $data),
+            ]);
+            AuditEvent::record($locked, 'updated', $before, $locked->fresh()->toArray());
+        });
 
         return back()->with('success', 'Unidad actualizada en todos los vales relacionados.');
     }

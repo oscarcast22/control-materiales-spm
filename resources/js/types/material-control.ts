@@ -5,6 +5,7 @@ export type CatalogDeletion = {
 };
 export type Unit = Named & {
     symbol: string;
+    decimal_places: 0 | 1;
     is_active?: boolean;
     deletion?: CatalogDeletion;
 };
@@ -175,6 +176,11 @@ export type Voucher = {
     review_reasons: string[];
     cancellation_reason?: string | null;
     items_count: number;
+    material_totals: {
+        registered_quantity: string;
+        applied_quantity: string | null;
+        pending_quantity: string | null;
+    };
     items: VoucherItem[];
     application_reports: MaterialApplicationReport[];
     attachments: {

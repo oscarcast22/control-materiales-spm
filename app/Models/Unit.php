@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property string $name
  * @property string $symbol
+ * @property int $decimal_places
  * @property bool $is_active
  * @property-read Collection<int, Material> $materials
  * @property-read int|null $materials_count
@@ -21,11 +22,11 @@ class Unit extends Model
     /** @use HasFactory<UnitFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'symbol', 'is_active'];
+    protected $fillable = ['name', 'symbol', 'decimal_places', 'is_active'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['decimal_places' => 'integer', 'is_active' => 'boolean'];
     }
 
     /** @return HasMany<Material, $this> */

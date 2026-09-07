@@ -39,7 +39,7 @@ final class CatalogIndexData
                 ? Unit::query()
                     ->withExists(['materials', 'voucherItems', 'inventoryAdjustments'])
                     ->orderBy('name')
-                    ->get(['id', 'name', 'symbol', 'is_active'])
+                    ->get(['id', 'name', 'symbol', 'decimal_places', 'is_active'])
                     ->each(fn (Unit $unit) => $this->decorateDeletion($unit))
                 : [],
             'voucherTypes' => fn () => $section === 'materials'
@@ -104,7 +104,7 @@ final class CatalogIndexData
         $query = Material::query()
             ->select(['id', 'name', 'default_unit_id', 'is_active', 'needs_review'])
             ->with([
-                'defaultUnit:id,name,symbol,is_active',
+                'defaultUnit:id,name,symbol,decimal_places,is_active',
                 'voucherTypes:id,name,code',
             ])
             ->withCount('aliases')

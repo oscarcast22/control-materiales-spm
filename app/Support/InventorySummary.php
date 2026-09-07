@@ -65,7 +65,7 @@ final class InventorySummary
             $rows[$key] ??= [
                 'location' => self::location($adjustment->location),
                 'material' => $adjustment->material->only(['id', 'name']),
-                'unit' => $adjustment->unit->only(['id', 'name', 'symbol']),
+                'unit' => $adjustment->unit->only(['id', 'name', 'symbol', 'decimal_places']),
                 'entries' => 0.0, 'exits' => 0.0, 'adjustments' => 0.0,
             ];
             $rows[$key]['adjustments'] += (float) $adjustment->quantity_delta;
@@ -92,7 +92,7 @@ final class InventorySummary
         return [
             'location' => self::location($location),
             'material' => $item->material->only(['id', 'name']),
-            'unit' => $item->unit->only(['id', 'name', 'symbol']),
+            'unit' => $item->unit->only(['id', 'name', 'symbol', 'decimal_places']),
             'entries' => 0.0, 'exits' => 0.0, 'adjustments' => 0.0,
         ];
     }

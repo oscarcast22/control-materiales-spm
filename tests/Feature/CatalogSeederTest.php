@@ -51,7 +51,16 @@ class CatalogSeederTest extends TestCase
         $this->assertDatabaseCount('person_aliases', 56);
         $this->assertDatabaseCount('destinations', 309);
         $this->assertDatabaseCount('destination_aliases', 7);
-        $this->assertDatabaseCount('units', 7);
+        $this->assertDatabaseCount('units', 8);
+        $this->assertDatabaseHas('units', [
+            'name' => 'Litro',
+            'symbol' => 'L',
+            'decimal_places' => 1,
+        ]);
+        $this->assertDatabaseHas('units', [
+            'symbol' => 'm',
+            'decimal_places' => 1,
+        ]);
         $this->assertDatabaseCount('programs', 1);
         $this->assertTrue(Schema::hasTable('actions'));
         $this->assertDatabaseCount('actions', 17);
@@ -145,18 +154,42 @@ class CatalogSeederTest extends TestCase
         $this->assertSame(21, ActionIndicator::query()->count());
 
         $this->assertSame([
+            'L' => 16,
             'jgo' => 4,
             'kg' => 2,
             'm' => 45,
             'm³' => 2,
             'pza' => 552,
             'rollo' => 39,
-            's/e' => 199,
+            's/e' => 183,
         ], Unit::query()
             ->withCount('materials')
             ->get()
             ->mapWithKeys(fn (Unit $unit): array => [$unit->symbol => $unit->materials_count])
             ->sortKeys()
+            ->all());
+
+        $this->assertSame([
+            'ACEITE ATF',
+            'ACEITE H 300 GRUA',
+            'ACEITE HIDRAULICO',
+            'ACEITE MOTOR A GASOLINA',
+            'ANTICONGELANTE',
+            'LIQUIDO PARA FRENOS',
+            'PINTURA AMARILLO',
+            'PINTURA AZUL MARINO',
+            'PINTURA DORADO',
+            'PINTURA ESMALTE BLANCA',
+            'PINTURA ESMALTE NEGRA',
+            'PINTURA ESMALTE VERDE',
+            'PINTURA GRIS',
+            'PINTURA NEGRA',
+            'PINTURA VINILICA BLANCA',
+            'THINNER',
+        ], Material::query()
+            ->whereHas('defaultUnit', fn ($query) => $query->where('symbol', 'L'))
+            ->orderBy('name')
+            ->pluck('name')
             ->all());
     }
 

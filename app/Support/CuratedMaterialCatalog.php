@@ -7,17 +7,18 @@ use RuntimeException;
 
 final class CuratedMaterialCatalog
 {
-    /** @return list<array{name: string, symbol: string}> */
+    /** @return list<array{name: string, symbol: string, decimal_places: int}> */
     public function units(): array
     {
         return [
-            ['name' => 'Pieza', 'symbol' => 'pza'],
-            ['name' => 'Metro', 'symbol' => 'm'],
-            ['name' => 'Kilogramo', 'symbol' => 'kg'],
-            ['name' => 'Metro cúbico', 'symbol' => 'm³'],
-            ['name' => 'Rollo', 'symbol' => 'rollo'],
-            ['name' => 'Juego', 'symbol' => 'jgo'],
-            ['name' => 'Unidad sin especificar', 'symbol' => 's/e'],
+            ['name' => 'Pieza', 'symbol' => 'pza', 'decimal_places' => 0],
+            ['name' => 'Metro', 'symbol' => 'm', 'decimal_places' => 1],
+            ['name' => 'Litro', 'symbol' => 'L', 'decimal_places' => 1],
+            ['name' => 'Kilogramo', 'symbol' => 'kg', 'decimal_places' => 0],
+            ['name' => 'Metro cúbico', 'symbol' => 'm³', 'decimal_places' => 0],
+            ['name' => 'Rollo', 'symbol' => 'rollo', 'decimal_places' => 0],
+            ['name' => 'Juego', 'symbol' => 'jgo', 'decimal_places' => 0],
+            ['name' => 'Unidad sin especificar', 'symbol' => 's/e', 'decimal_places' => 0],
         ];
     }
 

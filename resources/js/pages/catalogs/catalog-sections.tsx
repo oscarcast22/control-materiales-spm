@@ -516,6 +516,11 @@ function MaterialDialog({
     );
 }
 
+const unitPrecisionOptions = [
+    { value: '0', label: 'Sólo cantidades enteras' },
+    { value: '1', label: 'Permite decimales' },
+];
+
 function UnitManager({
     open,
     onOpenChange,
@@ -525,7 +530,7 @@ function UnitManager({
     onOpenChange: (open: boolean) => void;
     units: Unit[];
 }) {
-    const form = useForm({ name: '', symbol: '' });
+    const form = useForm({ name: '', symbol: '', decimal_places: '0' });
     const submit = (event: FormEvent) => {
         event.preventDefault();
         form.post('/catalogs/units', {
@@ -544,7 +549,7 @@ function UnitManager({
                 <ModalBody className="grid content-start gap-5">
                     <form
                         onSubmit={submit}
-                        className="grid gap-3 rounded-xl border border-border bg-surface-subtle p-4 sm:grid-cols-[1fr_130px_auto]"
+                        className="grid gap-3 rounded-xl border border-border bg-surface-subtle p-4 sm:grid-cols-[minmax(0,1fr)_110px_220px_auto]"
                     >
                         <div className="grid gap-1.5">
                             <Label htmlFor="new-unit-name">Nombre</Label>
@@ -566,9 +571,24 @@ function UnitManager({
                                 onChange={(event) =>
                                     form.setData('symbol', event.target.value)
                                 }
-                                placeholder="l"
+                                placeholder="L"
                             />
                             <InputError message={form.errors.symbol} />
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="new-unit-precision">
+                                Cantidades permitidas
+                            </Label>
+                            <SimpleSelect
+                                id="new-unit-precision"
+                                value={form.data.decimal_places}
+                                onValueChange={(value) =>
+                                    form.setData('decimal_places', value)
+                                }
+                                options={unitPrecisionOptions}
+                                placeholder="Seleccionar precisión"
+                            />
+                            <InputError message={form.errors.decimal_places} />
                         </div>
                         <Button className="self-end" disabled={form.processing}>
                             <Plus aria-hidden="true" />
@@ -590,6 +610,7 @@ function UnitRow({ unit }: { unit: Unit }) {
     const form = useForm({
         name: unit.name,
         symbol: unit.symbol,
+        decimal_places: String(unit.decimal_places),
         is_active: unit.is_active ?? true,
     });
 
@@ -602,7 +623,7 @@ function UnitRow({ unit }: { unit: Unit }) {
                     onSuccess: () => form.setDefaults(),
                 });
             }}
-            className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[1fr_110px_auto_auto] sm:items-center"
+            className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[minmax(0,1fr)_110px_220px_auto_auto] sm:items-center"
         >
             <Input
                 aria-label={`Nombre de ${unit.name}`}
@@ -614,6 +635,24 @@ function UnitRow({ unit }: { unit: Unit }) {
                 value={form.data.symbol}
                 onChange={(event) => form.setData('symbol', event.target.value)}
             />
+            <div>
+                <Label
+                    htmlFor={`unit-${unit.id}-precision`}
+                    className="sr-only"
+                >
+                    Cantidades permitidas para {unit.name}
+                </Label>
+                <SimpleSelect
+                    id={`unit-${unit.id}-precision`}
+                    value={form.data.decimal_places}
+                    onValueChange={(value) =>
+                        form.setData('decimal_places', value)
+                    }
+                    options={unitPrecisionOptions}
+                    placeholder="Seleccionar precisión"
+                    invalid={Boolean(form.errors.decimal_places)}
+                />
+            </div>
             <Button
                 type="submit"
                 size="sm"
@@ -631,14 +670,20 @@ function UnitRow({ unit }: { unit: Unit }) {
                 }}
                 onDeleted={() => undefined}
             />
-            <div className="sm:col-span-4">
+            <div className="sm:col-span-5">
                 <CatalogStatusField
                     value={form.data.is_active}
                     onValueChange={(value) => form.setData('is_active', value)}
                 />
             </div>
-            <div className="sm:col-span-4">
-                <InputError message={form.errors.name ?? form.errors.symbol} />
+            <div className="sm:col-span-5">
+                <InputError
+                    message={
+                        form.errors.name ??
+                        form.errors.symbol ??
+                        form.errors.decimal_places
+                    }
+                />
             </div>
         </form>
     );
