@@ -96,7 +96,7 @@ class ReportController extends Controller
         $sheet = $writer->addNewSheetAndMakeItCurrent();
         $sheet->setName('Aplicaciones');
         $writer->addRow(Row::fromValues([
-            'Folio', 'Material', 'Fecha', 'Cantidad', 'Referencia', 'Destino', 'Notas',
+            'Folio', 'Material', 'Fecha', 'Cantidad', 'Tipo de orden', 'Orden de servicio', 'Ubicación o dirección', 'Detalles',
         ]));
         foreach ($vouchers as $voucher) {
             foreach ($voucher->items as $item) {
@@ -107,12 +107,12 @@ class ReportController extends Controller
                     if ($application->voided_at !== null) {
                         continue;
                     }
+                    $report = $application->application_report_id !== null ? $application->report : null;
                     $writer->addRow(Row::fromValues([
                         self::safe($voucher->folio), self::safe($item->description_snapshot), $application->occurred_on->format('Y-m-d'),
-                        (float) $application->quantity, self::safe($application->reference), self::safe($application->destination_snapshot),
-                        self::safe($application->application_report_id !== null
-                            ? ($application->report->notes ?? $application->notes)
-                            : $application->notes),
+                        (float) $application->quantity, self::safe($report?->service_order_type?->label()), self::safe($application->reference),
+                        self::safe($report !== null ? ($report->location ?? $application->destination_snapshot) : $application->destination_snapshot),
+                        self::safe($report !== null ? ($report->notes ?? $application->notes) : $application->notes),
                     ]));
                 }
             }

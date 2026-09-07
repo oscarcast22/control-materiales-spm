@@ -18,10 +18,10 @@ La aplicación está desplegada en producción en `https://materiales.utopiadigi
 - Acceso privado con cuentas creadas por consola; el registro público está deshabilitado.
 - Captura y edición de entradas y salidas de Almacén o Patio con varios materiales.
 - Catálogos organizados en Personas, Materiales —con sus unidades habituales—, Ubicaciones y una sección conjunta del programa fijo SPM-06, sus acciones e indicadores. Almacén y Patio son tipos estructurales fijos.
-- Aplicaciones parciales o en bloque, con saldo por partida.
-- Anulación auditada de movimientos, registro mínimo y corrección de folios físicos prestados, y cancelación controlada de vales.
+- Aplicaciones parciales o en bloque con tipo y número de orden de servicio, ubicación o dirección libre, detalles y saldo por partida.
+- Anulación auditada de movimientos, registro mínimo y corrección de folios físicos prestados, y cancelación controlada de vales con clasificación del material sin usar.
 - Fotos o PDF del vale guardados en almacenamiento privado.
-- Consulta, filtros, impresión y exportación XLSX del seguimiento de material.
+- Consulta por folio u orden de servicio, filtros, impresión y exportación XLSX del seguimiento de material.
 - Resúmenes por material y por técnico de lo entregado, aplicado y pendiente desde 2026.
 - Resumen operativo centrado en vales con saldo, partidas por comprobar y técnicos con pendientes; los vales liquidados y las incidencias permanecen accesibles sin competir con esas prioridades.
 - Catálogos iniciales depurados y versionados; importación separada de agosto de 2026.
@@ -98,7 +98,7 @@ La aplicación no presenta estos saldos como existencias de almacén. Conocer el
 - `destination_voucher`: relación que permite asociar uno o varios lugares al mismo vale.
 - `vouchers`: documento de entrada o salida; el folio es único dentro de cada tipo.
 - `voucher_items`: cantidad entregada y referencias al material y unidad canónicos; su descripción se sincroniza para búsqueda y presentación.
-- `material_application_reports`: encabezado y evidencia opcional de una aplicación capturada en bloque.
+- `material_application_reports`: fecha, tipo y número de orden, ubicación o dirección libre, detalles y evidencia opcional de una aplicación capturada en bloque.
 - `material_applications`: cantidades aplicadas a las partidas de un vale.
 - `inventory_adjustments`: infraestructura reservada para un posible inventario físico; no tiene rutas ni interfaz activas.
 - `audit_events`: historial del usuario y valores anteriores/posteriores de operaciones sensibles.

@@ -13,16 +13,17 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import InputError from '@/components/input-error';
 import { Pagination } from '@/components/pagination';
-import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
@@ -456,29 +457,27 @@ export function CatalogDeleteAction({
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
+        <AlertDialog open={open} onOpenChange={setOpen}>
+            <AlertDialogTrigger asChild>
                 <Button type="button" variant="destructive">
                     Eliminar registro
                 </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>¿Eliminar {target.name}?</DialogTitle>
-                    <DialogDescription>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
+                        ¿Eliminar {target.name}?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
                         Esta acción es permanente. Sólo se elimina porque no
                         tiene vales ni otras dependencias que conservar.
-                    </DialogDescription>
-                </DialogHeader>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
                 <InputError message={form.errors.delete} />
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setOpen(false)}
-                    >
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={form.processing}>
                         Volver
-                    </Button>
+                    </AlertDialogCancel>
                     <Button
                         type="button"
                         variant="destructive"
@@ -487,8 +486,8 @@ export function CatalogDeleteAction({
                     >
                         Eliminar definitivamente
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }

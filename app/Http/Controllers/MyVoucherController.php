@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Voucher;
+use App\Support\MaterialApplicationFormOptions;
 use App\Support\VoucherData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -63,6 +64,7 @@ class MyVoucherController extends Controller
 
         return Inertia::render('vouchers/show', [
             'voucher' => VoucherData::make($model, true, $user),
+            'applicationFormOptions' => MaterialApplicationFormOptions::make(),
             'backUrl' => route('my-vouchers.index'),
         ]);
     }

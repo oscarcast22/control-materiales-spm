@@ -2,18 +2,18 @@ import { useForm } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle2, FileUp, Search, Wrench } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { ApplicationLocationInput } from '@/components/application-location-input';
+import { DiscardChangesAlert } from '@/components/discard-changes-alert';
+import {
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+} from '@/components/modal-shell';
+import { SimpleSelect } from '@/components/simple-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import {
     Field,
     FieldDescription,
@@ -24,7 +24,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate, formatQuantity } from '@/lib/format';
-import type { MaterialApplicationReport, Voucher, VoucherItem } from '@/types';
+import type {
+    MaterialApplicationFormOptions,
+    MaterialApplicationReport,
+    Voucher,
+    VoucherItem,
+} from '@/types';
 
 type VoucherOption = {
     id: number;
@@ -40,6 +45,8 @@ type ApplicationForm = {
     voucher_id: number | '';
     occurred_on: string;
     reference: string;
+    service_order_type: string;
+    location: string;
     notes: string;
     correction_reason: string;
     items: { voucher_item_id: number; quantity: string }[];
@@ -82,12 +89,17 @@ const asOption = (
 });
 
 const initialForm = (
+    formOptions: MaterialApplicationFormOptions,
     voucher?: Voucher,
     report?: MaterialApplicationReport,
 ): ApplicationForm => ({
     voucher_id: voucher?.id ?? '',
     occurred_on: report?.occurred_on ?? today(),
     reference: report?.service_order ?? '',
+    service_order_type:
+        report?.service_order_type ??
+        (report ? '' : formOptions.default_service_order_type),
+    location: report?.location ?? '',
     notes: report?.notes ?? '',
     correction_reason: '',
     items: voucher
@@ -103,11 +115,13 @@ export function QuickApplicationDialog({
     trigger,
     voucher,
     report,
+    formOptions,
     onSuccess,
 }: {
     trigger: ReactNode;
     voucher?: Voucher;
     report?: MaterialApplicationReport;
+    formOptions: MaterialApplicationFormOptions;
     onSuccess?: () => void;
 }) {
     const editMode = Boolean(report);
@@ -120,7 +134,10 @@ export function QuickApplicationDialog({
     const [searching, setSearching] = useState(false);
     const [searchError, setSearchError] = useState('');
     const [itemsError, setItemsError] = useState('');
-    const form = useForm<ApplicationForm>(initialForm(voucher, report));
+    const [discardOpen, setDiscardOpen] = useState(false);
+    const form = useForm<ApplicationForm>(
+        initialForm(formOptions, voucher, report),
+    );
 
     useEffect(() => {
         if (!open || voucher || selected || search.trim() === '') {
@@ -199,7 +216,14 @@ export function QuickApplicationDialog({
             return;
         }
 
+        if (form.isDirty && !force) {
+            setDiscardOpen(true);
+
+            return;
+        }
+
         setOpen(false);
+        setDiscardOpen(false);
         setSearch('');
         setResults([]);
         setSearchError('');
@@ -213,7 +237,7 @@ export function QuickApplicationDialog({
         const nextSelected = voucher ? asOption(voucher, report) : null;
 
         setSelected(nextSelected);
-        form.setData(initialForm(voucher, report));
+        form.setData(initialForm(formOptions, voucher, report));
         form.clearErrors();
         setItemsError('');
         setOpen(true);
@@ -267,469 +291,553 @@ export function QuickApplicationDialog({
     ).length;
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={(next) => (next ? openDialog() : close())}
-        >
-            <DialogTrigger asChild>{trigger}</DialogTrigger>
-            <DialogContent className="max-h-[92vh] overflow-y-auto p-0 sm:max-w-3xl">
-                <DialogHeader className="border-b px-5 pt-5 pb-4 sm:px-6 sm:pt-6">
-                    <div className="flex items-start gap-3 pr-8">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary-subtle text-primary">
-                            <Wrench className="size-5" aria-hidden="true" />
-                        </span>
-                        <div>
-                            <DialogTitle>
-                                {editMode
-                                    ? 'Editar aplicación'
-                                    : 'Registrar aplicación'}
-                            </DialogTitle>
-                            <DialogDescription className="mt-1">
-                                {editMode
-                                    ? 'Corrige la fecha, la orden o las cantidades aplicadas. El cambio quedará auditado.'
-                                    : 'Registra la orden de servicio y las cantidades utilizadas.'}
-                            </DialogDescription>
-                        </div>
-                    </div>
-                </DialogHeader>
+        <>
+            <Dialog
+                open={open}
+                onOpenChange={(next) => (next ? openDialog() : close())}
+            >
+                <DialogTrigger asChild>{trigger}</DialogTrigger>
+                <ModalContent size="flow">
+                    <ModalHeader
+                        icon={<Wrench aria-hidden="true" />}
+                        title={
+                            editMode
+                                ? 'Editar aplicación'
+                                : 'Registrar aplicación'
+                        }
+                    />
 
-                {!selected ? (
-                    <div className="flex flex-col gap-4 px-5 py-5 sm:px-6">
-                        <Field>
-                            <FieldLabel htmlFor="application-voucher-search">
-                                Folio del vale
-                            </FieldLabel>
-                            <div className="relative">
-                                <Search
-                                    className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                                    aria-hidden="true"
-                                />
-                                <Input
-                                    id="application-voucher-search"
-                                    className="pl-9"
-                                    autoFocus
-                                    value={search}
-                                    onChange={(event) =>
-                                        setSearch(event.target.value)
-                                    }
-                                    placeholder="Ej. 15628"
-                                    autoComplete="off"
-                                />
-                            </div>
-                            <FieldDescription>
-                                Sólo aparecen vales de salida activos con
-                                material pendiente.
-                            </FieldDescription>
-                        </Field>
-
-                        <div
-                            className="flex min-h-40 flex-col gap-2"
-                            aria-live="polite"
-                        >
-                            {searching && (
-                                <p className="py-10 text-center text-sm text-muted-foreground">
-                                    Buscando vale…
-                                </p>
-                            )}
-                            {!searching &&
-                                search.trim() !== '' &&
-                                results.length === 0 &&
-                                !searchError && (
-                                    <div className="rounded-md border border-dashed px-4 py-8 text-center">
-                                        <p className="font-medium">
-                                            No se encontró un vale pendiente
-                                        </p>
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            Revisa el folio o abre el detalle
-                                            para confirmar su estado.
-                                        </p>
-                                    </div>
-                                )}
-                            {!searching &&
-                                results.map((option) => (
-                                    <button
-                                        type="button"
-                                        key={option.id}
-                                        onClick={() => chooseVoucher(option)}
-                                        className="flex w-full items-center justify-between gap-4 rounded-md border border-border-strong bg-surface px-4 py-3 text-left transition-colors hover:border-primary/55 hover:bg-primary-subtle/25 focus-visible:ring-3 focus-visible:ring-ring/25 focus-visible:outline-none"
-                                    >
-                                        <span className="min-w-0">
-                                            <span className="block font-semibold">
-                                                Vale {option.folio}
-                                            </span>
-                                            <span className="mt-0.5 block truncate text-sm text-muted-foreground">
-                                                {option.voucher_type.name} ·{' '}
-                                                {option.received_by.name} ·{' '}
-                                                {formatDate(option.issued_on)}
-                                            </span>
-                                        </span>
-                                        <Badge
-                                            variant="warning"
-                                            className="shrink-0"
-                                        >
-                                            {option.items.length}{' '}
-                                            {option.items.length === 1
-                                                ? 'partida'
-                                                : 'partidas'}
-                                        </Badge>
-                                    </button>
-                                ))}
-                            <FieldError>{searchError}</FieldError>
-                        </div>
-                    </div>
-                ) : (
-                    <form onSubmit={submit} className="flex flex-col">
-                        <div className="flex flex-col gap-5 px-5 py-5 sm:px-6">
-                            <section className="rounded-md border border-primary/20 bg-primary-subtle/25 p-4">
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                    <div>
-                                        <p className="font-semibold">
-                                            Vale {selected.folio}
-                                        </p>
-                                        <p className="mt-0.5 text-sm text-muted-foreground">
-                                            {selected.voucher_type.name} ·{' '}
-                                            {selected.received_by.name} ·{' '}
-                                            {formatDate(selected.issued_on)}
-                                        </p>
-                                        <p className="mt-2 text-sm">
-                                            {selected.destination_summary ??
-                                                'Sin ubicación o actividad registrada'}
-                                        </p>
-                                    </div>
-                                    {!voucher && (
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={changeVoucher}
-                                        >
-                                            <ArrowLeft data-icon="inline-start" />
-                                            Cambiar vale
-                                        </Button>
-                                    )}
-                                </div>
-                            </section>
-
-                            <FieldGroup className="grid gap-4 sm:grid-cols-2">
-                                <Field
-                                    invalid={Boolean(form.errors.occurred_on)}
-                                >
-                                    <FieldLabel htmlFor="application-date">
-                                        Fecha de aplicación
-                                    </FieldLabel>
-                                    <Input
-                                        id="application-date"
-                                        type="date"
-                                        value={form.data.occurred_on}
-                                        onChange={(event) =>
-                                            form.setData(
-                                                'occurred_on',
-                                                event.target.value,
-                                            )
-                                        }
-                                        aria-invalid={
-                                            !!form.errors.occurred_on ||
-                                            undefined
-                                        }
-                                    />
-                                    <FieldError>
-                                        {form.errors.occurred_on}
-                                    </FieldError>
-                                </Field>
-                                <Field invalid={Boolean(form.errors.reference)}>
-                                    <FieldLabel htmlFor="application-reference">
-                                        Orden de servicio
-                                    </FieldLabel>
-                                    <Input
-                                        id="application-reference"
-                                        value={form.data.reference}
-                                        onChange={(event) =>
-                                            form.setData(
-                                                'reference',
-                                                event.target.value,
-                                            )
-                                        }
-                                        placeholder="Ej. A-24391"
-                                        required
-                                        aria-invalid={
-                                            !!form.errors.reference || undefined
-                                        }
-                                    />
-                                    <FieldError>
-                                        {form.errors.reference}
-                                    </FieldError>
-                                </Field>
-                            </FieldGroup>
-
-                            <Field invalid={Boolean(form.errors.notes)}>
-                                <FieldLabel htmlFor="application-notes">
-                                    Comentarios (opcional)
+                    {!selected ? (
+                        <ModalBody className="flex flex-col gap-4">
+                            <Field>
+                                <FieldLabel htmlFor="application-voucher-search">
+                                    Vale u orden de servicio
                                 </FieldLabel>
-                                <Textarea
-                                    id="application-notes"
-                                    value={form.data.notes}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'notes',
-                                            event.target.value,
-                                        )
-                                    }
-                                    placeholder="Aclaraciones generales de esta aplicación"
-                                    rows={3}
-                                    aria-invalid={
-                                        !!form.errors.notes || undefined
-                                    }
-                                />
-                                <FieldError>{form.errors.notes}</FieldError>
+                                <div className="relative">
+                                    <Search
+                                        className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                                        aria-hidden="true"
+                                    />
+                                    <Input
+                                        id="application-voucher-search"
+                                        className="pl-9"
+                                        autoFocus
+                                        value={search}
+                                        onChange={(event) =>
+                                            setSearch(event.target.value)
+                                        }
+                                        placeholder="Folio u orden de servicio"
+                                        autoComplete="off"
+                                    />
+                                </div>
+                                <FieldDescription>
+                                    Sólo aparecen vales de salida activos con
+                                    material pendiente.
+                                </FieldDescription>
                             </Field>
 
-                            <section
-                                className="flex flex-col gap-3"
-                                aria-labelledby="application-materials-title"
+                            <div
+                                className="flex min-h-40 flex-col gap-2"
+                                aria-live="polite"
                             >
-                                <div>
-                                    <h3
-                                        id="application-materials-title"
-                                        className="font-semibold"
-                                    >
-                                        Material utilizado
-                                    </h3>
-                                    <p className="mt-0.5 text-sm text-muted-foreground">
-                                        Escribe únicamente las cantidades
-                                        reportadas en esta aplicación.
+                                {searching && (
+                                    <p className="py-10 text-center text-sm text-muted-foreground">
+                                        Buscando vale…
                                     </p>
-                                </div>
-                                <div className="overflow-hidden rounded-md border">
-                                    {selected.items.map((item, index) => {
-                                        const error = (
-                                            form.errors as Record<
-                                                string,
-                                                string
-                                            >
-                                        )[`items.${index}.quantity`];
-                                        const registered = Number(
-                                            activeQuantity(report, item.id) ||
-                                                0,
-                                        );
-                                        const maximum =
-                                            Number(item.pending_quantity) +
-                                            registered;
-
-                                        return (
-                                            <div
-                                                key={item.id}
-                                                className="grid gap-3 border-b px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center"
-                                            >
-                                                <div className="min-w-0">
-                                                    <p className="font-medium">
-                                                        {item.description}
-                                                    </p>
-                                                    <p className="mt-0.5 text-xs text-muted-foreground">
-                                                        {editMode ? (
-                                                            <>
-                                                                Registrado:{' '}
-                                                                {formatQuantity(
-                                                                    registered,
-                                                                )}{' '}
-                                                                {
-                                                                    item.unit
-                                                                        .symbol
-                                                                }{' '}
-                                                                · máximo:{' '}
-                                                                {formatQuantity(
-                                                                    maximum,
-                                                                )}{' '}
-                                                                {
-                                                                    item.unit
-                                                                        .symbol
-                                                                }
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                Pendiente:{' '}
-                                                                {formatQuantity(
-                                                                    item.pending_quantity,
-                                                                )}{' '}
-                                                                {
-                                                                    item.unit
-                                                                        .symbol
-                                                                }
-                                                            </>
-                                                        )}
-                                                    </p>
-                                                </div>
-                                                <Field invalid={Boolean(error)}>
-                                                    <FieldLabel
-                                                        htmlFor={`application-item-${item.id}`}
-                                                        className="sr-only"
-                                                    >
-                                                        Cantidad aplicada de{' '}
-                                                        {item.description}
-                                                    </FieldLabel>
-                                                    <div className="relative">
-                                                        <Input
-                                                            id={`application-item-${item.id}`}
-                                                            inputMode="numeric"
-                                                            pattern="[0-9]*"
-                                                            value={
-                                                                form.data.items[
-                                                                    index
-                                                                ]?.quantity ??
-                                                                ''
-                                                            }
-                                                            onChange={(
-                                                                event,
-                                                            ) => {
-                                                                const items = [
-                                                                    ...form.data
-                                                                        .items,
-                                                                ];
-                                                                items[index] = {
-                                                                    voucher_item_id:
-                                                                        item.id,
-                                                                    quantity:
-                                                                        event
-                                                                            .target
-                                                                            .value,
-                                                                };
-                                                                form.setData(
-                                                                    'items',
-                                                                    items,
-                                                                );
-                                                            }}
-                                                            placeholder="0"
-                                                            aria-invalid={
-                                                                !!error ||
-                                                                undefined
-                                                            }
-                                                            className="pr-14 text-right tabular-nums"
-                                                        />
-                                                        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
-                                                            {item.unit.symbol}
-                                                        </span>
-                                                    </div>
-                                                    <FieldError className="text-xs">
-                                                        {error}
-                                                    </FieldError>
-                                                </Field>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <FieldError>
-                                    {itemsError || form.errors.items}
-                                </FieldError>
-                            </section>
-
-                            {editMode ? (
-                                <Field
-                                    invalid={Boolean(
-                                        form.errors.correction_reason,
+                                )}
+                                {!searching &&
+                                    search.trim() !== '' &&
+                                    results.length === 0 &&
+                                    !searchError && (
+                                        <div className="rounded-md border border-dashed px-4 py-8 text-center">
+                                            <p className="font-medium">
+                                                No se encontró un vale pendiente
+                                            </p>
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                Revisa el folio o la orden de
+                                                servicio, o abre el detalle para
+                                                confirmar su estado.
+                                            </p>
+                                        </div>
                                     )}
-                                >
-                                    <FieldLabel htmlFor="application-correction-reason">
-                                        Motivo de la corrección
+                                {!searching &&
+                                    results.map((option) => (
+                                        <button
+                                            type="button"
+                                            key={option.id}
+                                            onClick={() =>
+                                                chooseVoucher(option)
+                                            }
+                                            className="flex w-full items-center justify-between gap-4 rounded-md border border-border-strong bg-surface px-4 py-3 text-left transition-colors hover:border-primary/55 hover:bg-primary-subtle/25 focus-visible:ring-3 focus-visible:ring-ring/25 focus-visible:outline-none"
+                                        >
+                                            <span className="min-w-0">
+                                                <span className="block font-semibold">
+                                                    Vale {option.folio}
+                                                </span>
+                                                <span className="mt-0.5 line-clamp-2 block text-sm text-muted-foreground">
+                                                    {option.voucher_type.name} ·{' '}
+                                                    {option.received_by.name} ·{' '}
+                                                    {formatDate(
+                                                        option.issued_on,
+                                                    )}
+                                                </span>
+                                            </span>
+                                            <Badge
+                                                variant="warning"
+                                                className="shrink-0"
+                                            >
+                                                {option.items.length}{' '}
+                                                {option.items.length === 1
+                                                    ? 'partida'
+                                                    : 'partidas'}
+                                            </Badge>
+                                        </button>
+                                    ))}
+                                <FieldError>{searchError}</FieldError>
+                            </div>
+                        </ModalBody>
+                    ) : (
+                        <form
+                            onSubmit={submit}
+                            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                        >
+                            <ModalBody className="flex flex-col gap-5">
+                                <section className="rounded-md border border-primary/20 bg-primary-subtle/25 p-4">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div>
+                                            <p className="font-semibold">
+                                                Vale {selected.folio}
+                                            </p>
+                                            <p className="mt-0.5 text-sm text-muted-foreground">
+                                                {selected.voucher_type.name} ·{' '}
+                                                {selected.received_by.name} ·{' '}
+                                                {formatDate(selected.issued_on)}
+                                            </p>
+                                            <p className="mt-2 text-sm">
+                                                {selected.destination_summary ??
+                                                    'Sin ubicación o actividad registrada'}
+                                            </p>
+                                        </div>
+                                        {!voucher && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={changeVoucher}
+                                            >
+                                                <ArrowLeft data-icon="inline-start" />
+                                                Cambiar vale
+                                            </Button>
+                                        )}
+                                    </div>
+                                </section>
+
+                                <FieldGroup className="grid gap-4 md:grid-cols-3">
+                                    <Field
+                                        invalid={Boolean(
+                                            form.errors.occurred_on,
+                                        )}
+                                    >
+                                        <FieldLabel htmlFor="application-date">
+                                            Fecha de aplicación
+                                        </FieldLabel>
+                                        <Input
+                                            id="application-date"
+                                            type="date"
+                                            value={form.data.occurred_on}
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'occurred_on',
+                                                    event.target.value,
+                                                )
+                                            }
+                                            aria-invalid={
+                                                !!form.errors.occurred_on ||
+                                                undefined
+                                            }
+                                        />
+                                        <FieldError>
+                                            {form.errors.occurred_on}
+                                        </FieldError>
+                                    </Field>
+                                    <Field
+                                        invalid={Boolean(
+                                            form.errors.service_order_type,
+                                        )}
+                                    >
+                                        <FieldLabel htmlFor="application-service-order-type">
+                                            Tipo de orden
+                                        </FieldLabel>
+                                        <SimpleSelect
+                                            id="application-service-order-type"
+                                            value={form.data.service_order_type}
+                                            onValueChange={(value) =>
+                                                form.setData(
+                                                    'service_order_type',
+                                                    value,
+                                                )
+                                            }
+                                            options={
+                                                formOptions.service_order_types
+                                            }
+                                            placeholder="Seleccionar tipo"
+                                            invalid={Boolean(
+                                                form.errors.service_order_type,
+                                            )}
+                                        />
+                                        <FieldError>
+                                            {form.errors.service_order_type}
+                                        </FieldError>
+                                    </Field>
+                                    <Field
+                                        invalid={Boolean(form.errors.reference)}
+                                    >
+                                        <FieldLabel htmlFor="application-reference">
+                                            Número de orden
+                                        </FieldLabel>
+                                        <Input
+                                            id="application-reference"
+                                            value={form.data.reference}
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'reference',
+                                                    event.target.value,
+                                                )
+                                            }
+                                            placeholder="Ej. A-24391"
+                                            required
+                                            aria-invalid={
+                                                !!form.errors.reference ||
+                                                undefined
+                                            }
+                                        />
+                                        <FieldError>
+                                            {form.errors.reference}
+                                        </FieldError>
+                                    </Field>
+                                </FieldGroup>
+
+                                <Field invalid={Boolean(form.errors.location)}>
+                                    <FieldLabel htmlFor="application-location">
+                                        Ubicación o dirección (opcional)
+                                    </FieldLabel>
+                                    <ApplicationLocationInput
+                                        id="application-location"
+                                        value={form.data.location}
+                                        onValueChange={(value) =>
+                                            form.setData('location', value)
+                                        }
+                                        destinations={formOptions.destinations}
+                                        invalid={Boolean(form.errors.location)}
+                                        describedBy="application-location-description"
+                                    />
+                                    <FieldDescription id="application-location-description">
+                                        Puedes elegir una sugerencia del
+                                        catálogo o escribir cualquier dirección.
+                                        El texto libre no crea una ubicación
+                                        nueva.
+                                    </FieldDescription>
+                                    <FieldError>
+                                        {form.errors.location}
+                                    </FieldError>
+                                </Field>
+
+                                <Field invalid={Boolean(form.errors.notes)}>
+                                    <FieldLabel htmlFor="application-notes">
+                                        Detalles (opcional)
                                     </FieldLabel>
                                     <Textarea
-                                        id="application-correction-reason"
-                                        value={form.data.correction_reason}
+                                        id="application-notes"
+                                        value={form.data.notes}
                                         onChange={(event) =>
                                             form.setData(
-                                                'correction_reason',
+                                                'notes',
                                                 event.target.value,
                                             )
                                         }
-                                        placeholder="Explica qué dato se corrige"
-                                        rows={2}
-                                        required
+                                        placeholder="Trabajo realizado, referencias u otras aclaraciones"
+                                        rows={3}
                                         aria-invalid={
-                                            !!form.errors.correction_reason ||
-                                            undefined
+                                            !!form.errors.notes || undefined
                                         }
                                     />
-                                    <FieldDescription>
-                                        Las cantidades anteriores se conservarán
-                                        anuladas en el historial. Si dejas todas
-                                        en 0, la aplicación quedará anulada.
-                                    </FieldDescription>
-                                    <FieldError>
-                                        {form.errors.correction_reason}
-                                    </FieldError>
+                                    <FieldError>{form.errors.notes}</FieldError>
                                 </Field>
-                            ) : (
-                                <Field
-                                    invalid={Boolean(form.errors.attachment)}
-                                >
-                                    <FieldLabel htmlFor="application-attachment">
-                                        Foto o PDF de respaldo (opcional)
-                                    </FieldLabel>
-                                    <Input
-                                        id="application-attachment"
-                                        type="file"
-                                        accept=".jpg,.jpeg,.png,.webp,.pdf"
-                                        onChange={(event) =>
-                                            form.setData(
-                                                'attachment',
-                                                event.target.files?.[0] ?? null,
-                                            )
-                                        }
-                                        aria-invalid={
-                                            !!form.errors.attachment ||
-                                            undefined
-                                        }
-                                    />
-                                    <FieldDescription className="flex items-center gap-2">
-                                        <FileUp
-                                            className="size-3.5"
-                                            aria-hidden="true"
-                                        />
-                                        Un archivo privado de hasta 10 MB.
-                                    </FieldDescription>
-                                    <FieldError>
-                                        {form.errors.attachment}
-                                    </FieldError>
-                                </Field>
-                            )}
-                        </div>
 
-                        <DialogFooter className="border-t bg-muted/25 px-5 py-4 sm:px-6">
-                            <DialogClose asChild>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    disabled={form.processing}
+                                <section
+                                    className="flex flex-col gap-3"
+                                    aria-labelledby="application-materials-title"
                                 >
-                                    Cancelar
-                                </Button>
-                            </DialogClose>
-                            <Button
-                                disabled={
-                                    form.processing ||
-                                    (!editMode && selectedCount === 0)
-                                }
-                                aria-busy={form.processing}
-                            >
-                                {form.processing ? (
-                                    'Guardando…'
-                                ) : editMode ? (
-                                    <>
-                                        <CheckCircle2 data-icon="inline-start" />
-                                        Guardar corrección
-                                    </>
+                                    <div>
+                                        <h3
+                                            id="application-materials-title"
+                                            className="font-semibold"
+                                        >
+                                            Material utilizado
+                                        </h3>
+                                        <p className="mt-0.5 text-sm text-muted-foreground">
+                                            Escribe únicamente las cantidades
+                                            reportadas en esta aplicación.
+                                        </p>
+                                    </div>
+                                    <div className="overflow-hidden rounded-md border">
+                                        {selected.items.map((item, index) => {
+                                            const error = (
+                                                form.errors as Record<
+                                                    string,
+                                                    string
+                                                >
+                                            )[`items.${index}.quantity`];
+                                            const registered = Number(
+                                                activeQuantity(
+                                                    report,
+                                                    item.id,
+                                                ) || 0,
+                                            );
+                                            const maximum =
+                                                Number(item.pending_quantity) +
+                                                registered;
+
+                                            return (
+                                                <div
+                                                    key={item.id}
+                                                    className="grid gap-3 border-b px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <p className="font-medium">
+                                                            {item.description}
+                                                        </p>
+                                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                                            {editMode ? (
+                                                                <>
+                                                                    Registrado:{' '}
+                                                                    {formatQuantity(
+                                                                        registered,
+                                                                    )}{' '}
+                                                                    {
+                                                                        item
+                                                                            .unit
+                                                                            .symbol
+                                                                    }{' '}
+                                                                    · máximo:{' '}
+                                                                    {formatQuantity(
+                                                                        maximum,
+                                                                    )}{' '}
+                                                                    {
+                                                                        item
+                                                                            .unit
+                                                                            .symbol
+                                                                    }
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    Pendiente:{' '}
+                                                                    {formatQuantity(
+                                                                        item.pending_quantity,
+                                                                    )}{' '}
+                                                                    {
+                                                                        item
+                                                                            .unit
+                                                                            .symbol
+                                                                    }
+                                                                </>
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <Field
+                                                        invalid={Boolean(error)}
+                                                    >
+                                                        <FieldLabel
+                                                            htmlFor={`application-item-${item.id}`}
+                                                            className="sr-only"
+                                                        >
+                                                            Cantidad aplicada de{' '}
+                                                            {item.description}
+                                                        </FieldLabel>
+                                                        <div className="relative">
+                                                            <Input
+                                                                id={`application-item-${item.id}`}
+                                                                inputMode="numeric"
+                                                                pattern="[0-9]*"
+                                                                value={
+                                                                    form.data
+                                                                        .items[
+                                                                        index
+                                                                    ]
+                                                                        ?.quantity ??
+                                                                    ''
+                                                                }
+                                                                onChange={(
+                                                                    event,
+                                                                ) => {
+                                                                    const items =
+                                                                        [
+                                                                            ...form
+                                                                                .data
+                                                                                .items,
+                                                                        ];
+                                                                    items[
+                                                                        index
+                                                                    ] = {
+                                                                        voucher_item_id:
+                                                                            item.id,
+                                                                        quantity:
+                                                                            event
+                                                                                .target
+                                                                                .value,
+                                                                    };
+                                                                    form.setData(
+                                                                        'items',
+                                                                        items,
+                                                                    );
+                                                                }}
+                                                                placeholder="0"
+                                                                aria-invalid={
+                                                                    !!error ||
+                                                                    undefined
+                                                                }
+                                                                className="pr-14 text-right tabular-nums"
+                                                            />
+                                                            <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
+                                                                {
+                                                                    item.unit
+                                                                        .symbol
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                        <FieldError className="text-xs">
+                                                            {error}
+                                                        </FieldError>
+                                                    </Field>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <FieldError>
+                                        {itemsError || form.errors.items}
+                                    </FieldError>
+                                </section>
+
+                                {editMode ? (
+                                    <Field
+                                        invalid={Boolean(
+                                            form.errors.correction_reason,
+                                        )}
+                                    >
+                                        <FieldLabel htmlFor="application-correction-reason">
+                                            Motivo de la corrección
+                                        </FieldLabel>
+                                        <Textarea
+                                            id="application-correction-reason"
+                                            value={form.data.correction_reason}
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'correction_reason',
+                                                    event.target.value,
+                                                )
+                                            }
+                                            placeholder="Explica qué dato se corrige"
+                                            rows={2}
+                                            required
+                                            aria-invalid={
+                                                !!form.errors
+                                                    .correction_reason ||
+                                                undefined
+                                            }
+                                        />
+                                        <FieldDescription>
+                                            Las cantidades anteriores se
+                                            conservarán anuladas en el
+                                            historial. Si dejas todas en 0, la
+                                            aplicación quedará anulada.
+                                        </FieldDescription>
+                                        <FieldError>
+                                            {form.errors.correction_reason}
+                                        </FieldError>
+                                    </Field>
                                 ) : (
-                                    <>
-                                        <CheckCircle2 data-icon="inline-start" />
-                                        Registrar {selectedCount || ''}{' '}
-                                        {selectedCount === 1
-                                            ? 'aplicación'
-                                            : 'aplicaciones'}
-                                    </>
+                                    <Field
+                                        invalid={Boolean(
+                                            form.errors.attachment,
+                                        )}
+                                    >
+                                        <FieldLabel htmlFor="application-attachment">
+                                            Foto o PDF de respaldo (opcional)
+                                        </FieldLabel>
+                                        <Input
+                                            id="application-attachment"
+                                            type="file"
+                                            accept=".jpg,.jpeg,.png,.webp,.pdf"
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'attachment',
+                                                    event.target.files?.[0] ??
+                                                        null,
+                                                )
+                                            }
+                                            aria-invalid={
+                                                !!form.errors.attachment ||
+                                                undefined
+                                            }
+                                        />
+                                        <FieldDescription className="flex items-center gap-2">
+                                            <FileUp
+                                                className="size-3.5"
+                                                aria-hidden="true"
+                                            />
+                                            Un archivo privado de hasta 10 MB.
+                                        </FieldDescription>
+                                        <FieldError>
+                                            {form.errors.attachment}
+                                        </FieldError>
+                                    </Field>
                                 )}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                )}
-            </DialogContent>
-        </Dialog>
+                            </ModalBody>
+
+                            <ModalFooter>
+                                <DialogClose asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={form.processing}
+                                    >
+                                        Cancelar
+                                    </Button>
+                                </DialogClose>
+                                <Button
+                                    disabled={
+                                        form.processing ||
+                                        (!editMode && selectedCount === 0)
+                                    }
+                                    aria-busy={form.processing}
+                                >
+                                    {form.processing ? (
+                                        'Guardando…'
+                                    ) : editMode ? (
+                                        <>
+                                            <CheckCircle2 data-icon="inline-start" />
+                                            Guardar corrección
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle2 data-icon="inline-start" />
+                                            Registrar {selectedCount || ''}{' '}
+                                            {selectedCount === 1
+                                                ? 'aplicación'
+                                                : 'aplicaciones'}
+                                        </>
+                                    )}
+                                </Button>
+                            </ModalFooter>
+                        </form>
+                    )}
+                </ModalContent>
+            </Dialog>
+            <DiscardChangesAlert
+                open={discardOpen}
+                onOpenChange={setDiscardOpen}
+                onDiscard={() => close(true)}
+            />
+        </>
     );
 }

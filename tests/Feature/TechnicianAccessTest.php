@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ServiceOrderType;
 use App\Enums\UserRole;
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
@@ -182,6 +183,23 @@ class TechnicianAccessTest extends TestCase
         $technician = User::factory()->technician($person)->create();
         $pending = $this->voucherItem($person, '2026-01-01', 10);
         $pending->voucher->update(['folio' => 'MIO-1', 'folio_key' => 'mio1']);
+        $report = MaterialApplicationReport::create([
+            'voucher_id' => $pending->voucher_id,
+            'occurred_on' => '2026-01-02',
+            'reference' => 'OS-MIO-777',
+            'service_order_type' => ServiceOrderType::Normal,
+            'created_by' => $technician->id,
+            'updated_by' => $technician->id,
+        ]);
+        MaterialApplication::create([
+            'voucher_item_id' => $pending->id,
+            'application_report_id' => $report->id,
+            'occurred_on' => '2026-01-02',
+            'quantity' => 1,
+            'reference' => 'OS-MIO-777',
+            'created_by' => $technician->id,
+            'updated_by' => $technician->id,
+        ]);
         $settled = $this->voucherItem($person, '2026-02-01', 4);
         $settled->voucher->update(['folio' => 'MIO-2', 'folio_key' => 'mio2']);
         MaterialApplication::factory()->create([
@@ -208,6 +226,11 @@ class TechnicianAccessTest extends TestCase
                 ->has('vouchers.data', 1)
                 ->where('vouchers.data.0.folio', 'MIO-2'));
 
+        $this->actingAs($technician)->get(route('my-vouchers.index', ['search' => 'MIO-777']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('vouchers.data', 1)
+                ->where('vouchers.data.0.folio', 'MIO-1'));
+
         $foreign = $this->voucherItem($other, '2026-04-01', 1)->voucher;
         $this->actingAs($technician)->get(route('my-vouchers.show', $foreign))->assertNotFound();
         $this->actingAs($technician)->get(route('vouchers.show', $foreign))->assertNotFound();
@@ -223,6 +246,14 @@ class TechnicianAccessTest extends TestCase
         $this->actingAs($technician)->post(route('applications.store'), [
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-25',
+            'reference' => 'OS-499',
+            'items' => [['voucher_item_id' => $item->id, 'quantity' => 2]],
+        ])->assertSessionHasErrors('service_order_type');
+
+        $this->actingAs($technician)->post(route('applications.store'), [
+            'voucher_id' => $item->voucher_id,
+            'occurred_on' => '2026-08-25',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 2]],
         ])->assertSessionHasErrors('reference');
 
@@ -230,17 +261,22 @@ class TechnicianAccessTest extends TestCase
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-25',
             'reference' => 'OS-500',
+            'service_order_type' => ServiceOrderType::Normal->value,
+            'location' => 'Priv. Fresno 18',
             'notes' => 'Trabajo concluido en el parque.',
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 2]],
         ])->assertSessionHasNoErrors();
         $own = MaterialApplicationReport::query()->sole();
         $this->assertSame($technician->id, $own->created_by);
+        $this->assertSame(ServiceOrderType::Normal, $own->service_order_type);
+        $this->assertSame('Priv. Fresno 18', $own->location);
         $this->assertSame('Trabajo concluido en el parque.', $own->notes);
 
         $foreign = MaterialApplicationReport::create([
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-26',
             'reference' => 'OS-ADMIN',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'created_by' => $administrator->id,
             'updated_by' => $administrator->id,
         ]);
@@ -264,6 +300,8 @@ class TechnicianAccessTest extends TestCase
         $this->actingAs($technician)->put(route('application-reports.update', $own), [
             'occurred_on' => '2026-08-27',
             'reference' => 'OS-501',
+            'service_order_type' => ServiceOrderType::CitizenService072->value,
+            'location' => 'Poblado El Nayar',
             'notes' => 'Se corrigió la cantidad.',
             'correction_reason' => 'El reporte físico indica otra cantidad',
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 3]],
@@ -358,6 +396,7 @@ class TechnicianAccessTest extends TestCase
         $this->put(route('application-reports.update', $report), [
             'occurred_on' => '2026-08-26',
             'reference' => '',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'correction_reason' => 'Corrección del reporte histórico',
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 1]],
         ])->assertSessionHasErrors('reference');

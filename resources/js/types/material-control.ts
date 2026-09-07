@@ -44,6 +44,15 @@ export type Destination = Named & {
     aliases?: { id: number; alias: string }[];
     deletion?: CatalogDeletion;
 };
+export type ServiceOrderTypeOption = {
+    value: string;
+    label: string;
+};
+export type MaterialApplicationFormOptions = {
+    default_service_order_type: string;
+    service_order_types: ServiceOrderTypeOption[];
+    destinations: Pick<Destination, 'id' | 'name' | 'aliases'>[];
+};
 export type Program = {
     id: number;
     code: string;
@@ -104,6 +113,8 @@ export type MaterialApplicationReport = {
     id: number | null;
     occurred_on: string;
     service_order?: string | null;
+    service_order_type: string | null;
+    location: string | null;
     notes?: string | null;
     editable: boolean;
     permissions: {

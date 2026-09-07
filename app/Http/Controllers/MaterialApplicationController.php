@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ServiceOrderType;
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
 use App\Models\AuditEvent;
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -27,17 +29,19 @@ class MaterialApplicationController extends Controller
     {
         Gate::authorize('viewAny', Voucher::class);
         $data = $request->validate(['search' => ['required', 'string', 'max:50']]);
-        $folioKey = Normalizer::folio($data['search']);
+        $search = trim($data['search']);
 
-        if ($folioKey === '') {
+        if ($search === '') {
             return response()->json(['data' => []]);
         }
+
+        $folioKey = Normalizer::folio($search);
 
         $vouchers = Voucher::query()
             ->with(['location', 'receivedBy', 'destinations', 'items.material', 'items.unit', 'items.applications'])
             ->whereIn('status', VoucherStatus::operationalValues())
             ->where('direction', VoucherDirection::Exit->value)
-            ->where('folio_key', 'like', "%{$folioKey}%")
+            ->searchFolioOrServiceOrder($search)
             ->whereHas('items', fn ($item) => $item->whereRaw(
                 'quantity > (select COALESCE(SUM(quantity), 0) from material_applications where material_applications.voucher_item_id = voucher_items.id and voided_at is null)'
             ))
@@ -67,12 +71,14 @@ class MaterialApplicationController extends Controller
             'voucher_id' => ['required', 'integer', 'exists:vouchers,id'],
             'occurred_on' => ['required', 'date'],
             'reference' => ['required', 'string', 'max:255'],
+            'service_order_type' => ['required', Rule::enum(ServiceOrderType::class)],
+            'location' => ['nullable', 'string', 'max:500'],
             'notes' => ['nullable', 'string', 'max:3000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.voucher_item_id' => ['required', 'integer', 'distinct', 'exists:voucher_items,id'],
             'items.*.quantity' => ['required', 'integer', 'gt:0', 'max:999999999'],
             'attachment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
-        ]);
+        ], $this->applicationValidationMessages());
 
         $user = $request->user();
         $voucher = Voucher::query()->visibleTo($user)->findOrFail((int) $data['voucher_id']);
@@ -82,7 +88,7 @@ class MaterialApplicationController extends Controller
 
         try {
             DB::transaction(function () use ($data, $request, $file, $storedPath, $user): void {
-                $voucher = Voucher::query()->visibleTo($user)->with('destinations')->lockForUpdate()->findOrFail((int) $data['voucher_id']);
+                $voucher = Voucher::query()->visibleTo($user)->lockForUpdate()->findOrFail((int) $data['voucher_id']);
                 Gate::forUser($user)->authorize('createApplication', $voucher);
                 if ($voucher->direction !== VoucherDirection::Exit || ! in_array($voucher->status->value, VoucherStatus::operationalValues(), true)) {
                     throw ValidationException::withMessages([
@@ -112,6 +118,8 @@ class MaterialApplicationController extends Controller
                     'voucher_id' => $voucher->id,
                     'occurred_on' => $data['occurred_on'],
                     'reference' => trim((string) $data['reference']),
+                    'service_order_type' => $data['service_order_type'],
+                    'location' => filled($data['location'] ?? null) ? trim((string) $data['location']) : null,
                     'notes' => filled($data['notes'] ?? null) ? trim((string) $data['notes']) : null,
                     'created_by' => $request->user()?->id,
                     'updated_by' => $request->user()?->id,
@@ -133,7 +141,7 @@ class MaterialApplicationController extends Controller
                         'occurred_on' => $data['occurred_on'],
                         'quantity' => $row['quantity'],
                         'reference' => $report->reference,
-                        'destination_snapshot' => VoucherData::destinationSummary($voucher),
+                        'destination_snapshot' => $report->location,
                         'created_by' => $request->user()?->id,
                         'updated_by' => $request->user()?->id,
                     ]);
@@ -173,18 +181,20 @@ class MaterialApplicationController extends Controller
         $data = $request->validate([
             'occurred_on' => ['required', 'date'],
             'reference' => ['required', 'string', 'max:255'],
+            'service_order_type' => ['required', Rule::enum(ServiceOrderType::class)],
+            'location' => ['nullable', 'string', 'max:500'],
             'notes' => ['nullable', 'string', 'max:3000'],
             'correction_reason' => ['required', 'string', 'min:5', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.voucher_item_id' => ['required', 'integer', 'distinct', 'exists:voucher_items,id'],
             'items.*.quantity' => ['required', 'integer', 'gte:0', 'max:999999999'],
-        ]);
+        ], $this->applicationValidationMessages());
 
         $itemRows = VoucherData::itemRows($data['items'] ?? null);
 
         DB::transaction(function () use ($report, $data, $itemRows, $request): void {
             $lockedReport = MaterialApplicationReport::query()
-                ->with('voucher.destinations')
+                ->with('voucher')
                 ->lockForUpdate()
                 ->findOrFail($report->id);
             $voucher = $lockedReport->voucher;
@@ -220,6 +230,7 @@ class MaterialApplicationController extends Controller
                 ->get()
                 ->keyBy('voucher_item_id');
             $reference = trim((string) $data['reference']);
+            $location = filled($data['location'] ?? null) ? trim((string) $data['location']) : null;
             $notes = filled($data['notes'] ?? null) ? trim((string) $data['notes']) : null;
             $reason = trim((string) $data['correction_reason']);
             $beforeReport = $lockedReport->toArray();
@@ -244,9 +255,6 @@ class MaterialApplicationController extends Controller
 
                 $currentCandidate = $activeApplications->get($item->id);
                 $current = $currentCandidate instanceof MaterialApplication ? $currentCandidate : null;
-                $destinationSnapshot = $current instanceof MaterialApplication && $current->destination_snapshot !== null
-                    ? $current->destination_snapshot
-                    : VoucherData::destinationSummary($voucher);
                 $quantityChanged = ! $current || abs((float) $current->quantity - $quantity) > 0.0001;
 
                 if ($current && $quantityChanged) {
@@ -267,7 +275,7 @@ class MaterialApplicationController extends Controller
                         'occurred_on' => $data['occurred_on'],
                         'quantity' => $quantity,
                         'reference' => $reference,
-                        'destination_snapshot' => $destinationSnapshot,
+                        'destination_snapshot' => $location,
                         'created_by' => $request->user()?->id,
                         'updated_by' => $request->user()?->id,
                     ]);
@@ -278,11 +286,13 @@ class MaterialApplicationController extends Controller
                 }
 
                 if ($current && ! $quantityChanged &&
-                    ($current->occurred_on->format('Y-m-d') !== $data['occurred_on'] || $current->reference !== $reference)) {
+                    ($current->occurred_on->format('Y-m-d') !== $data['occurred_on'] ||
+                        $current->reference !== $reference || $current->destination_snapshot !== $location)) {
                     $before = $current->toArray();
                     $current->update([
                         'occurred_on' => $data['occurred_on'],
                         'reference' => $reference,
+                        'destination_snapshot' => $location,
                         'updated_by' => $request->user()?->id,
                     ]);
                     AuditEvent::record($current, 'corrected_metadata', $before, [
@@ -295,6 +305,8 @@ class MaterialApplicationController extends Controller
             $lockedReport->update([
                 'occurred_on' => $data['occurred_on'],
                 'reference' => $reference,
+                'service_order_type' => $data['service_order_type'],
+                'location' => $location,
                 'notes' => $notes,
                 'updated_by' => $request->user()?->id,
             ]);
@@ -305,6 +317,19 @@ class MaterialApplicationController extends Controller
         });
 
         return back()->with('success', 'Aplicación corregida; el saldo fue recalculado.');
+    }
+
+    /** @return array<string, string> */
+    private function applicationValidationMessages(): array
+    {
+        return [
+            'service_order_type.required' => 'Selecciona el tipo de orden de servicio.',
+            'service_order_type.enum' => 'Selecciona un tipo de orden de servicio válido.',
+            'location.string' => 'La ubicación o dirección debe ser texto.',
+            'location.max' => 'La ubicación o dirección no puede tener más de 500 caracteres.',
+            'notes.string' => 'Los detalles deben ser texto.',
+            'notes.max' => 'Los detalles no pueden tener más de 3,000 caracteres.',
+        ];
     }
 
     public function void(Request $request, MaterialApplication $application): RedirectResponse

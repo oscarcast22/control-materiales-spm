@@ -3,6 +3,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useEffect } from 'react';
 import InputError from '@/components/input-error';
+import { ModalBody, ModalFooter, ModalHeader } from '@/components/modal-shell';
 import { Page, PageHeader } from '@/components/page';
 import { SimpleSelect } from '@/components/simple-select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -24,6 +25,7 @@ export type VoucherReferenceFormProps = {
     embedded?: boolean;
     onSuccess?: () => void;
     onDirtyChange?: (dirty: boolean) => void;
+    onCancel?: () => void;
 };
 
 export default function VoucherReferenceForm({
@@ -32,6 +34,7 @@ export default function VoucherReferenceForm({
     embedded = false,
     onSuccess,
     onDirtyChange,
+    onCancel,
 }: VoucherReferenceFormProps) {
     const form = useForm({
         _dialog: embedded,
@@ -63,33 +66,8 @@ export default function VoucherReferenceForm({
         });
     };
 
-    const content = (
-        <form onSubmit={submit} className="flex flex-col gap-5">
-            <PageHeader
-                title={`Corregir folio ${voucher.folio}`}
-                description={`Actualiza únicamente los datos de referencia del vale ${voucher.status === 'loaned' ? 'prestado' : 'cancelado'}.`}
-                actions={
-                    <>
-                        {!embedded && (
-                            <Button variant="ghost" asChild>
-                                <Link href={`/vouchers/${voucher.id}`}>
-                                    <ArrowLeft data-icon="inline-start" />
-                                    Volver
-                                </Link>
-                            </Button>
-                        )}
-                        <Button
-                            disabled={form.processing}
-                            aria-busy={form.processing}
-                        >
-                            <Save data-icon="inline-start" />
-                            {form.processing
-                                ? 'Guardando…'
-                                : 'Guardar corrección'}
-                        </Button>
-                    </>
-                }
-            />
+    const formFields = (
+        <>
             <Alert variant="info">
                 <AlertDescription>
                     El estado no cambiará y la corrección quedará registrada en
@@ -207,6 +185,73 @@ export default function VoucherReferenceForm({
                     </FieldGroup>
                 </CardContent>
             </Card>
+        </>
+    );
+
+    const content = (
+        <form
+            onSubmit={submit}
+            className={
+                embedded
+                    ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
+                    : 'flex flex-col gap-5'
+            }
+        >
+            {embedded ? (
+                <ModalHeader title={`Corregir folio ${voucher.folio}`} />
+            ) : (
+                <PageHeader
+                    title={`Corregir folio ${voucher.folio}`}
+                    description={`Actualiza únicamente los datos de referencia del vale ${voucher.status === 'loaned' ? 'prestado' : 'cancelado'}.`}
+                    actions={
+                        <>
+                            {!embedded && (
+                                <Button variant="ghost" asChild>
+                                    <Link href={`/vouchers/${voucher.id}`}>
+                                        <ArrowLeft data-icon="inline-start" />
+                                        Volver
+                                    </Link>
+                                </Button>
+                            )}
+                            <Button
+                                disabled={form.processing}
+                                aria-busy={form.processing}
+                            >
+                                <Save data-icon="inline-start" />
+                                {form.processing
+                                    ? 'Guardando…'
+                                    : 'Guardar corrección'}
+                            </Button>
+                        </>
+                    }
+                />
+            )}
+            {embedded ? (
+                <>
+                    <ModalBody>{formFields}</ModalBody>
+                    <ModalFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={form.processing}
+                            onClick={onCancel}
+                        >
+                            Volver al detalle
+                        </Button>
+                        <Button
+                            disabled={form.processing}
+                            aria-busy={form.processing}
+                        >
+                            <Save data-icon="inline-start" />
+                            {form.processing
+                                ? 'Guardando…'
+                                : 'Guardar corrección'}
+                        </Button>
+                    </ModalFooter>
+                </>
+            ) : (
+                formFields
+            )}
         </form>
     );
 

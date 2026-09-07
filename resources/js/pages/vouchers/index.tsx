@@ -30,12 +30,19 @@ import {
 } from '@/components/voucher-dialogs';
 import { useReactiveFilters } from '@/hooks/use-reactive-filters';
 import { formatDate } from '@/lib/format';
-import type { Named, Paginated, Voucher, VoucherType } from '@/types';
+import type {
+    MaterialApplicationFormOptions,
+    Named,
+    Paginated,
+    Voucher,
+    VoucherType,
+} from '@/types';
 
 type Props = {
     vouchers: Paginated<Voucher>;
     receivers: Named[];
     voucherTypes: VoucherType[];
+    applicationFormOptions: MaterialApplicationFormOptions;
     filters: Record<string, string | number | null | undefined>;
 };
 
@@ -73,6 +80,7 @@ export default function VoucherIndex({
     vouchers,
     receivers,
     voucherTypes,
+    applicationFormOptions,
     filters,
 }: Props) {
     const warehouseTypeId = String(
@@ -148,6 +156,7 @@ export default function VoucherIndex({
                             />
                             <LoanedVoucherDialog voucherTypes={voucherTypes} />
                             <QuickApplicationDialog
+                                formOptions={applicationFormOptions}
                                 trigger={
                                     <Button variant="outline">
                                         <Wrench data-icon="inline-start" />
@@ -167,7 +176,7 @@ export default function VoucherIndex({
 
                 <FilterBar
                     title="Buscar y filtrar vales"
-                    description="Localiza un documento por folio, persona, material, fecha o estado. Los cambios se aplican automáticamente."
+                    description="Localiza un documento por folio, orden de servicio, persona, material, fecha o estado. Los cambios se aplican automáticamente."
                     activeFilters={activeFilters}
                     onClear={clear}
                 >
@@ -193,7 +202,7 @@ export default function VoucherIndex({
                                                 true,
                                             )
                                         }
-                                        placeholder="Folio, destino, técnico o material"
+                                        placeholder="Folio, orden, destino, técnico o material"
                                     />
                                 </div>
                             </FormField>

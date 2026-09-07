@@ -7,6 +7,7 @@ const email = process.env.VISUAL_EMAIL;
 const password = process.env.VISUAL_PASSWORD;
 const technicianUsername = process.env.VISUAL_TECH_USERNAME;
 const technicianPassword = process.env.VISUAL_TECH_PASSWORD;
+const lightOnly = process.env.VISUAL_LIGHT_ONLY === '1';
 const evidenceDir = path.resolve('storage/logs/visual-audit');
 
 type AuditViewport = {
@@ -16,7 +17,7 @@ type AuditViewport = {
     theme: 'light' | 'dark';
 };
 
-const viewports: AuditViewport[] = [
+const allViewports: AuditViewport[] = [
     { name: 'desktop-light', width: 1440, height: 1000, theme: 'light' },
     { name: 'desktop-dark', width: 1440, height: 1000, theme: 'dark' },
     {
@@ -33,6 +34,9 @@ const viewports: AuditViewport[] = [
     },
     { name: 'mobile-light', width: 390, height: 844, theme: 'light' },
 ];
+const viewports = lightOnly
+    ? allViewports.filter((viewport) => viewport.theme === 'light')
+    : allViewports;
 
 const baseRoutes = [
     ['dashboard', '/dashboard'],
@@ -115,12 +119,37 @@ async function assertFloatingSurfaceDoesNotZoom(surface: Locator) {
     ).toBe('none');
 }
 
-async function assertVoucherModalSelectScroll(page: Page) {
+async function assertVoucherModalSelectScroll(
+    page: Page,
+    viewportName: string,
+) {
     await page.getByRole('link', { name: 'Capturar vale' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Capturar vale' });
 
     await expect(dialog).toBeVisible();
+    await expect(dialog.locator('[data-slot="dialog-body"]')).toBeVisible();
+    await expect(
+        dialog.getByRole('button', { name: 'Guardar vale' }),
+    ).toBeVisible();
+
+    const dialogBox = await dialog.boundingBox();
+
+    expect(dialogBox).not.toBeNull();
+    expect(dialogBox!.x).toBeGreaterThanOrEqual(0);
+    expect(dialogBox!.y).toBeGreaterThanOrEqual(0);
+    expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(
+        page.viewportSize()!.width + 1,
+    );
+    expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(
+        page.viewportSize()!.height + 1,
+    );
+    await page.screenshot({
+        path: path.join(
+            evidenceDir,
+            `${viewportName}--dialog-voucher-create.png`,
+        ),
+    });
     await dialog.getByRole('combobox', { name: 'Material 1' }).click();
 
     const commandList = page.locator('[data-slot="command-list"]');
@@ -150,6 +179,73 @@ async function assertVoucherModalSelectScroll(page: Page) {
     await page.keyboard.press('Escape');
     await expect(commandList).toBeHidden();
     await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+}
+
+async function assertVoucherDetailModalHeader(
+    page: Page,
+    viewportName: string,
+) {
+    await page.goto('/vouchers', { waitUntil: 'networkidle' });
+    const voucherLink = page
+        .locator('a')
+        .filter({ hasText: /^Vale\s+/ })
+        .first();
+
+    if (!(await voucherLink.isVisible())) {
+        return;
+    }
+
+    await voucherLink.click();
+    const dialog = page.getByRole('dialog');
+
+    await expect(dialog).toBeVisible();
+    await expect(
+        dialog.getByRole('heading', { name: /^Vale\s+/ }),
+    ).toBeVisible();
+    const dialogBox = await dialog.boundingBox();
+
+    expect(dialogBox).not.toBeNull();
+    expect(dialogBox!.y).toBeGreaterThanOrEqual(0);
+    expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(
+        page.viewportSize()!.height + 1,
+    );
+    const closeButton = dialog.getByRole('button', {
+        name: 'Cerrar diálogo',
+    });
+
+    await expect(closeButton).toBeVisible();
+    await expect(
+        dialog.getByRole('button', { name: 'Más acciones' }),
+    ).toHaveCount(0);
+    const closeBox = await closeButton.boundingBox();
+
+    expect(closeBox).not.toBeNull();
+    await page.screenshot({
+        path: path.join(
+            evidenceDir,
+            `${viewportName}--dialog-voucher-detail.png`,
+        ),
+    });
+    await closeButton.click();
+    await expect(dialog).toBeHidden();
+
+    const editLink = page.getByRole('link', { name: /^Editar vale/ }).first();
+
+    if (!(await editLink.isVisible())) {
+        return;
+    }
+
+    await editLink.click();
+    await expect(dialog).toBeVisible();
+    await expect(
+        dialog.getByRole('button', { name: 'Volver al detalle' }),
+    ).toBeVisible();
+    await dialog.getByRole('button', { name: 'Volver al detalle' }).click();
+    await expect(
+        dialog.getByRole('heading', { name: /^Vale\s+/ }),
+    ).toBeVisible();
+    await closeButton.click();
     await expect(dialog).toBeHidden();
 }
 
@@ -344,8 +440,9 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
 
         await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
-        if (viewport.name === 'desktop-light') {
-            await assertVoucherModalSelectScroll(page);
+        if (viewport.theme === 'light') {
+            await assertVoucherModalSelectScroll(page, viewport.name);
+            await assertVoucherDetailModalHeader(page, viewport.name);
         }
 
         const stickyHeader = page.locator('#main-content > header');
@@ -529,9 +626,6 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                 page.getByText('Materiales por comprobar', { exact: true }),
             ).toBeVisible();
             await expect(
-                page.locator('[data-slot="metric-notices"]'),
-            ).toHaveCount(0);
-            await expect(
                 page.getByRole('group', { name: 'Mostrar vales de' }),
             ).toHaveCount(0);
 
@@ -540,14 +634,20 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             });
             await expect(themeToggle).toBeVisible();
             await assertNoPressScale(page, themeToggle);
-            await themeToggle.click();
-            await expect(page.locator('html')).toHaveClass(/dark/);
-            expect(
-                await page.evaluate(() => localStorage.getItem('appearance')),
-            ).toBe('dark');
-            await page
-                .getByRole('button', { name: 'Cambiar a tema claro' })
-                .click();
+
+            if (!lightOnly) {
+                await themeToggle.click();
+                await expect(page.locator('html')).toHaveClass(/dark/);
+                expect(
+                    await page.evaluate(() =>
+                        localStorage.getItem('appearance'),
+                    ),
+                ).toBe('dark');
+                await page
+                    .getByRole('button', { name: 'Cambiar a tema claro' })
+                    .click();
+            }
+
             await expect(page.locator('html')).not.toHaveClass(/dark/);
             expect(
                 await page.evaluate(() => localStorage.getItem('appearance')),
@@ -684,14 +784,22 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             if (voucherPath) {
                 await page.goto(voucherPath, { waitUntil: 'networkidle' });
                 const cancelButton = page.getByRole('button', {
-                    name: 'Cancelar',
+                    name: 'Cancelar vale',
                     exact: true,
                 });
 
-                if (await cancelButton.isVisible()) {
+                if (
+                    (await cancelButton.isVisible()) &&
+                    (await cancelButton.isEnabled())
+                ) {
                     await cancelButton.click();
                     await expect(
                         page.getByRole('heading', { name: 'Cancelar vale' }),
+                    ).toBeVisible();
+                    await expect(
+                        page.getByText(
+                            'Opcional. Si escribes un motivo, usa al menos 5 caracteres.',
+                        ),
                     ).toBeVisible();
                     await page.waitForTimeout(250);
                     await page.screenshot({

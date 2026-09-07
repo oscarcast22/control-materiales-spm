@@ -8,11 +8,12 @@ import {
     useMemo,
     useState,
 } from 'react';
+import { DiscardChangesAlert } from '@/components/discard-changes-alert';
+import { ModalBody, ModalContent } from '@/components/modal-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
-    DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
@@ -20,7 +21,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import type { VoucherFormProps } from '@/pages/vouchers/form';
 import type { VoucherReferenceFormProps } from '@/pages/vouchers/reference-form';
-import type { Voucher } from '@/types';
+import type { MaterialApplicationFormOptions, Voucher } from '@/types';
 
 const VoucherForm = lazy(() => import('@/pages/vouchers/form'));
 const VoucherReferenceForm = lazy(
@@ -31,13 +32,17 @@ const VoucherShow = lazy(() => import('@/pages/vouchers/show'));
 type DialogMode = 'create' | 'detail' | 'edit';
 type FormPayload = Omit<
     VoucherFormProps,
-    'embedded' | 'onSuccess' | 'onDirtyChange'
+    'embedded' | 'onSuccess' | 'onDirtyChange' | 'onCancel'
 >;
 type ReferencePayload = Omit<
     VoucherReferenceFormProps,
-    'embedded' | 'onSuccess' | 'onDirtyChange'
+    'embedded' | 'onSuccess' | 'onDirtyChange' | 'onCancel'
 >;
-type Payload = FormPayload | ReferencePayload | { voucher: Voucher };
+type DetailPayload = {
+    voucher: Voucher;
+    applicationFormOptions: MaterialApplicationFormOptions;
+};
+type Payload = FormPayload | ReferencePayload | DetailPayload;
 
 type VoucherDialogsContextValue = {
     openCreate: () => void;
@@ -56,6 +61,10 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [dirty, setDirty] = useState(false);
+    const [discardOpen, setDiscardOpen] = useState(false);
+    const [discardAction, setDiscardAction] = useState<(() => void) | null>(
+        null,
+    );
 
     const load = useCallback(async (nextMode: DialogMode, id?: number) => {
         const path =
@@ -94,28 +103,49 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    const close = useCallback(() => {
-        if (
-            dirty &&
-            !window.confirm(
-                'Hay cambios sin guardar. ¿Deseas cerrar el formulario?',
-            )
-        ) {
-            return;
-        }
-
+    const reset = useCallback(() => {
         setMode(null);
         setVoucherId(null);
         setPayload(null);
         setDirty(false);
         setError('');
-    }, [dirty]);
+        setDiscardOpen(false);
+        setDiscardAction(null);
+    }, []);
+
+    const requestDiscard = useCallback(
+        (action: () => void) => {
+            if (dirty) {
+                setDiscardAction(() => action);
+                setDiscardOpen(true);
+
+                return;
+            }
+
+            action();
+        },
+        [dirty],
+    );
+
+    const close = useCallback(() => {
+        requestDiscard(reset);
+    }, [requestDiscard, reset]);
 
     const success = useCallback(() => {
         setDirty(false);
         setMode(null);
         setPayload(null);
     }, []);
+
+    const backToDetail = useCallback(() => {
+        if (voucherId === null) {
+            close();
+
+            return;
+        }
+
+        requestDiscard(() => void load('detail', voucherId));
+    }, [close, load, requestDiscard, voucherId]);
 
     const value = useMemo<VoucherDialogsContextValue>(
         () => ({
@@ -160,36 +190,47 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
                 open={mode !== null}
                 onOpenChange={(open) => !open && close()}
             >
-                <DialogContent className="max-h-[calc(100dvh-1.5rem)] overflow-y-auto p-3 sm:max-w-[min(96vw,1280px)] sm:p-5">
-                    <DialogHeader className="sr-only">
-                        <DialogTitle>
-                            {mode === 'create'
-                                ? 'Capturar vale'
-                                : mode === 'edit'
-                                  ? 'Editar vale'
-                                  : 'Detalle del vale'}
-                        </DialogTitle>
-                        <DialogDescription>
-                            Ventana de gestión de vales de material.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {loading && <VoucherDialogLoading />}
+                <ModalContent size="workspace">
+                    {(loading || error || mode === 'detail') && (
+                        <DialogHeader className="sr-only">
+                            <DialogTitle>
+                                {mode === 'create'
+                                    ? 'Capturar vale'
+                                    : mode === 'edit'
+                                      ? 'Editar vale'
+                                      : 'Detalle del vale'}
+                            </DialogTitle>
+                            <DialogDescription>
+                                Ventana de gestión de vales de material.
+                            </DialogDescription>
+                        </DialogHeader>
+                    )}
+                    {loading && (
+                        <ModalBody>
+                            <VoucherDialogLoading />
+                        </ModalBody>
+                    )}
                     {error && (
-                        <Alert variant="destructive">
-                            <AlertDescription className="flex flex-col gap-3">
-                                <span>{error}</span>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() =>
-                                        mode &&
-                                        void load(mode, voucherId ?? undefined)
-                                    }
-                                >
-                                    Intentar de nuevo
-                                </Button>
-                            </AlertDescription>
-                        </Alert>
+                        <ModalBody>
+                            <Alert variant="destructive">
+                                <AlertDescription className="flex flex-col gap-3">
+                                    <span>{error}</span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                            mode &&
+                                            void load(
+                                                mode,
+                                                voucherId ?? undefined,
+                                            )
+                                        }
+                                    >
+                                        Intentar de nuevo
+                                    </Button>
+                                </AlertDescription>
+                            </Alert>
+                        </ModalBody>
                     )}
                     <Suspense fallback={<VoucherDialogLoading />}>
                         {!loading && !error && payload && mode === 'create' && (
@@ -198,6 +239,7 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
                                 embedded
                                 onSuccess={success}
                                 onDirtyChange={setDirty}
+                                onCancel={close}
                             />
                         )}
                         {!loading &&
@@ -211,6 +253,7 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
                                     embedded
                                     onSuccess={success}
                                     onDirtyChange={setDirty}
+                                    onCancel={backToDetail}
                                 />
                             ) : (
                                 <VoucherReferenceForm
@@ -218,12 +261,15 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
                                     embedded
                                     onSuccess={success}
                                     onDirtyChange={setDirty}
+                                    onCancel={backToDetail}
                                 />
                             ))}
                         {!loading && !error && payload && mode === 'detail' && (
                             <VoucherShow
-                                voucher={
-                                    (payload as { voucher: Voucher }).voucher
+                                voucher={(payload as DetailPayload).voucher}
+                                applicationFormOptions={
+                                    (payload as DetailPayload)
+                                        .applicationFormOptions
                                 }
                                 embedded
                                 onEdit={() =>
@@ -234,8 +280,18 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
                             />
                         )}
                     </Suspense>
-                </DialogContent>
+                </ModalContent>
             </Dialog>
+            <DiscardChangesAlert
+                open={discardOpen}
+                onOpenChange={setDiscardOpen}
+                onDiscard={() => {
+                    const action = discardAction ?? reset;
+
+                    setDiscardAction(null);
+                    action();
+                }}
+            />
         </VoucherDialogsContext.Provider>
     );
 }

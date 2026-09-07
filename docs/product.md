@@ -15,10 +15,10 @@ La usuaria principal captura y revisa información administrativa. No controla e
 
 1. Se captura un vale con tipo, folio, fecha, movimiento, técnico, persona que entrega, una o varias ubicaciones, una descripción opcional de uso o actividad y una o más partidas. En toda salida, de Almacén o Patio, el programa fijo SPM-06 se asigna automáticamente y la acción es obligatoria; el indicador se asigna si es único o se elige cuando la acción tiene dos. Entradas, cancelados y prestados no conservan esta clasificación. La hora no se transcribe: el sistema conserva automáticamente cuándo se creó el registro.
 2. Cada partida conserva la cantidad entregada y referencia el material y la unidad canónicos del catálogo. Corregir esos catálogos actualiza cómo se muestran todos los vales relacionados; no convierte cantidades.
-3. Posteriormente se registran una o varias **aplicaciones**. Cada captura agrupa una fecha, una orden de servicio obligatoria, un comentario común opcional y el desglose de materiales utilizados; la evidencia privada es opcional.
+3. Posteriormente se registran una o varias **aplicaciones**. Cada captura agrupa una fecha, el tipo y número obligatorios de la orden de servicio, una ubicación o dirección libre opcional, detalles comunes opcionales y el desglose de materiales utilizados; la evidencia privada es opcional. La ubicación admite sugerencias del catálogo, pero el texto capturado no crea ni modifica ubicaciones canónicas.
 4. La aplicación recalcula el saldo. Un vale queda liquidado cuando todas sus partidas llegan exactamente a cero.
 5. Una aplicación incorrecta se corrige o anula desde su edición con un motivo obligatorio. Al corregir una cantidad, el valor anterior se conserva anulado y la cantidad corregida se registra como reemplazo auditable; nada se elimina del historial. Los reportes históricos sin orden siguen visibles, pero al corregirlos debe documentarse una orden.
-6. Un vale sólo puede cancelarse si no tiene aplicaciones vigentes.
+6. Un vale activo sólo puede cancelarse si no tiene aplicaciones vigentes. La razón es opcional; fecha, usuario y valores anteriores siempre quedan auditados. En una salida cancelada, las partidas se presentan como material sin usar y dejan de generar responsabilidad pendiente, sin modificar sus cantidades ni crear devoluciones o movimientos de inventario.
 7. Si el formato físico ya está cancelado, se registra sólo su tipo, folio y fecha; el sistema no exige personas ni materiales.
 8. El resumen avisa los huecos en las series numéricas de Almacén y Patio para facilitar la conciliación de documentos.
 9. Si un formato físico fue prestado antes de asignarlo, se registra únicamente su tipo, folio, fecha y, opcionalmente, el nombre libre de quien lo recibió. No admite personas operativas, destinos, materiales ni devolución.
@@ -42,18 +42,19 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 ## Alcance del MVP
 
 - Acceso privado mediante cuentas administradoras y cuentas técnicas vinculadas de forma única a una persona activa que recibe material. El acceso acepta correo o nombre de usuario.
-- Captura, consulta, edición, impresión y cancelación controlada de vales.
+- Captura, consulta, edición, impresión y cancelación controlada de vales. Las salidas canceladas conservan sus partidas como material sin usar; las entradas canceladas conservan las cantidades únicamente como referencia.
 - Registro rápido de folios cancelados y revisión de continuidad por tipo de vale.
 - Materiales filtrados estrictamente según el tipo de vale elegido.
 - Registro mínimo y corrección auditada de folios prestados.
 - Varias partidas por vale y adjuntos privados JPG, PNG, WebP o PDF.
-- Captura rápida de aplicaciones agrupadas por fecha y orden de servicio obligatoria, con comentario común, desglose por material, evidencia opcional reemplazable y corrección o anulación auditada.
+- Captura rápida de aplicaciones agrupadas por fecha, tipo y número de orden de servicio obligatorios, con ubicación o dirección libre, detalles comunes, desglose por material, evidencia opcional reemplazable y corrección o anulación auditada. Los tipos iniciales son Normal y 072, y el catálogo de opciones es extensible.
 - Vista “Mis vales” para cada técnico, con sus saldos pendientes e inconsistencias y un historial de vales liquidados. Sólo permite operar vales de salida activos asignados a su persona desde el `2026-01-01`.
 - Administración del acceso técnico desde Personas: alta, cambio de identificadores, pausa y restablecimiento de contraseña sin mostrar la anterior.
 - Catálogos editables y alias, organizados en Personas, Materiales, Ubicaciones y una sección conjunta de Programa, acciones e indicadores. SPM-06, los códigos y sus relaciones son estructurales; en acciones e indicadores sólo se corrigen nombres y estados con auditoría. Las unidades se administran dentro de Materiales; Almacén y Patio son tipos estructurales fijos y no se administran desde la interfaz. Un registro sólo se elimina de forma permanente si no está asignado a un vale ni tiene dependencias de catálogo que perderían información; los registros con historia se desactivan o corrigen. Los nombres canónicos se reflejan en todos los vales relacionados, y materiales y unidades también normalizan las partidas existentes sin convertir cantidades. La fusión auditada de duplicados permanece como contingencia técnica y no se expone en la interfaz.
 - Catálogo buscable de ubicaciones con alta desde el vale; una actividad no geográfica se conserva por separado como texto libre.
 - Seguimiento desde 2026 por material, técnico y detalle.
-- Exportación XLSX con los mismos filtros del seguimiento.
+- Búsqueda de vales por folio u orden de servicio en Vales, Mis vales, Seguimiento y la captura rápida de aplicaciones; las órdenes presentes sólo en aplicaciones anuladas no generan coincidencias.
+- Exportación XLSX con los mismos filtros del seguimiento y el contexto de cada aplicación.
 - Vales y seguimiento abren con Almacén como contexto predeterminado; Patio o la vista combinada se consultan mediante una selección explícita. El resumen siempre presenta el panorama general de Almacén y Patio.
 - Importación trazable y repetible únicamente de agosto de 2026 desde el control actualizado.
 

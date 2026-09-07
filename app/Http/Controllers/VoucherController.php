@@ -16,6 +16,7 @@ use App\Models\StorageLocation;
 use App\Models\Voucher;
 use App\Models\VoucherAttachment;
 use App\Models\VoucherItem;
+use App\Support\MaterialApplicationFormOptions;
 use App\Support\Normalizer;
 use App\Support\VoucherData;
 use App\Support\VoucherTypeScope;
@@ -98,6 +99,7 @@ class VoucherController extends Controller
             ],
             'receivers' => fn () => Person::query()->where('can_receive_material', true)->orderBy('name')->get(['id', 'name']),
             'voucherTypes' => fn () => StorageLocation::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'tracking_started_on']),
+            'applicationFormOptions' => fn () => MaterialApplicationFormOptions::make(),
         ]);
     }
 
@@ -142,11 +144,19 @@ class VoucherController extends Controller
     public function storeCancelled(Request $request): RedirectResponse
     {
         Gate::authorize('create', Voucher::class);
+        if (is_string($request->input('cancellation_reason'))) {
+            $reason = trim((string) $request->input('cancellation_reason'));
+            $request->merge(['cancellation_reason' => $reason !== '' ? $reason : null]);
+        }
         $data = $request->validate([
             'voucher_type_id' => ['required', 'integer', Rule::exists('storage_locations', 'id')->where('is_active', true)],
             'folio' => ['required', 'string', 'max:50'],
             'issued_on' => ['required', 'date'],
-            'cancellation_reason' => ['nullable', 'string', 'max:1000'],
+            'cancellation_reason' => ['nullable', 'string', 'min:5', 'max:1000'],
+        ], [
+            'cancellation_reason.string' => 'El motivo de cancelación debe ser texto.',
+            'cancellation_reason.min' => 'Si escribes un motivo, usa al menos 5 caracteres.',
+            'cancellation_reason.max' => 'El motivo de cancelación no puede tener más de 1,000 caracteres.',
         ]);
         $data['folio'] = trim($data['folio']);
         $this->ensureUniqueFolio($data['folio'], (int) $data['voucher_type_id']);
@@ -160,8 +170,7 @@ class VoucherController extends Controller
                 'status' => VoucherStatus::Cancelled,
                 'cancelled_at' => now(),
                 'cancelled_by' => $request->user()?->id,
-                'cancellation_reason' => trim((string) ($data['cancellation_reason'] ?? ''))
-                    ?: 'Folio cancelado para conservar la continuidad de la numeración.',
+                'cancellation_reason' => $data['cancellation_reason'] ?? null,
                 'created_by' => $request->user()?->id,
                 'updated_by' => $request->user()?->id,
             ]);
@@ -210,7 +219,10 @@ class VoucherController extends Controller
     public function show(Request $request, Voucher $voucher): Response|JsonResponse
     {
         Gate::authorize('view', $voucher);
-        $data = ['voucher' => VoucherData::make($voucher, true)];
+        $data = [
+            'voucher' => VoucherData::make($voucher, true),
+            'applicationFormOptions' => MaterialApplicationFormOptions::make(),
+        ];
 
         return $request->expectsJson()
             ? response()->json($data)
@@ -273,10 +285,23 @@ class VoucherController extends Controller
     {
         Gate::authorize('cancel', $voucher);
         abort_unless($voucher->status === VoucherStatus::Active, 422, 'Sólo un vale activo se puede cancelar.');
-        $validated = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:1000']]);
+        if (is_string($request->input('reason'))) {
+            $reason = trim((string) $request->input('reason'));
+            $request->merge(['reason' => $reason !== '' ? $reason : null]);
+        }
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'min:5', 'max:1000'],
+        ], [
+            'reason.string' => 'El motivo de cancelación debe ser texto.',
+            'reason.min' => 'Si escribes un motivo, usa al menos 5 caracteres.',
+            'reason.max' => 'El motivo de cancelación no puede tener más de 1,000 caracteres.',
+        ]);
 
         DB::transaction(function () use ($voucher, $validated, $request): void {
             $locked = Voucher::query()->with('items.applications')->lockForUpdate()->findOrFail($voucher->id);
+            if ($locked->status !== VoucherStatus::Active) {
+                throw ValidationException::withMessages(['reason' => 'Este vale ya no está activo y no se puede cancelar.']);
+            }
             $hasAccounting = $locked->items->flatMap->applications->contains(fn ($row): bool => $row->voided_at === null);
             if ($hasAccounting) {
                 throw ValidationException::withMessages(['reason' => 'No se puede cancelar un vale con aplicaciones activas.']);
@@ -286,7 +311,7 @@ class VoucherController extends Controller
                 'status' => VoucherStatus::Cancelled,
                 'cancelled_at' => now(),
                 'cancelled_by' => $request->user()?->id,
-                'cancellation_reason' => $validated['reason'],
+                'cancellation_reason' => $validated['reason'] ?? null,
                 'updated_by' => $request->user()?->id,
             ]);
             AuditEvent::record($locked, 'cancelled', $before, $locked->fresh()->toArray());

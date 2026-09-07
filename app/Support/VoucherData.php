@@ -117,6 +117,8 @@ final class VoucherData
                 'id' => $report->id,
                 'occurred_on' => $report->occurred_on->format('Y-m-d'),
                 'service_order' => $report->reference,
+                'service_order_type' => $report->service_order_type?->value,
+                'location' => $report->location,
                 'notes' => $report->notes,
                 'editable' => $user?->can('update', $report) ?? false,
                 'permissions' => [
@@ -145,6 +147,8 @@ final class VoucherData
                 'id' => null,
                 'occurred_on' => $application->occurred_on->format('Y-m-d'),
                 'service_order' => $application->reference,
+                'service_order_type' => null,
+                'location' => $application->destination_snapshot,
                 'notes' => $application->notes,
                 'editable' => false,
                 'permissions' => [

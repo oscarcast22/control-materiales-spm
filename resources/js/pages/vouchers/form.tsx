@@ -11,6 +11,7 @@ import type { FormEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
+import { ModalFooter, ModalHeader } from '@/components/modal-shell';
 import { PageHeader } from '@/components/page';
 import { SearchableSelect } from '@/components/searchable-select';
 import { SimpleSelect } from '@/components/simple-select';
@@ -88,6 +89,7 @@ export type VoucherFormProps = {
     embedded?: boolean;
     onSuccess?: () => void;
     onDirtyChange?: (dirty: boolean) => void;
+    onCancel?: () => void;
 };
 
 let nextLineId = 0;
@@ -116,6 +118,7 @@ export default function VoucherForm({
     embedded = false,
     onSuccess,
     onDirtyChange,
+    onCancel,
 }: VoucherFormProps) {
     const formElement = useRef<HTMLFormElement>(null);
     const [showUsageDescription, setShowUsageDescription] = useState(
@@ -528,20 +531,24 @@ export default function VoucherForm({
                 onSubmit={submit}
                 className={
                     embedded
-                        ? 'flex w-full flex-col gap-6 px-1 py-1'
+                        ? 'flex min-h-0 w-full flex-1 flex-col overflow-hidden'
                         : 'mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-7 px-4 py-6 min-[1200px]:px-8 md:px-6'
                 }
             >
-                <PageHeader
-                    title={voucher ? 'Editar vale' : 'Capturar vale'}
-                    description={
-                        voucher
-                            ? 'Corrige los datos del documento original sin alterar su historial.'
-                            : 'Registra el documento original y todos los materiales entregados.'
-                    }
-                    actions={
-                        <>
-                            {!embedded && (
+                {embedded ? (
+                    <ModalHeader
+                        title={voucher ? 'Editar vale' : 'Capturar vale'}
+                    />
+                ) : (
+                    <PageHeader
+                        title={voucher ? 'Editar vale' : 'Capturar vale'}
+                        description={
+                            voucher
+                                ? 'Corrige los datos del documento original sin alterar su historial.'
+                                : 'Registra el documento original y todos los materiales entregados.'
+                        }
+                        actions={
+                            <>
                                 <Button variant="ghost" asChild>
                                     <Link
                                         href={
@@ -554,801 +561,872 @@ export default function VoucherForm({
                                         Volver
                                     </Link>
                                 </Button>
-                            )}
-                            <Button
-                                disabled={
-                                    form.processing ||
-                                    missingDeliverers ||
-                                    missingAuthorizers
-                                }
-                                aria-busy={form.processing}
-                            >
-                                <Save data-icon="inline-start" />
-                                {form.processing
-                                    ? 'Guardando…'
-                                    : 'Guardar vale'}
-                            </Button>
-                        </>
+                                <Button
+                                    disabled={
+                                        form.processing ||
+                                        missingDeliverers ||
+                                        missingAuthorizers
+                                    }
+                                    aria-busy={form.processing}
+                                >
+                                    <Save data-icon="inline-start" />
+                                    {form.processing
+                                        ? 'Guardando…'
+                                        : 'Guardar vale'}
+                                </Button>
+                            </>
+                        }
+                    />
+                )}
+                <div
+                    data-slot={embedded ? 'dialog-body' : undefined}
+                    className={
+                        embedded
+                            ? 'flex min-h-0 flex-1 scroll-py-20 flex-col gap-5 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6 [&>*]:shrink-0'
+                            : 'contents'
                     }
-                />
-                {missingDeliverers && (
-                    <Alert variant="warning">
-                        <AlertDescription>
-                            <p className="font-medium text-foreground">
-                                Falta configurar quién entrega el material.
-                            </p>
-                            <p>
-                                Habilita al menos una persona con la función
-                                “Entrega material” antes de capturar un vale.{' '}
-                                <Link
-                                    className="font-medium text-primary underline-offset-4 hover:underline"
-                                    href="/catalogs"
-                                >
-                                    Ir a Catálogos
-                                </Link>
-                            </p>
-                        </AlertDescription>
-                    </Alert>
-                )}
-                {missingAuthorizers && (
-                    <Alert variant="warning">
-                        <AlertDescription>
-                            <p className="font-medium text-foreground">
-                                Falta configurar quién autoriza el material.
-                            </p>
-                            <p>
-                                Habilita al menos una persona con la función
-                                “Autoriza material” antes de guardar el vale.{' '}
-                                <Link
-                                    className="font-medium text-primary underline-offset-4 hover:underline"
-                                    href="/catalogs"
-                                >
-                                    Ir a Catálogos
-                                </Link>
-                            </p>
-                        </AlertDescription>
-                    </Alert>
-                )}
-                <Card className="gap-0 overflow-hidden border-border/85 py-0">
-                    <CardHeader className="border-b border-border/75 bg-surface-subtle/45 pt-6 pb-5">
-                        <VoucherSectionHeading
-                            step="1"
-                            title="Datos del vale"
-                            description="Transcribe los datos tal como aparecen en el documento físico."
-                        />
-                    </CardHeader>
-                    <CardContent className="pt-5 pb-6">
-                        <FieldGroup className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-                            <VoucherField
-                                id="voucher-type"
-                                label="Tipo de vale"
-                                error={form.errors.voucher_type_id}
-                            >
-                                <SimpleSelect
-                                    id="voucher-type"
-                                    value={form.data.voucher_type_id}
-                                    onValueChange={changeVoucherType}
-                                    placeholder="Seleccionar tipo"
-                                    options={voucherTypeOptions}
-                                    invalid={Boolean(
-                                        form.errors.voucher_type_id,
-                                    )}
-                                    describedBy={errorDescriptionId(
-                                        'voucher-type',
-                                        form.errors.voucher_type_id,
-                                    )}
-                                />
-                            </VoucherField>
-                            <Field invalid={Boolean(form.errors.direction)}>
-                                <FieldLabel id="voucher-direction-label">
-                                    Movimiento
-                                </FieldLabel>
-                                <ToggleGroup
-                                    id="voucher-direction"
-                                    type="single"
-                                    variant="outline"
-                                    value={form.data.direction}
-                                    onValueChange={(value) => {
-                                        if (
-                                            value === 'entry' ||
-                                            value === 'exit'
-                                        ) {
-                                            changeDirection(value);
-                                        }
-                                    }}
-                                    className="grid w-full grid-cols-2"
-                                    aria-labelledby="voucher-direction-label"
-                                    aria-describedby={errorDescriptionId(
-                                        'voucher-direction',
-                                        form.errors.direction,
-                                    )}
-                                    aria-invalid={
-                                        Boolean(form.errors.direction) ||
-                                        undefined
-                                    }
-                                >
-                                    <ToggleGroupItem
-                                        value="exit"
-                                        aria-invalid={
-                                            Boolean(form.errors.direction) ||
-                                            undefined
-                                        }
-                                        aria-describedby={errorDescriptionId(
-                                            'voucher-direction',
-                                            form.errors.direction,
-                                        )}
-                                    >
-                                        Salida
-                                    </ToggleGroupItem>
-                                    <ToggleGroupItem
-                                        value="entry"
-                                        aria-invalid={
-                                            Boolean(form.errors.direction) ||
-                                            undefined
-                                        }
-                                        aria-describedby={errorDescriptionId(
-                                            'voucher-direction',
-                                            form.errors.direction,
-                                        )}
-                                    >
-                                        Entrada
-                                    </ToggleGroupItem>
-                                </ToggleGroup>
-                                <FieldError id="voucher-direction-error">
-                                    {form.errors.direction}
-                                </FieldError>
-                            </Field>
-                            <VoucherField
-                                id="voucher-folio"
-                                label="Folio"
-                                error={form.errors.folio}
-                            >
-                                <Input
-                                    id="voucher-folio"
-                                    value={form.data.folio}
-                                    onChange={(e) =>
-                                        form.setData('folio', e.target.value)
-                                    }
-                                    placeholder="Ej. 16576"
-                                    aria-invalid={
-                                        Boolean(form.errors.folio) || undefined
-                                    }
-                                    aria-describedby={errorDescriptionId(
-                                        'voucher-folio',
-                                        form.errors.folio,
-                                    )}
-                                />
-                            </VoucherField>
-                            <VoucherField
-                                id="voucher-date"
-                                label="Fecha"
-                                error={form.errors.issued_on}
-                            >
-                                <Input
-                                    id="voucher-date"
-                                    type="date"
-                                    value={form.data.issued_on}
-                                    onChange={(e) =>
-                                        form.setData(
-                                            'issued_on',
-                                            e.target.value,
-                                        )
-                                    }
-                                    aria-invalid={
-                                        Boolean(form.errors.issued_on) ||
-                                        undefined
-                                    }
-                                    aria-describedby={errorDescriptionId(
-                                        'voucher-date',
-                                        form.errors.issued_on,
-                                    )}
-                                />
-                            </VoucherField>
-                            {usesClassification && (
-                                <>
-                                    <VoucherField
-                                        id="voucher-program"
-                                        label="Programa"
-                                    >
-                                        <div
-                                            id="voucher-program"
-                                            className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 text-sm"
-                                        >
-                                            <span className="font-mono font-semibold">
-                                                {fixedProgram?.code ?? 'SPM-06'}
-                                            </span>
-                                            <span className="mx-2 text-muted-foreground">
-                                                ·
-                                            </span>
-                                            <span>
-                                                {fixedProgram?.name ??
-                                                    'Alumbrado público'}
-                                            </span>
-                                        </div>
-                                    </VoucherField>
-                                    <VoucherField
-                                        id="voucher-action"
-                                        label="Acción"
-                                        error={form.errors.action_id}
-                                    >
-                                        <SearchableSelect
-                                            id="voucher-action"
-                                            value={form.data.action_id}
-                                            onValueChange={changeAction}
-                                            options={actionOptions}
-                                            optionLayout="code-description"
-                                            placeholder="Seleccionar acción"
-                                            searchPlaceholder="Buscar acción…"
-                                            emptyMessage="No se encontró la acción."
-                                            invalid={Boolean(
-                                                form.errors.action_id,
-                                            )}
-                                            describedBy={errorDescriptionId(
-                                                'voucher-action',
-                                                form.errors.action_id,
-                                            )}
-                                        />
-                                    </VoucherField>
-                                    {selectedIndicators.length > 1 && (
-                                        <VoucherField
-                                            id="voucher-indicator"
-                                            label="Indicador"
-                                            error={
-                                                form.errors.action_indicator_id
-                                            }
-                                        >
-                                            <SearchableSelect
-                                                id="voucher-indicator"
-                                                value={
-                                                    form.data
-                                                        .action_indicator_id
-                                                }
-                                                onValueChange={(value) =>
-                                                    form.setData(
-                                                        'action_indicator_id',
-                                                        value,
-                                                    )
-                                                }
-                                                options={indicatorOptions}
-                                                optionLayout="code-description"
-                                                placeholder="Seleccionar indicador"
-                                                searchPlaceholder="Buscar indicador…"
-                                                emptyMessage="No se encontró el indicador."
-                                                invalid={Boolean(
-                                                    form.errors
-                                                        .action_indicator_id,
-                                                )}
-                                                describedBy={errorDescriptionId(
-                                                    'voucher-indicator',
-                                                    form.errors
-                                                        .action_indicator_id,
-                                                )}
-                                            />
-                                        </VoucherField>
-                                    )}
-                                </>
-                            )}
-                            <VoucherField
-                                id="voucher-receiver"
-                                label="Recibió"
-                                error={form.errors.received_by_id}
-                            >
-                                <SearchableSelect
-                                    id="voucher-receiver"
-                                    value={form.data.received_by_id}
-                                    onValueChange={(v) =>
-                                        form.setData('received_by_id', v)
-                                    }
-                                    placeholder="Seleccionar persona"
-                                    searchPlaceholder="Buscar por nombre…"
-                                    emptyMessage="No encontramos a esa persona."
-                                    options={receiverOptions}
-                                    invalid={Boolean(
-                                        form.errors.received_by_id,
-                                    )}
-                                    describedBy={errorDescriptionId(
-                                        'voucher-receiver',
-                                        form.errors.received_by_id,
-                                    )}
-                                />
-                            </VoucherField>
-                            <VoucherField
-                                id="voucher-deliverer"
-                                label="Entregó material"
-                                error={form.errors.delivered_by_id}
-                            >
-                                <SearchableSelect
-                                    id="voucher-deliverer"
-                                    value={form.data.delivered_by_id}
-                                    onValueChange={(v) =>
-                                        form.setData('delivered_by_id', v)
-                                    }
-                                    placeholder="Seleccionar persona"
-                                    searchPlaceholder="Buscar por nombre…"
-                                    emptyMessage="No encontramos a esa persona."
-                                    options={delivererOptions}
-                                    disabled={missingDeliverers}
-                                    invalid={Boolean(
-                                        form.errors.delivered_by_id,
-                                    )}
-                                    describedBy={errorDescriptionId(
-                                        'voucher-deliverer',
-                                        form.errors.delivered_by_id,
-                                    )}
-                                />
-                            </VoucherField>
-                            {authorizers.length > 1 && (
-                                <VoucherField
-                                    id="voucher-authorizer"
-                                    label="Autorizó"
-                                    error={form.errors.authorized_by_id}
-                                >
-                                    <SearchableSelect
-                                        id="voucher-authorizer"
-                                        value={form.data.authorized_by_id}
-                                        onValueChange={(v) =>
-                                            form.setData('authorized_by_id', v)
-                                        }
-                                        placeholder="Seleccionar persona"
-                                        searchPlaceholder="Buscar por nombre…"
-                                        emptyMessage="No encontramos a esa persona."
-                                        options={authorizerOptions}
-                                        invalid={Boolean(
-                                            form.errors.authorized_by_id,
-                                        )}
-                                        describedBy={errorDescriptionId(
-                                            'voucher-authorizer',
-                                            form.errors.authorized_by_id,
-                                        )}
-                                    />
-                                </VoucherField>
-                            )}
-                            <div
-                                data-invalid={
-                                    Boolean(destinationError) || undefined
-                                }
-                                className="rounded-xl border border-border/75 bg-surface-subtle/35 p-4 transition-[background-color,border-color] data-[invalid=true]:border-danger/50 data-[invalid=true]:bg-danger-subtle/10 md:col-span-2 md:p-5 xl:col-span-4"
-                            >
-                                <VoucherField
-                                    id="voucher-destination"
-                                    label={destinationLabel}
-                                    error={destinationError}
-                                >
-                                    <VoucherDestinationPicker
-                                        id="voucher-destination"
-                                        destinations={destinations}
-                                        selectedIds={form.data.destination_ids}
-                                        newDestinations={
-                                            form.data.new_destinations
-                                        }
-                                        onSelectedIdsChange={(ids) => {
-                                            clearDestinationErrors();
-                                            form.setData(
-                                                'destination_ids',
-                                                ids,
-                                            );
-                                        }}
-                                        onNewDestinationsChange={(names) => {
-                                            clearDestinationErrors();
-                                            form.setData(
-                                                'new_destinations',
-                                                names,
-                                            );
-                                        }}
-                                        invalid={Boolean(destinationError)}
-                                        describedBy={errorDescriptionId(
-                                            'voucher-destination',
-                                            destinationError,
-                                        )}
-                                    />
-                                </VoucherField>
-                                <label
-                                    data-invalid={
-                                        Boolean(destinationError) || undefined
-                                    }
-                                    className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-dashed px-4 py-3 transition-[background-color,border-color] hover:bg-muted/30 data-[invalid=true]:border-danger/35 data-[invalid=true]:bg-danger-subtle/15"
-                                >
-                                    <Checkbox
-                                        checked={showUsageDescription}
-                                        onCheckedChange={(checked) => {
-                                            const enabled = checked === true;
-                                            setShowUsageDescription(enabled);
-
-                                            if (!enabled) {
-                                                form.setData(
-                                                    'usage_description',
-                                                    '',
-                                                );
-                                            }
-                                        }}
-                                        className="mt-0.5"
-                                    />
-                                    <span>
-                                        <span className="block text-sm font-medium">
-                                            Agregar descripción de uso o
-                                            actividad
-                                        </span>
-                                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                                            Úsala para trabajos, actualizaciones
-                                            o destinos que no sean una
-                                            ubicación.
-                                        </span>
-                                    </span>
-                                </label>
-                                {showUsageDescription && (
-                                    <div className="mt-3">
-                                        <VoucherField
-                                            id="voucher-usage-description"
-                                            label={
-                                                form.data.direction === 'entry'
-                                                    ? 'Concepto de la entrada'
-                                                    : 'Uso o actividad'
-                                            }
-                                            error={
-                                                form.errors.usage_description
-                                            }
-                                        >
-                                            <Textarea
-                                                id="voucher-usage-description"
-                                                value={
-                                                    form.data.usage_description
-                                                }
-                                                onChange={(event) => {
-                                                    if (
-                                                        event.target.value.trim()
-                                                    ) {
-                                                        clearDestinationErrors();
-                                                    }
-
-                                                    form.setData(
-                                                        'usage_description',
-                                                        event.target.value,
-                                                    );
-                                                }}
-                                                placeholder="Describe el trabajo, actualización o uso del material"
-                                                aria-invalid={
-                                                    Boolean(
-                                                        form.errors
-                                                            .usage_description,
-                                                    ) || undefined
-                                                }
-                                                aria-describedby={errorDescriptionId(
-                                                    'voucher-usage-description',
-                                                    form.errors
-                                                        .usage_description,
-                                                )}
-                                            />
-                                        </VoucherField>
-                                    </div>
-                                )}
-                            </div>
-                        </FieldGroup>
-                    </CardContent>
-                </Card>
-                <Card className="gap-0 overflow-hidden border-success/25 py-0">
-                    <CardHeader className="border-b border-success/20 bg-success-subtle/30 pt-6 pb-5">
-                        <VoucherSectionHeading
-                            step="2"
-                            title={`Material ${
-                                form.data.direction === 'entry'
-                                    ? 'recibido'
-                                    : 'entregado'
-                            }`}
-                            description="Cada material usa su unidad canónica. Completa sus datos y confírmalo antes de agregar el siguiente."
-                        >
-                            <Badge
-                                variant={
-                                    confirmedMaterialCount > 0
-                                        ? 'success'
-                                        : 'secondary'
-                                }
-                                className="tabular-nums"
-                            >
-                                {confirmedMaterialCount}{' '}
-                                {confirmedMaterialCount === 1
-                                    ? 'material agregado'
-                                    : 'materiales agregados'}
-                            </Badge>
-                        </VoucherSectionHeading>
-                    </CardHeader>
-                    <CardContent className="pt-5 pb-6">
-                        <FieldGroup className="gap-5">
-                            {duplicateMaterials.length > 0 && (
-                                <Alert variant="warning">
-                                    <AlertDescription>
-                                        Hay materiales repetidos. Puedes
-                                        conservar renglones separados o sumar
-                                        sus cantidades.
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-                            {form.data.items.map((line, index) => {
-                                const hasApplications = Boolean(
-                                    line.has_applications,
-                                );
-                                const isConfirmed = line.confirmed;
-                                const materialFieldError =
-                                    form.errors[
-                                        `items.${index}.material_id` as keyof typeof form.errors
-                                    ];
-                                const itemError = Object.entries(
-                                    form.errors,
-                                ).find(([field]) =>
-                                    field.startsWith(`items.${index}.`),
-                                )?.[1];
-                                const materialError =
-                                    materialFieldError ?? itemError;
-                                const quantityError =
-                                    form.errors[
-                                        `items.${index}.quantity` as keyof typeof form.errors
-                                    ];
-                                const unit = materials.find(
-                                    (material) =>
-                                        String(material.id) ===
-                                        line.material_id,
-                                )?.default_unit;
-                                const materialId = `item-${index}-material`;
-                                const quantityId = `item-${index}-quantity`;
-
-                                return (
-                                    <fieldset
-                                        key={line.client_id}
-                                        data-confirmed={
-                                            isConfirmed || undefined
-                                        }
-                                        className="grid min-w-0 items-start gap-4 rounded-xl border border-border/80 bg-surface-subtle/55 p-4 transition-[background-color,border-color] data-[confirmed=true]:border-success/35 data-[confirmed=true]:bg-success-subtle/45 min-[900px]:!grid-cols-[minmax(260px,1fr)_minmax(190px,220px)_190px] sm:grid-cols-2"
-                                    >
-                                        <legend className="sr-only">
-                                            Material {index + 1}
-                                        </legend>
-                                        <VoucherField
-                                            id={materialId}
-                                            label={
-                                                <span className="flex items-center gap-2">
-                                                    <span>
-                                                        Material {index + 1}
-                                                    </span>
-                                                    {isConfirmed && (
-                                                        <Badge
-                                                            variant="success"
-                                                            className="min-h-5 px-2 text-[11px]"
-                                                        >
-                                                            Agregado
-                                                        </Badge>
-                                                    )}
-                                                </span>
-                                            }
-                                            error={materialError}
-                                            className="min-[900px]:!col-span-1 sm:col-span-2"
-                                        >
-                                            <SearchableSelect
-                                                id={materialId}
-                                                value={line.material_id}
-                                                onValueChange={(materialId) =>
-                                                    selectMaterial(
-                                                        index,
-                                                        materialId,
-                                                    )
-                                                }
-                                                placeholder="Seleccionar material"
-                                                searchPlaceholder="Buscar material…"
-                                                emptyMessage="No encontramos ese material."
-                                                options={materialOptions}
-                                                disabled={hasApplications}
-                                                invalid={Boolean(materialError)}
-                                                describedBy={errorDescriptionId(
-                                                    materialId,
-                                                    materialError,
-                                                )}
-                                            />
-                                        </VoucherField>
-                                        <VoucherField
-                                            id={quantityId}
-                                            label={
-                                                <span className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                                                    <span>Cantidad</span>
-                                                    {unit && (
-                                                        <span className="text-xs font-medium text-muted-foreground">
-                                                            Unidad: {unit.name}{' '}
-                                                            ({unit.symbol})
-                                                        </span>
-                                                    )}
-                                                </span>
-                                            }
-                                            error={quantityError}
-                                        >
-                                            <Input
-                                                id={quantityId}
-                                                inputMode="numeric"
-                                                pattern="[0-9]*"
-                                                value={line.quantity}
-                                                readOnly={hasApplications}
-                                                onChange={(e) =>
-                                                    changeLine(index, {
-                                                        quantity:
-                                                            e.target.value,
-                                                    })
-                                                }
-                                                placeholder="0"
-                                                aria-invalid={
-                                                    Boolean(quantityError) ||
-                                                    undefined
-                                                }
-                                                aria-describedby={errorDescriptionId(
-                                                    quantityId,
-                                                    quantityError,
-                                                )}
-                                            />
-                                        </VoucherField>
-                                        {isConfirmed ? (
-                                            <MaterialLineAction>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    disabled={hasApplications}
-                                                    onClick={() =>
-                                                        removeLine(index)
-                                                    }
-                                                    aria-label={`Eliminar material ${index + 1}`}
-                                                    className="w-full border-danger/35 text-destructive hover:border-danger/55 hover:bg-danger-subtle hover:text-destructive"
-                                                >
-                                                    <Trash2
-                                                        data-icon="inline-start"
-                                                        aria-hidden="true"
-                                                    />
-                                                    Eliminar material
-                                                </Button>
-                                            </MaterialLineAction>
-                                        ) : isCompleteMaterial(line) ? (
-                                            <MaterialLineAction>
-                                                <Button
-                                                    id={`item-${index}-confirm`}
-                                                    type="button"
-                                                    variant="success"
-                                                    onClick={() =>
-                                                        confirmLine(index)
-                                                    }
-                                                    aria-label={`Confirmar material ${index + 1}`}
-                                                    aria-describedby={
-                                                        form.errors.items
-                                                            ? 'voucher-items-error'
-                                                            : undefined
-                                                    }
-                                                    className="w-full"
-                                                >
-                                                    <Check
-                                                        data-icon="inline-start"
-                                                        aria-hidden="true"
-                                                    />
-                                                    Confirmar material
-                                                </Button>
-                                            </MaterialLineAction>
-                                        ) : (
-                                            <MaterialLineAction>
-                                                <div
-                                                    role="status"
-                                                    aria-live="polite"
-                                                    className="flex min-h-10 w-full items-center rounded-lg border border-dashed border-border-strong/70 bg-surface-raised/60 px-3 text-xs leading-5 font-medium text-muted-foreground max-sm:min-h-11"
-                                                >
-                                                    Completa material y cantidad
-                                                </div>
-                                            </MaterialLineAction>
-                                        )}
-                                        {hasApplications && (
-                                            <p className="text-sm text-muted-foreground min-[900px]:!col-span-3 sm:col-span-2">
-                                                Este material ya tiene
-                                                aplicaciones registradas. Anula
-                                                primero sus aplicaciones para
-                                                cambiarlo.
-                                            </p>
-                                        )}
-                                    </fieldset>
-                                );
-                            })}
-                            <InputError
-                                id="voucher-items-error"
-                                message={form.errors.items}
-                            />
-                            <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                                <PackageSearch
-                                    className="mt-0.5 size-4 shrink-0"
-                                    aria-hidden="true"
-                                />
+                >
+                    {missingDeliverers && (
+                        <Alert variant="warning">
+                            <AlertDescription>
+                                <p className="font-medium text-foreground">
+                                    Falta configurar quién entrega el material.
+                                </p>
                                 <p>
-                                    ¿No aparece un material?{' '}
+                                    Habilita al menos una persona con la función
+                                    “Entrega material” antes de capturar un
+                                    vale.{' '}
                                     <Link
                                         className="font-medium text-primary underline-offset-4 hover:underline"
                                         href="/catalogs"
                                     >
-                                        Agrégalo primero al catálogo.
+                                        Ir a Catálogos
                                     </Link>
                                 </p>
-                            </div>
-                        </FieldGroup>
-                    </CardContent>
-                </Card>
-                <Card className="gap-0 overflow-hidden border-border/85 py-0">
-                    <CardHeader className="border-b border-border/75 bg-surface-subtle/45 pt-6 pb-5">
-                        <VoucherSectionHeading
-                            step="3"
-                            title="Respaldo y observaciones"
-                            description="Adjunta evidencia del documento y conserva cualquier aclaración útil para su consulta."
-                        />
-                    </CardHeader>
-                    <CardContent className="pt-5 pb-6">
-                        <FieldGroup className="grid gap-6 md:grid-cols-2">
-                            <VoucherField
-                                id="voucher-attachments"
-                                label="Foto o PDF del vale (opcional)"
-                                error={form.errors.attachments}
-                                description="Hasta 5 archivos de 10 MB cada uno."
-                            >
-                                <Input
-                                    id="voucher-attachments"
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp,application/pdf"
-                                    multiple
-                                    onChange={(e) =>
-                                        form.setData(
-                                            'attachments',
-                                            Array.from(e.target.files ?? []),
-                                        )
-                                    }
-                                    aria-invalid={
-                                        Boolean(form.errors.attachments) ||
-                                        undefined
-                                    }
-                                    aria-describedby={fieldDescriptionIds(
-                                        'voucher-attachments',
-                                        form.errors.attachments,
-                                        true,
-                                    )}
-                                />
-                            </VoucherField>
-                            <VoucherField
-                                id="voucher-notes"
-                                label="Observaciones"
-                                error={form.errors.notes}
-                            >
-                                <Textarea
-                                    id="voucher-notes"
-                                    value={form.data.notes}
-                                    onChange={(e) =>
-                                        form.setData('notes', e.target.value)
-                                    }
-                                    placeholder="Aclaraciones del vale, correcciones visibles o contexto adicional"
-                                    aria-invalid={
-                                        Boolean(form.errors.notes) || undefined
-                                    }
-                                    aria-describedby={errorDescriptionId(
-                                        'voucher-notes',
-                                        form.errors.notes,
-                                    )}
-                                />
-                            </VoucherField>
-                            {voucher && voucher.attachments.length > 0 && (
-                                <div className="md:col-span-2">
-                                    <p className="mb-2 text-sm font-medium">
-                                        Archivos existentes
-                                    </p>
-                                    {voucher.attachments.map((file) => (
-                                        <a
-                                            key={file.id}
-                                            className="mr-3 inline-flex items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
-                                            href={`/attachments/${file.id}`}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    {missingAuthorizers && (
+                        <Alert variant="warning">
+                            <AlertDescription>
+                                <p className="font-medium text-foreground">
+                                    Falta configurar quién autoriza el material.
+                                </p>
+                                <p>
+                                    Habilita al menos una persona con la función
+                                    “Autoriza material” antes de guardar el
+                                    vale.{' '}
+                                    <Link
+                                        className="font-medium text-primary underline-offset-4 hover:underline"
+                                        href="/catalogs"
+                                    >
+                                        Ir a Catálogos
+                                    </Link>
+                                </p>
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    <Card className="gap-0 overflow-hidden border-border/85 py-0">
+                        <CardHeader className="border-b border-border/75 bg-surface-subtle/45 pt-6 pb-5">
+                            <VoucherSectionHeading
+                                step="1"
+                                title="Datos del vale"
+                                description="Transcribe los datos tal como aparecen en el documento físico."
+                            />
+                        </CardHeader>
+                        <CardContent className="pt-5 pb-6">
+                            <FieldGroup className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+                                <VoucherField
+                                    id="voucher-type"
+                                    label="Tipo de vale"
+                                    error={form.errors.voucher_type_id}
+                                >
+                                    <SimpleSelect
+                                        id="voucher-type"
+                                        value={form.data.voucher_type_id}
+                                        onValueChange={changeVoucherType}
+                                        placeholder="Seleccionar tipo"
+                                        options={voucherTypeOptions}
+                                        invalid={Boolean(
+                                            form.errors.voucher_type_id,
+                                        )}
+                                        describedBy={errorDescriptionId(
+                                            'voucher-type',
+                                            form.errors.voucher_type_id,
+                                        )}
+                                    />
+                                </VoucherField>
+                                <Field invalid={Boolean(form.errors.direction)}>
+                                    <FieldLabel id="voucher-direction-label">
+                                        Movimiento
+                                    </FieldLabel>
+                                    <ToggleGroup
+                                        id="voucher-direction"
+                                        type="single"
+                                        variant="outline"
+                                        value={form.data.direction}
+                                        onValueChange={(value) => {
+                                            if (
+                                                value === 'entry' ||
+                                                value === 'exit'
+                                            ) {
+                                                changeDirection(value);
+                                            }
+                                        }}
+                                        className="grid w-full grid-cols-2"
+                                        aria-labelledby="voucher-direction-label"
+                                        aria-describedby={errorDescriptionId(
+                                            'voucher-direction',
+                                            form.errors.direction,
+                                        )}
+                                        aria-invalid={
+                                            Boolean(form.errors.direction) ||
+                                            undefined
+                                        }
+                                    >
+                                        <ToggleGroupItem
+                                            value="exit"
+                                            aria-invalid={
+                                                Boolean(
+                                                    form.errors.direction,
+                                                ) || undefined
+                                            }
+                                            aria-describedby={errorDescriptionId(
+                                                'voucher-direction',
+                                                form.errors.direction,
+                                            )}
                                         >
-                                            <FileText
-                                                className="mr-1 size-4"
-                                                aria-hidden="true"
+                                            Salida
+                                        </ToggleGroupItem>
+                                        <ToggleGroupItem
+                                            value="entry"
+                                            aria-invalid={
+                                                Boolean(
+                                                    form.errors.direction,
+                                                ) || undefined
+                                            }
+                                            aria-describedby={errorDescriptionId(
+                                                'voucher-direction',
+                                                form.errors.direction,
+                                            )}
+                                        >
+                                            Entrada
+                                        </ToggleGroupItem>
+                                    </ToggleGroup>
+                                    <FieldError id="voucher-direction-error">
+                                        {form.errors.direction}
+                                    </FieldError>
+                                </Field>
+                                <VoucherField
+                                    id="voucher-folio"
+                                    label="Folio"
+                                    error={form.errors.folio}
+                                >
+                                    <Input
+                                        id="voucher-folio"
+                                        value={form.data.folio}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'folio',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Ej. 16576"
+                                        aria-invalid={
+                                            Boolean(form.errors.folio) ||
+                                            undefined
+                                        }
+                                        aria-describedby={errorDescriptionId(
+                                            'voucher-folio',
+                                            form.errors.folio,
+                                        )}
+                                    />
+                                </VoucherField>
+                                <VoucherField
+                                    id="voucher-date"
+                                    label="Fecha"
+                                    error={form.errors.issued_on}
+                                >
+                                    <Input
+                                        id="voucher-date"
+                                        type="date"
+                                        value={form.data.issued_on}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'issued_on',
+                                                e.target.value,
+                                            )
+                                        }
+                                        aria-invalid={
+                                            Boolean(form.errors.issued_on) ||
+                                            undefined
+                                        }
+                                        aria-describedby={errorDescriptionId(
+                                            'voucher-date',
+                                            form.errors.issued_on,
+                                        )}
+                                    />
+                                </VoucherField>
+                                {usesClassification && (
+                                    <>
+                                        <VoucherField
+                                            id="voucher-program"
+                                            label="Programa"
+                                        >
+                                            <div
+                                                id="voucher-program"
+                                                className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 text-sm"
+                                            >
+                                                <span className="font-mono font-semibold">
+                                                    {fixedProgram?.code ??
+                                                        'SPM-06'}
+                                                </span>
+                                                <span className="mx-2 text-muted-foreground">
+                                                    ·
+                                                </span>
+                                                <span>
+                                                    {fixedProgram?.name ??
+                                                        'Alumbrado público'}
+                                                </span>
+                                            </div>
+                                        </VoucherField>
+                                        <VoucherField
+                                            id="voucher-action"
+                                            label="Acción"
+                                            error={form.errors.action_id}
+                                        >
+                                            <SearchableSelect
+                                                id="voucher-action"
+                                                value={form.data.action_id}
+                                                onValueChange={changeAction}
+                                                options={actionOptions}
+                                                optionLayout="code-description"
+                                                placeholder="Seleccionar acción"
+                                                searchPlaceholder="Buscar acción…"
+                                                emptyMessage="No se encontró la acción."
+                                                invalid={Boolean(
+                                                    form.errors.action_id,
+                                                )}
+                                                describedBy={errorDescriptionId(
+                                                    'voucher-action',
+                                                    form.errors.action_id,
+                                                )}
                                             />
-                                            {file.original_name}
-                                        </a>
-                                    ))}
+                                        </VoucherField>
+                                        {selectedIndicators.length > 1 && (
+                                            <VoucherField
+                                                id="voucher-indicator"
+                                                label="Indicador"
+                                                error={
+                                                    form.errors
+                                                        .action_indicator_id
+                                                }
+                                            >
+                                                <SearchableSelect
+                                                    id="voucher-indicator"
+                                                    value={
+                                                        form.data
+                                                            .action_indicator_id
+                                                    }
+                                                    onValueChange={(value) =>
+                                                        form.setData(
+                                                            'action_indicator_id',
+                                                            value,
+                                                        )
+                                                    }
+                                                    options={indicatorOptions}
+                                                    optionLayout="code-description"
+                                                    placeholder="Seleccionar indicador"
+                                                    searchPlaceholder="Buscar indicador…"
+                                                    emptyMessage="No se encontró el indicador."
+                                                    invalid={Boolean(
+                                                        form.errors
+                                                            .action_indicator_id,
+                                                    )}
+                                                    describedBy={errorDescriptionId(
+                                                        'voucher-indicator',
+                                                        form.errors
+                                                            .action_indicator_id,
+                                                    )}
+                                                />
+                                            </VoucherField>
+                                        )}
+                                    </>
+                                )}
+                                <VoucherField
+                                    id="voucher-receiver"
+                                    label="Recibió"
+                                    error={form.errors.received_by_id}
+                                >
+                                    <SearchableSelect
+                                        id="voucher-receiver"
+                                        value={form.data.received_by_id}
+                                        onValueChange={(v) =>
+                                            form.setData('received_by_id', v)
+                                        }
+                                        placeholder="Seleccionar persona"
+                                        searchPlaceholder="Buscar por nombre…"
+                                        emptyMessage="No encontramos a esa persona."
+                                        options={receiverOptions}
+                                        invalid={Boolean(
+                                            form.errors.received_by_id,
+                                        )}
+                                        describedBy={errorDescriptionId(
+                                            'voucher-receiver',
+                                            form.errors.received_by_id,
+                                        )}
+                                    />
+                                </VoucherField>
+                                <VoucherField
+                                    id="voucher-deliverer"
+                                    label="Entregó material"
+                                    error={form.errors.delivered_by_id}
+                                >
+                                    <SearchableSelect
+                                        id="voucher-deliverer"
+                                        value={form.data.delivered_by_id}
+                                        onValueChange={(v) =>
+                                            form.setData('delivered_by_id', v)
+                                        }
+                                        placeholder="Seleccionar persona"
+                                        searchPlaceholder="Buscar por nombre…"
+                                        emptyMessage="No encontramos a esa persona."
+                                        options={delivererOptions}
+                                        disabled={missingDeliverers}
+                                        invalid={Boolean(
+                                            form.errors.delivered_by_id,
+                                        )}
+                                        describedBy={errorDescriptionId(
+                                            'voucher-deliverer',
+                                            form.errors.delivered_by_id,
+                                        )}
+                                    />
+                                </VoucherField>
+                                {authorizers.length > 1 && (
+                                    <VoucherField
+                                        id="voucher-authorizer"
+                                        label="Autorizó"
+                                        error={form.errors.authorized_by_id}
+                                    >
+                                        <SearchableSelect
+                                            id="voucher-authorizer"
+                                            value={form.data.authorized_by_id}
+                                            onValueChange={(v) =>
+                                                form.setData(
+                                                    'authorized_by_id',
+                                                    v,
+                                                )
+                                            }
+                                            placeholder="Seleccionar persona"
+                                            searchPlaceholder="Buscar por nombre…"
+                                            emptyMessage="No encontramos a esa persona."
+                                            options={authorizerOptions}
+                                            invalid={Boolean(
+                                                form.errors.authorized_by_id,
+                                            )}
+                                            describedBy={errorDescriptionId(
+                                                'voucher-authorizer',
+                                                form.errors.authorized_by_id,
+                                            )}
+                                        />
+                                    </VoucherField>
+                                )}
+                                <div
+                                    data-invalid={
+                                        Boolean(destinationError) || undefined
+                                    }
+                                    className="rounded-xl border border-border/75 bg-surface-subtle/35 p-4 transition-[background-color,border-color] data-[invalid=true]:border-danger/50 data-[invalid=true]:bg-danger-subtle/10 md:col-span-2 md:p-5 xl:col-span-4"
+                                >
+                                    <VoucherField
+                                        id="voucher-destination"
+                                        label={destinationLabel}
+                                        error={destinationError}
+                                    >
+                                        <VoucherDestinationPicker
+                                            id="voucher-destination"
+                                            destinations={destinations}
+                                            selectedIds={
+                                                form.data.destination_ids
+                                            }
+                                            newDestinations={
+                                                form.data.new_destinations
+                                            }
+                                            onSelectedIdsChange={(ids) => {
+                                                clearDestinationErrors();
+                                                form.setData(
+                                                    'destination_ids',
+                                                    ids,
+                                                );
+                                            }}
+                                            onNewDestinationsChange={(
+                                                names,
+                                            ) => {
+                                                clearDestinationErrors();
+                                                form.setData(
+                                                    'new_destinations',
+                                                    names,
+                                                );
+                                            }}
+                                            invalid={Boolean(destinationError)}
+                                            describedBy={errorDescriptionId(
+                                                'voucher-destination',
+                                                destinationError,
+                                            )}
+                                        />
+                                    </VoucherField>
+                                    <label
+                                        data-invalid={
+                                            Boolean(destinationError) ||
+                                            undefined
+                                        }
+                                        className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-dashed px-4 py-3 transition-[background-color,border-color] hover:bg-muted/30 data-[invalid=true]:border-danger/35 data-[invalid=true]:bg-danger-subtle/15"
+                                    >
+                                        <Checkbox
+                                            checked={showUsageDescription}
+                                            onCheckedChange={(checked) => {
+                                                const enabled =
+                                                    checked === true;
+                                                setShowUsageDescription(
+                                                    enabled,
+                                                );
+
+                                                if (!enabled) {
+                                                    form.setData(
+                                                        'usage_description',
+                                                        '',
+                                                    );
+                                                }
+                                            }}
+                                            className="mt-0.5"
+                                        />
+                                        <span>
+                                            <span className="block text-sm font-medium">
+                                                Agregar descripción de uso o
+                                                actividad
+                                            </span>
+                                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                                                Úsala para trabajos,
+                                                actualizaciones o destinos que
+                                                no sean una ubicación.
+                                            </span>
+                                        </span>
+                                    </label>
+                                    {showUsageDescription && (
+                                        <div className="mt-3">
+                                            <VoucherField
+                                                id="voucher-usage-description"
+                                                label={
+                                                    form.data.direction ===
+                                                    'entry'
+                                                        ? 'Concepto de la entrada'
+                                                        : 'Uso o actividad'
+                                                }
+                                                error={
+                                                    form.errors
+                                                        .usage_description
+                                                }
+                                            >
+                                                <Textarea
+                                                    id="voucher-usage-description"
+                                                    value={
+                                                        form.data
+                                                            .usage_description
+                                                    }
+                                                    onChange={(event) => {
+                                                        if (
+                                                            event.target.value.trim()
+                                                        ) {
+                                                            clearDestinationErrors();
+                                                        }
+
+                                                        form.setData(
+                                                            'usage_description',
+                                                            event.target.value,
+                                                        );
+                                                    }}
+                                                    placeholder="Describe el trabajo, actualización o uso del material"
+                                                    aria-invalid={
+                                                        Boolean(
+                                                            form.errors
+                                                                .usage_description,
+                                                        ) || undefined
+                                                    }
+                                                    aria-describedby={errorDescriptionId(
+                                                        'voucher-usage-description',
+                                                        form.errors
+                                                            .usage_description,
+                                                    )}
+                                                />
+                                            </VoucherField>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </FieldGroup>
-                    </CardContent>
-                </Card>
+                            </FieldGroup>
+                        </CardContent>
+                    </Card>
+                    <Card className="gap-0 overflow-hidden border-success/25 py-0">
+                        <CardHeader className="border-b border-success/20 bg-success-subtle/30 pt-6 pb-5">
+                            <VoucherSectionHeading
+                                step="2"
+                                title={`Material ${
+                                    form.data.direction === 'entry'
+                                        ? 'recibido'
+                                        : 'entregado'
+                                }`}
+                                description="Cada material usa su unidad canónica. Completa sus datos y confírmalo antes de agregar el siguiente."
+                            >
+                                <Badge
+                                    variant={
+                                        confirmedMaterialCount > 0
+                                            ? 'success'
+                                            : 'secondary'
+                                    }
+                                    className="tabular-nums"
+                                >
+                                    {confirmedMaterialCount}{' '}
+                                    {confirmedMaterialCount === 1
+                                        ? 'material agregado'
+                                        : 'materiales agregados'}
+                                </Badge>
+                            </VoucherSectionHeading>
+                        </CardHeader>
+                        <CardContent className="pt-5 pb-6">
+                            <FieldGroup className="gap-5">
+                                {duplicateMaterials.length > 0 && (
+                                    <Alert variant="warning">
+                                        <AlertDescription>
+                                            Hay materiales repetidos. Puedes
+                                            conservar renglones separados o
+                                            sumar sus cantidades.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                                {form.data.items.map((line, index) => {
+                                    const hasApplications = Boolean(
+                                        line.has_applications,
+                                    );
+                                    const isConfirmed = line.confirmed;
+                                    const materialFieldError =
+                                        form.errors[
+                                            `items.${index}.material_id` as keyof typeof form.errors
+                                        ];
+                                    const itemError = Object.entries(
+                                        form.errors,
+                                    ).find(([field]) =>
+                                        field.startsWith(`items.${index}.`),
+                                    )?.[1];
+                                    const materialError =
+                                        materialFieldError ?? itemError;
+                                    const quantityError =
+                                        form.errors[
+                                            `items.${index}.quantity` as keyof typeof form.errors
+                                        ];
+                                    const unit = materials.find(
+                                        (material) =>
+                                            String(material.id) ===
+                                            line.material_id,
+                                    )?.default_unit;
+                                    const materialId = `item-${index}-material`;
+                                    const quantityId = `item-${index}-quantity`;
+
+                                    return (
+                                        <fieldset
+                                            key={line.client_id}
+                                            data-confirmed={
+                                                isConfirmed || undefined
+                                            }
+                                            className="grid min-w-0 items-start gap-4 rounded-xl border border-border/80 bg-surface-subtle/55 p-4 transition-[background-color,border-color] data-[confirmed=true]:border-success/35 data-[confirmed=true]:bg-success-subtle/45 min-[900px]:!grid-cols-[minmax(260px,1fr)_minmax(190px,220px)_190px] sm:grid-cols-2"
+                                        >
+                                            <legend className="sr-only">
+                                                Material {index + 1}
+                                            </legend>
+                                            <VoucherField
+                                                id={materialId}
+                                                label={
+                                                    <span className="flex items-center gap-2">
+                                                        <span>
+                                                            Material {index + 1}
+                                                        </span>
+                                                        {isConfirmed && (
+                                                            <Badge
+                                                                variant="success"
+                                                                className="min-h-5 px-2 text-[11px]"
+                                                            >
+                                                                Agregado
+                                                            </Badge>
+                                                        )}
+                                                    </span>
+                                                }
+                                                error={materialError}
+                                                className="min-[900px]:!col-span-1 sm:col-span-2"
+                                            >
+                                                <SearchableSelect
+                                                    id={materialId}
+                                                    value={line.material_id}
+                                                    onValueChange={(
+                                                        materialId,
+                                                    ) =>
+                                                        selectMaterial(
+                                                            index,
+                                                            materialId,
+                                                        )
+                                                    }
+                                                    placeholder="Seleccionar material"
+                                                    searchPlaceholder="Buscar material…"
+                                                    emptyMessage="No encontramos ese material."
+                                                    options={materialOptions}
+                                                    disabled={hasApplications}
+                                                    invalid={Boolean(
+                                                        materialError,
+                                                    )}
+                                                    describedBy={errorDescriptionId(
+                                                        materialId,
+                                                        materialError,
+                                                    )}
+                                                />
+                                            </VoucherField>
+                                            <VoucherField
+                                                id={quantityId}
+                                                label={
+                                                    <span className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                                                        <span>Cantidad</span>
+                                                        {unit && (
+                                                            <span className="text-xs font-medium text-muted-foreground">
+                                                                Unidad:{' '}
+                                                                {unit.name} (
+                                                                {unit.symbol})
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                }
+                                                error={quantityError}
+                                            >
+                                                <Input
+                                                    id={quantityId}
+                                                    inputMode="numeric"
+                                                    pattern="[0-9]*"
+                                                    value={line.quantity}
+                                                    readOnly={hasApplications}
+                                                    onChange={(e) =>
+                                                        changeLine(index, {
+                                                            quantity:
+                                                                e.target.value,
+                                                        })
+                                                    }
+                                                    placeholder="0"
+                                                    aria-invalid={
+                                                        Boolean(
+                                                            quantityError,
+                                                        ) || undefined
+                                                    }
+                                                    aria-describedby={errorDescriptionId(
+                                                        quantityId,
+                                                        quantityError,
+                                                    )}
+                                                />
+                                            </VoucherField>
+                                            {isConfirmed ? (
+                                                <MaterialLineAction>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        disabled={
+                                                            hasApplications
+                                                        }
+                                                        onClick={() =>
+                                                            removeLine(index)
+                                                        }
+                                                        aria-label={`Eliminar material ${index + 1}`}
+                                                        className="w-full border-danger/35 text-destructive hover:border-danger/55 hover:bg-danger-subtle hover:text-destructive"
+                                                    >
+                                                        <Trash2
+                                                            data-icon="inline-start"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Eliminar material
+                                                    </Button>
+                                                </MaterialLineAction>
+                                            ) : isCompleteMaterial(line) ? (
+                                                <MaterialLineAction>
+                                                    <Button
+                                                        id={`item-${index}-confirm`}
+                                                        type="button"
+                                                        variant="success"
+                                                        onClick={() =>
+                                                            confirmLine(index)
+                                                        }
+                                                        aria-label={`Confirmar material ${index + 1}`}
+                                                        aria-describedby={
+                                                            form.errors.items
+                                                                ? 'voucher-items-error'
+                                                                : undefined
+                                                        }
+                                                        className="w-full"
+                                                    >
+                                                        <Check
+                                                            data-icon="inline-start"
+                                                            aria-hidden="true"
+                                                        />
+                                                        Confirmar material
+                                                    </Button>
+                                                </MaterialLineAction>
+                                            ) : (
+                                                <MaterialLineAction>
+                                                    <div
+                                                        role="status"
+                                                        aria-live="polite"
+                                                        className="flex min-h-10 w-full items-center rounded-lg border border-dashed border-border-strong/70 bg-surface-raised/60 px-3 text-xs leading-5 font-medium text-muted-foreground max-sm:min-h-11"
+                                                    >
+                                                        Completa material y
+                                                        cantidad
+                                                    </div>
+                                                </MaterialLineAction>
+                                            )}
+                                            {hasApplications && (
+                                                <p className="text-sm text-muted-foreground min-[900px]:!col-span-3 sm:col-span-2">
+                                                    Este material ya tiene
+                                                    aplicaciones registradas.
+                                                    Anula primero sus
+                                                    aplicaciones para cambiarlo.
+                                                </p>
+                                            )}
+                                        </fieldset>
+                                    );
+                                })}
+                                <InputError
+                                    id="voucher-items-error"
+                                    message={form.errors.items}
+                                />
+                                <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                                    <PackageSearch
+                                        className="mt-0.5 size-4 shrink-0"
+                                        aria-hidden="true"
+                                    />
+                                    <p>
+                                        ¿No aparece un material?{' '}
+                                        <Link
+                                            className="font-medium text-primary underline-offset-4 hover:underline"
+                                            href="/catalogs"
+                                        >
+                                            Agrégalo primero al catálogo.
+                                        </Link>
+                                    </p>
+                                </div>
+                            </FieldGroup>
+                        </CardContent>
+                    </Card>
+                    <Card className="gap-0 overflow-hidden border-border/85 py-0">
+                        <CardHeader className="border-b border-border/75 bg-surface-subtle/45 pt-6 pb-5">
+                            <VoucherSectionHeading
+                                step="3"
+                                title="Respaldo y observaciones"
+                                description="Adjunta evidencia del documento y conserva cualquier aclaración útil para su consulta."
+                            />
+                        </CardHeader>
+                        <CardContent className="pt-5 pb-6">
+                            <FieldGroup className="grid gap-6 md:grid-cols-2">
+                                <VoucherField
+                                    id="voucher-attachments"
+                                    label="Foto o PDF del vale (opcional)"
+                                    error={form.errors.attachments}
+                                    description="Hasta 5 archivos de 10 MB cada uno."
+                                >
+                                    <Input
+                                        id="voucher-attachments"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,application/pdf"
+                                        multiple
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'attachments',
+                                                Array.from(
+                                                    e.target.files ?? [],
+                                                ),
+                                            )
+                                        }
+                                        aria-invalid={
+                                            Boolean(form.errors.attachments) ||
+                                            undefined
+                                        }
+                                        aria-describedby={fieldDescriptionIds(
+                                            'voucher-attachments',
+                                            form.errors.attachments,
+                                            true,
+                                        )}
+                                    />
+                                </VoucherField>
+                                <VoucherField
+                                    id="voucher-notes"
+                                    label="Observaciones"
+                                    error={form.errors.notes}
+                                >
+                                    <Textarea
+                                        id="voucher-notes"
+                                        value={form.data.notes}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'notes',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Aclaraciones del vale, correcciones visibles o contexto adicional"
+                                        aria-invalid={
+                                            Boolean(form.errors.notes) ||
+                                            undefined
+                                        }
+                                        aria-describedby={errorDescriptionId(
+                                            'voucher-notes',
+                                            form.errors.notes,
+                                        )}
+                                    />
+                                </VoucherField>
+                                {voucher && voucher.attachments.length > 0 && (
+                                    <div className="md:col-span-2">
+                                        <p className="mb-2 text-sm font-medium">
+                                            Archivos existentes
+                                        </p>
+                                        {voucher.attachments.map((file) => (
+                                            <a
+                                                key={file.id}
+                                                className="mr-3 inline-flex items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+                                                href={`/attachments/${file.id}`}
+                                            >
+                                                <FileText
+                                                    className="mr-1 size-4"
+                                                    aria-hidden="true"
+                                                />
+                                                {file.original_name}
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
+                            </FieldGroup>
+                        </CardContent>
+                    </Card>
+                </div>
+                {embedded && (
+                    <ModalFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={form.processing}
+                            onClick={onCancel}
+                        >
+                            {voucher ? 'Volver al detalle' : 'Cancelar'}
+                        </Button>
+                        <Button
+                            disabled={
+                                form.processing ||
+                                missingDeliverers ||
+                                missingAuthorizers
+                            }
+                            aria-busy={form.processing}
+                        >
+                            <Save data-icon="inline-start" />
+                            {form.processing ? 'Guardando…' : 'Guardar vale'}
+                        </Button>
+                    </ModalFooter>
+                )}
             </form>
         </>
     );

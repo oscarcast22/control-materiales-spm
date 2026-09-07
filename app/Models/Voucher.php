@@ -38,6 +38,7 @@ use Illuminate\Support\Carbon;
  * @property bool $needs_review
  * @property array<int, string>|null $review_reasons
  * @property Carbon|null $cancelled_at
+ * @property int|null $cancelled_by
  * @property string|null $cancellation_reason
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -94,19 +95,14 @@ class Voucher extends Model
 
         $needle = '%'.mb_strtolower($search).'%';
         $normalizedNeedle = Normalizer::key($search);
-        $folioNeedle = Normalizer::folio($search);
 
-        return $query->where(function (Builder $searchQuery) use ($needle, $normalizedNeedle, $folioNeedle): void {
+        return $query->where(function (Builder $searchQuery) use ($search, $needle, $normalizedNeedle): void {
             $searchQuery
-                ->whereRaw('LOWER(vouchers.folio) LIKE ?', [$needle])
+                ->where(fn (Builder $identifierQuery) => $identifierQuery->searchFolioOrServiceOrder($search))
                 ->orWhereRaw('LOWER(vouchers.usage_description) LIKE ?', [$needle])
                 ->orWhereRaw('LOWER(vouchers.loaned_to_name) LIKE ?', [$needle])
                 ->orWhereHas('items', fn (Builder $items) => $items
                     ->whereRaw('LOWER(voucher_items.description_snapshot) LIKE ?', [$needle]));
-
-            if ($folioNeedle !== '') {
-                $searchQuery->orWhere('vouchers.folio_key', 'like', "%{$folioNeedle}%");
-            }
 
             if ($normalizedNeedle !== '') {
                 $searchQuery
@@ -116,6 +112,34 @@ class Voucher extends Model
                         ->where('normalized_name', 'like', "%{$normalizedNeedle}%"))
                     ->orWhereHas('items.material', fn (Builder $material) => $material
                         ->where('normalized_name', 'like', "%{$normalizedNeedle}%"));
+            }
+        });
+    }
+
+    /**
+     * @param  Builder<Voucher>  $query
+     * @return Builder<Voucher>
+     */
+    public function scopeSearchFolioOrServiceOrder(Builder $query, string $search): Builder
+    {
+        $search = trim($search);
+
+        if ($search === '') {
+            return $query;
+        }
+
+        $needle = '%'.mb_strtolower($search).'%';
+        $folioNeedle = Normalizer::folio($search);
+
+        return $query->where(function (Builder $identifierQuery) use ($needle, $folioNeedle): void {
+            $identifierQuery
+                ->whereRaw('LOWER(vouchers.folio) LIKE ?', [$needle])
+                ->orWhereHas('items.applications', fn (Builder $applications) => $applications
+                    ->whereNull('voided_at')
+                    ->whereRaw('LOWER(material_applications.reference) LIKE ?', [$needle]));
+
+            if ($folioNeedle !== '') {
+                $identifierQuery->orWhere('vouchers.folio_key', 'like', "%{$folioNeedle}%");
             }
         });
     }

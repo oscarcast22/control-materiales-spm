@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ServiceOrderType;
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
 use App\Models\Action;
@@ -173,6 +174,15 @@ class MaterialControlTest extends TestCase
         $user = User::factory()->create();
         $location = StorageLocation::factory()->create(['code' => 'warehouse']);
 
+        $this->actingAs($user)->post(route('vouchers.cancelled.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => '16575',
+            'issued_on' => '2026-08-27',
+            'cancellation_reason' => 'No',
+        ])->assertSessionHasErrors([
+            'cancellation_reason' => 'Si escribes un motivo, usa al menos 5 caracteres.',
+        ]);
+
         $response = $this->actingAs($user)->post(route('vouchers.cancelled.store'), [
             'voucher_type_id' => $location->id,
             'folio' => '16576',
@@ -187,10 +197,7 @@ class MaterialControlTest extends TestCase
         $this->assertNull($voucher->received_by_id);
         $this->assertNull($voucher->delivered_by_id);
         $this->assertSame(0, $voucher->items()->count());
-        $this->assertSame(
-            'Folio cancelado para conservar la continuidad de la numeración.',
-            $voucher->cancellation_reason,
-        );
+        $this->assertNull($voucher->cancellation_reason);
         $this->assertDatabaseHas('audit_events', [
             'event' => 'created_cancelled',
             'auditable_type' => Voucher::class,
@@ -208,10 +215,7 @@ class MaterialControlTest extends TestCase
         $voucher->refresh();
         $this->assertSame(VoucherStatus::Cancelled, $voucher->status);
         $this->assertSame('16577', $voucher->folio);
-        $this->assertSame(
-            'Folio cancelado para conservar la continuidad de la numeración.',
-            $voucher->cancellation_reason,
-        );
+        $this->assertNull($voucher->cancellation_reason);
     }
 
     public function test_voucher_validation_messages_explain_the_field_that_needs_correction(): void
@@ -712,6 +716,7 @@ class MaterialControlTest extends TestCase
         ]);
         $item->voucher->destinations()->attach($destination);
         $item->voucher->update(['usage_description' => 'Actualización LED']);
+        $destinationCount = Destination::query()->count();
         $secondMaterial = Material::factory()->create(['default_unit_id' => $item->unit_id]);
         $secondItem = VoucherItem::factory()->create([
             'voucher_id' => $item->voucher_id,
@@ -725,6 +730,8 @@ class MaterialControlTest extends TestCase
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-24',
             'reference' => 'Reporte 17',
+            'service_order_type' => ServiceOrderType::CitizenService072->value,
+            'location' => 'Calle Constitución 125, Zona Centro',
             'items' => [
                 ['voucher_item_id' => $item->id, 'quantity' => 6],
                 ['voucher_item_id' => $secondItem->id, 'quantity' => 2],
@@ -738,14 +745,23 @@ class MaterialControlTest extends TestCase
         $this->assertSame(1, MaterialApplicationReport::query()->count());
         $this->assertSame(2, MaterialApplication::query()->count());
         $this->assertSame(
-            ['Col. San Carlos · Actualización LED'],
+            ['Calle Constitución 125, Zona Centro'],
             MaterialApplication::query()->distinct()->pluck('destination_snapshot')->all(),
         );
+        $this->assertSame($destinationCount, Destination::query()->count());
+
+        $this->actingAs($user)->get(route('vouchers.show', $item->voucher))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('applicationFormOptions.default_service_order_type', ServiceOrderType::Normal->value)
+                ->where('applicationFormOptions.service_order_types.0.value', ServiceOrderType::Normal->value)
+                ->where('applicationFormOptions.service_order_types.1.value', ServiceOrderType::CitizenService072->value)
+                ->where('applicationFormOptions.destinations.0.name', 'Col. San Carlos'));
 
         $this->actingAs($user)->post(route('applications.store'), [
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-24',
             'reference' => 'OS-17',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 1.5]],
         ])->assertSessionHasErrors('items.0.quantity');
         $this->assertSame(2, MaterialApplication::query()->count());
@@ -756,6 +772,7 @@ class MaterialControlTest extends TestCase
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-24',
             'reference' => 'OS-18',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'items' => [
                 ['voucher_item_id' => $item->id, 'quantity' => 1],
                 ['voucher_item_id' => $foreignItem->id, 'quantity' => 1],
@@ -782,6 +799,8 @@ class MaterialControlTest extends TestCase
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-24',
             'reference' => 'OS-2408',
+            'service_order_type' => ServiceOrderType::Normal->value,
+            'location' => 'Parque Guadiana',
             'items' => [
                 ['voucher_item_id' => $item->id, 'quantity' => 6],
                 ['voucher_item_id' => $secondItem->id, 'quantity' => 2],
@@ -792,11 +811,16 @@ class MaterialControlTest extends TestCase
         $originalApplicationIds = $report->applications()->pluck('id')->all();
         $initialData = VoucherData::make($item->voucher->fresh(), true);
         $this->assertSame('OS-2408', $initialData['application_reports'][0]['service_order']);
+        $this->assertSame('normal', $initialData['application_reports'][0]['service_order_type']);
+        $this->assertSame('Parque Guadiana', $initialData['application_reports'][0]['location']);
         $this->assertCount(2, $initialData['application_reports'][0]['applications']);
 
         $this->actingAs($user)->put(route('application-reports.update', $report), [
             'occurred_on' => '2026-08-27',
             'reference' => 'OS-24391',
+            'service_order_type' => ServiceOrderType::CitizenService072->value,
+            'location' => 'Blvd. Dolores del Río 40',
+            'notes' => 'Luminaria instalada frente al acceso principal.',
             'correction_reason' => 'Corrección de cantidades reportadas',
             'items' => [
                 ['voucher_item_id' => $item->id, 'quantity' => 4],
@@ -807,6 +831,9 @@ class MaterialControlTest extends TestCase
         $report->refresh();
         $this->assertSame('2026-08-27', $report->occurred_on->toDateString());
         $this->assertSame('OS-24391', $report->reference);
+        $this->assertSame(ServiceOrderType::CitizenService072, $report->service_order_type);
+        $this->assertSame('Blvd. Dolores del Río 40', $report->location);
+        $this->assertSame('Luminaria instalada frente al acceso principal.', $report->notes);
         $this->assertSame('6.000', $item->fresh()->pendingQuantity());
         $this->assertSame('0.000', $secondItem->fresh()->pendingQuantity());
         $this->assertSame(4, $report->applications()->count());
@@ -832,6 +859,8 @@ class MaterialControlTest extends TestCase
         $data = VoucherData::make($item->voucher->fresh(), true);
         $this->assertCount(1, $data['application_reports']);
         $this->assertSame('OS-24391', $data['application_reports'][0]['service_order']);
+        $this->assertSame('072', $data['application_reports'][0]['service_order_type']);
+        $this->assertSame('Blvd. Dolores del Río 40', $data['application_reports'][0]['location']);
         $this->assertCount(4, $data['application_reports'][0]['applications']);
     }
 
@@ -844,6 +873,7 @@ class MaterialControlTest extends TestCase
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-24',
             'reference' => 'OS-2409',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 6]],
         ])->assertSessionHasNoErrors();
 
@@ -851,6 +881,7 @@ class MaterialControlTest extends TestCase
         $this->actingAs($user)->put(route('application-reports.update', $report), [
             'occurred_on' => '2026-08-24',
             'reference' => 'OS-2409',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'correction_reason' => 'Ajuste de cantidad capturada',
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 8.5]],
         ])->assertSessionHasErrors('items.0.quantity');
@@ -868,6 +899,7 @@ class MaterialControlTest extends TestCase
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-24',
             'reference' => 'OS-2410',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 6]],
         ])->assertSessionHasNoErrors();
 
@@ -877,6 +909,7 @@ class MaterialControlTest extends TestCase
         $this->actingAs($user)->put(route('application-reports.update', $report), [
             'occurred_on' => '2026-08-24',
             'reference' => 'OS-2410',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'correction_reason' => 'Aplicación capturada por duplicado',
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 0]],
         ])->assertSessionHasNoErrors();
@@ -912,11 +945,87 @@ class MaterialControlTest extends TestCase
     {
         $user = User::factory()->create();
         $item = $this->voucherItem(10);
-        MaterialApplication::factory()->create(['voucher_item_id' => $item->id, 'quantity' => 1]);
+        $application = MaterialApplication::factory()->create(['voucher_item_id' => $item->id, 'quantity' => 1]);
 
         $this->actingAs($user)->post(route('vouchers.cancel', $item->voucher), [
             'reason' => 'El vale ya no corresponde',
         ])->assertSessionHasErrors('reason');
+
+        $this->assertSame(VoucherStatus::Active, $item->voucher->fresh()->status);
+
+        $this->actingAs($user)->post(route('applications.void', $application), [
+            'reason' => 'La aplicación no correspondía a este vale',
+        ])->assertSessionHasNoErrors();
+        $this->actingAs($user)->post(route('vouchers.cancel', $item->voucher), [
+            'reason' => '',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(VoucherStatus::Cancelled, $item->voucher->fresh()->status);
+        $this->assertNull($item->voucher->fresh()->cancellation_reason);
+    }
+
+    public function test_a_registered_exit_can_be_cancelled_as_unused_without_changing_its_quantities(): void
+    {
+        $user = User::factory()->create();
+        $item = $this->voucherItem(10);
+
+        $response = $this->actingAs($user)->post(route('vouchers.cancel', $item->voucher), [
+            'reason' => '   ',
+        ]);
+
+        $voucher = $item->voucher->fresh();
+        $response->assertRedirect(route('vouchers.show', $voucher));
+        $this->assertSame(VoucherStatus::Cancelled, $voucher->status);
+        $this->assertNull($voucher->cancellation_reason);
+        $this->assertNotNull($voucher->cancelled_at);
+        $this->assertSame($user->id, $voucher->cancelled_by);
+        $this->assertSame('10.000', $item->fresh()->quantity);
+        $this->assertSame('10.000', $item->fresh()->pendingQuantity());
+        $this->assertSame('cancelled', VoucherData::make($voucher)['balance_state']);
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'cancelled',
+            'auditable_type' => Voucher::class,
+            'auditable_id' => $voucher->id,
+            'user_id' => $user->id,
+        ]);
+
+        $this->actingAs($user)->get(route('reports.material-tracking', [
+            'voucher_type_id' => 'all',
+        ]))->assertInertia(fn (Assert $page) => $page
+            ->where('metrics.delivered_vouchers', 0)
+            ->has('rows', 0));
+    }
+
+    public function test_a_registered_entry_can_be_cancelled_with_an_optional_trimmed_reason(): void
+    {
+        $user = User::factory()->create();
+        $item = $this->voucherItem(5, VoucherDirection::Entry);
+
+        $this->actingAs($user)->post(route('vouchers.cancel', $item->voucher), [
+            'reason' => '  Registro duplicado  ',
+        ])->assertSessionHasNoErrors();
+
+        $voucher = $item->voucher->fresh();
+        $this->assertSame(VoucherStatus::Cancelled, $voucher->status);
+        $this->assertSame('Registro duplicado', $voucher->cancellation_reason);
+        $this->assertSame('5.000', $item->fresh()->quantity);
+    }
+
+    public function test_an_optional_cancellation_reason_must_be_meaningful_when_present(): void
+    {
+        $user = User::factory()->create();
+        $item = $this->voucherItem(2);
+
+        $this->actingAs($user)->post(route('vouchers.cancel', $item->voucher), [
+            'reason' => 'No',
+        ])->assertSessionHasErrors([
+            'reason' => 'Si escribes un motivo, usa al menos 5 caracteres.',
+        ]);
+        $this->actingAs($user)->post(route('vouchers.cancel', $item->voucher), [
+            'reason' => str_repeat('a', 1001),
+        ])->assertSessionHasErrors([
+            'reason' => 'El motivo de cancelación no puede tener más de 1,000 caracteres.',
+        ]);
 
         $this->assertSame(VoucherStatus::Active, $item->voucher->fresh()->status);
     }
@@ -1014,6 +1123,7 @@ class MaterialControlTest extends TestCase
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-26',
             'reference' => 'A-24391',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 3]],
             'attachment' => UploadedFile::fake()->create('orden.jpg', 100, 'image/jpeg'),
         ])->assertSessionHasNoErrors();
@@ -1039,13 +1149,61 @@ class MaterialControlTest extends TestCase
             'voucher_item_id' => $settled->id,
             'quantity' => 2,
         ]);
+        $report = MaterialApplicationReport::create([
+            'voucher_id' => $pending->voucher_id,
+            'occurred_on' => '2026-08-25',
+            'reference' => 'OS-QUICK-156',
+            'service_order_type' => ServiceOrderType::Normal,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+        MaterialApplication::create([
+            'voucher_item_id' => $pending->id,
+            'application_report_id' => $report->id,
+            'occurred_on' => '2026-08-25',
+            'quantity' => 1,
+            'reference' => 'OS-QUICK-156',
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+        $voided = $this->voucherItem(3);
+        $voidedReport = MaterialApplicationReport::create([
+            'voucher_id' => $voided->voucher_id,
+            'occurred_on' => '2026-08-25',
+            'reference' => 'OS-ANULADA-404',
+            'service_order_type' => ServiceOrderType::Normal,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+        MaterialApplication::create([
+            'voucher_item_id' => $voided->id,
+            'application_report_id' => $voidedReport->id,
+            'occurred_on' => '2026-08-25',
+            'quantity' => 1,
+            'reference' => 'OS-ANULADA-404',
+            'voided_at' => now(),
+            'void_reason' => 'Captura duplicada',
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
 
         $this->actingAs($user)
             ->getJson(route('applications.vouchers.search', ['search' => '1562']))
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.folio', '15628')
-            ->assertJsonPath('data.0.items.0.pending_quantity', '10.000');
+            ->assertJsonPath('data.0.items.0.pending_quantity', '9.000');
+
+        $this->actingAs($user)
+            ->getJson(route('applications.vouchers.search', ['search' => 'QUICK-156']))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.folio', '15628');
+
+        $this->actingAs($user)
+            ->getJson(route('applications.vouchers.search', ['search' => 'ANULADA-404']))
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
     }
 
     public function test_tracking_report_exports_the_operational_sheets_as_a_valid_xlsx_file(): void
@@ -1084,6 +1242,7 @@ class MaterialControlTest extends TestCase
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-24',
             'reference' => 'OS-ENTRADA',
+            'service_order_type' => ServiceOrderType::Normal->value,
             'items' => [['voucher_item_id' => $item->id, 'quantity' => 1]],
         ])->assertForbidden();
         $this->assertDatabaseCount('material_applications', 0);
@@ -1198,7 +1357,7 @@ class MaterialControlTest extends TestCase
     {
         [$user, , , $yard] = $this->trackingSearchFixtures();
 
-        foreach (['16583', 'jose luis', 'otinapa', 'modernización', 'lampara', 'modelo legado'] as $search) {
+        foreach (['16583', 'jose luis', 'otinapa', 'modernización', 'lampara', 'modelo legado', '072-9981'] as $search) {
             $this->actingAs($user)->get(route('reports.material-tracking', [
                 'search' => $search,
             ]))->assertOk()->assertInertia(fn (Assert $page) => $page
@@ -1209,6 +1368,14 @@ class MaterialControlTest extends TestCase
                 ->where('rows.0.folio', '16-583')
                 ->where('rows.1.folio', '16-583'));
         }
+
+        $this->actingAs($user)->get(route('vouchers.index', [
+            'search' => '072-9981',
+            'voucher_type_id' => 'all',
+        ]))->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('vouchers/index')
+            ->has('vouchers.data', 1)
+            ->where('vouchers.data.0.folio', '16-583'));
 
         $this->actingAs($user)->get(route('reports.material-tracking', [
             'search' => 'jose luis',
@@ -1225,7 +1392,7 @@ class MaterialControlTest extends TestCase
         [$user] = $this->trackingSearchFixtures();
 
         $response = $this->actingAs($user)->get(route('reports.export', [
-            'search' => 'jose luis',
+            'search' => '072-9981',
         ]));
 
         $response->assertOk();
@@ -1243,6 +1410,9 @@ class MaterialControlTest extends TestCase
 
         $zip->close();
         $this->assertStringContainsString('16-583', $xml);
+        $this->assertStringContainsString('OS-072-9981', $xml);
+        $this->assertStringContainsString('Parque Guadiana, acceso norte', $xml);
+        $this->assertStringContainsString('Se atendió el reporte ciudadano.', $xml);
         $this->assertStringNotContainsString('16584', $xml);
         $this->assertStringNotContainsString('3753', $xml);
     }
@@ -1675,7 +1845,7 @@ class MaterialControlTest extends TestCase
             'usage_description' => 'Modernización de alumbrado',
         ]);
         $matching->destinations()->attach($destination);
-        VoucherItem::factory()->create([
+        $matchingItem = VoucherItem::factory()->create([
             'voucher_id' => $matching->id,
             'material_id' => $lamp->id,
             'unit_id' => $unit->id,
@@ -1688,6 +1858,26 @@ class MaterialControlTest extends TestCase
             'unit_id' => $unit->id,
             'description_snapshot' => 'Modelo legado para fotocelda',
             'quantity' => 4,
+        ]);
+        $applicationReport = MaterialApplicationReport::create([
+            'voucher_id' => $matching->id,
+            'occurred_on' => '2026-08-27',
+            'reference' => 'OS-072-9981',
+            'service_order_type' => ServiceOrderType::CitizenService072,
+            'location' => 'Parque Guadiana, acceso norte',
+            'notes' => 'Se atendió el reporte ciudadano.',
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+        MaterialApplication::create([
+            'voucher_item_id' => $matchingItem->id,
+            'application_report_id' => $applicationReport->id,
+            'occurred_on' => '2026-08-27',
+            'quantity' => 1,
+            'reference' => 'OS-072-9981',
+            'destination_snapshot' => 'Parque Guadiana, acceso norte',
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
         ]);
 
         $other = Voucher::factory()->create([
