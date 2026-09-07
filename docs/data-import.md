@@ -58,13 +58,15 @@ php artisan catalog:sync-material-units --apply
 
 La sincronización sólo sustituye `s/e` cuando el catálogo versionado define una unidad curada. Conserva unidades corregidas previamente, no cambia cantidades, aplicaciones ni saldos y registra auditoría por cada material o partida actualizados. Las partidas sin una traza histórica asociada no forman parte de este procedimiento.
 
+Litro (`L`) forma parte del catálogo versionado. Aceite ATF, aceite H 300 para grúa, aceite hidráulico, aceite para motor a gasolina, anticongelante, líquido para frenos, thinner y las nueve pinturas identificadas usan esta unidad. En una producción existente estas correcciones se aplican automáticamente mediante las migraciones de precisión, litros y pinturas a todas las partidas relacionadas; el comando anterior conserva exclusivamente su alcance histórico. Aerosoles y spray no forman parte de esta transformación.
+
 ## Reglas de transformación
 
 - Cada renglón de agosto representa un vale y se importa de forma atómica.
 - Una salida o entrada requiere folio, fecha, movimiento reconocido, al menos una ubicación o descripción de uso, receptor, entregador y al menos un material resuelto.
 - Si falta un dato o una referencia de catálogo, no se crea ninguna parte del vale. El renglón queda en `legacy_import_rows` con sus incidencias.
 - Los renglones `CANCELADO` crean un vale mínimo sin personas, destino ni materiales. Reservan el folio y no crean responsabilidad operativa.
-- Un renglón `Prestado` crea un vale histórico mínimo con folio y fecha. Conserva como texto libre el nombre de quien lo tiene cuando existe, pero ese nombre es opcional y no crea personas, movimiento, destinos ni materiales.
+- Un renglón `Prestado` crea un vale histórico mínimo con folio y fecha. Conserva como texto libre el nombre de quien lo tiene cuando existe, pero el importador no infiere técnico, movimiento, destinos ni materiales. La administradora puede completar posteriormente el técnico y las partidas desde la aplicación.
 - Sólo las salidas de Almacén interpretan programa y acción. Sus valores numéricos se normalizan como códigos completos; por ejemplo, `6` y `1` se resuelven como SPM-06 y SPM-06-01. Un indicador único se asigna automáticamente; una acción con varios indicadores sin dato suficiente invalida el renglón en vez de adivinar. Entradas y vales de Patio ignoran la clasificación y guardan los tres campos en `null`.
 - Una frase puede asociar varias ubicaciones y una actividad. Los ocho destinos de agosto están mapeados explícitamente; un texto no clasificado se conserva completo como descripción y marca el vale para revisión.
 - Almacén y Patio mantienen series de folio independientes. Un conflicto existente aborta antes de escribir trazas o vales.

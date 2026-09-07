@@ -56,6 +56,10 @@ La migración `2026_08_28_191433_canonicalize_voucher_item_catalog_values` aline
 
 La migración es deliberadamente irreversible porque los valores arbitrarios anteriores no pueden reconstruirse con seguridad. Antes de ejecutarla sobre una base con datos, crear y verificar un respaldo completo. Este paso es distinto de `catalog:sync-material-units`: la migración normaliza cualquier partida que no coincida con su material actual, mientras que el comando sólo corrige unidades `s/e` curadas en materiales y partidas trazadas de la importación histórica.
 
+La migración `2026_09_07_180000_add_unit_precision_and_curate_liter_materials` agrega la precisión configurable de las unidades, incorpora Litro (`L`) y promueve desde `s/e` los siete líquidos inequívocos documentados en el catálogo. La corrección se propaga de forma auditada a todas sus partidas sin modificar cantidades, aplicaciones o saldos y respeta cualquier unidad distinta de `s/e` corregida previamente. Se ejecuta como una migración pendiente en el despliegue habitual; no se debe volver a ejecutar el seeder ni usar el comando histórico para este cambio.
+
+La migración de seguimiento `2026_09_07_190000_curate_paint_materials_as_liters` aplica la misma corrección auditada a las nueve pinturas líquidas. No incluye aerosoles ni spray, preserva unidades corregidas previamente y no altera cantidades.
+
 ## Primera carga de datos en un entorno nuevo
 
 Este apartado documenta una instalación nueva e independiente. No debe
