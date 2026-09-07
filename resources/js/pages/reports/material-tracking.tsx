@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { ChevronRight, Download, Search } from 'lucide-react';
-import type { FormEvent, MouseEvent } from 'react';
+import type { FormEvent } from 'react';
 import { Fragment, useId, useState } from 'react';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
@@ -21,7 +21,14 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { VoucherModalLink } from '@/components/voucher-dialogs';
+import {
+    VoucherModalLink,
+    useVoucherDialogs,
+} from '@/components/voucher-dialogs';
+import {
+    AbstractMaterialQuantity,
+    VoucherMaterialDetailRow,
+} from '@/components/voucher-material-summary';
 import { useReactiveFilters } from '@/hooks/use-reactive-filters';
 import { formatDate, formatQuantity } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -631,6 +638,7 @@ function TechnicianTable({
 }
 
 function DetailTable({ rows }: { rows: TrackingRow[] }) {
+    const dialogs = useVoucherDialogs();
     const summaries = groupTrackingRows(rows);
     const sorted = useTableSort(summaries, 'folio', 'desc', {
         folio: (row) => row.folio,
@@ -656,17 +664,6 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
 
             return next;
         });
-    };
-
-    const toggleFromRow = (
-        event: MouseEvent<HTMLTableRowElement>,
-        voucherId: number,
-    ) => {
-        if ((event.target as HTMLElement).closest('a,button')) {
-            return;
-        }
-
-        toggleVoucher(voucherId);
     };
 
     return (
@@ -719,9 +716,15 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                             <Fragment key={row.voucher_id}>
                                 <TableRow
                                     className="cursor-pointer"
-                                    onClick={(event) =>
-                                        toggleFromRow(event, row.voucher_id)
-                                    }
+                                    onClick={(event) => {
+                                        if (
+                                            !(
+                                                event.target as HTMLElement
+                                            ).closest('a,button')
+                                        ) {
+                                            dialogs.openDetail(row.voucher_id);
+                                        }
+                                    }}
                                 >
                                     <TableCell>
                                         <div className="flex items-center gap-2">
@@ -771,41 +774,26 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                                     <TableCell className="max-w-72 whitespace-normal">
                                         {row.destination_summary ?? '—'}
                                     </TableCell>
-                                    <AbstractQuantity
+                                    <AbstractMaterialQuantity
                                         value={row.delivered_total}
                                     />
-                                    <AbstractQuantity value={row.used_total} />
-                                    <AbstractQuantity
+                                    <AbstractMaterialQuantity
+                                        value={row.used_total}
+                                    />
+                                    <AbstractMaterialQuantity
                                         value={row.pending_total}
                                         emphasized
                                     />
                                 </TableRow>
-                                <TableRow
-                                    aria-hidden={!expanded}
-                                    className="border-0 hover:bg-transparent"
-                                >
-                                    <TableCell
-                                        colSpan={7}
-                                        className="p-0 whitespace-normal"
-                                    >
-                                        <div
-                                            id={detailId}
-                                            className={cn(
-                                                'grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none',
-                                                expanded
-                                                    ? 'grid-rows-[1fr] opacity-100'
-                                                    : 'pointer-events-none grid-rows-[0fr] opacity-0',
-                                            )}
-                                        >
-                                            <div className="min-h-0 overflow-hidden">
-                                                <VoucherMaterialBreakdown
-                                                    folio={row.folio}
-                                                    rows={row.items}
-                                                />
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
+                                <VoucherMaterialDetailRow
+                                    expanded={expanded}
+                                    id={detailId}
+                                    colSpan={7}
+                                    folio={row.folio}
+                                    items={row.items}
+                                    primaryLabel="Entregado"
+                                    description="Cantidades y unidades de las partidas que coinciden con los filtros actuales."
+                                />
                             </Fragment>
                         );
                     })}
@@ -819,113 +807,6 @@ function DetailTable({ rows }: { rows: TrackingRow[] }) {
                 </TableBody>
             </Table>
         </DataTableSurface>
-    );
-}
-
-function VoucherMaterialBreakdown({
-    folio,
-    rows,
-}: {
-    folio: string;
-    rows: TrackingRow[];
-}) {
-    return (
-        <div className="px-4 pt-3 pb-5 pl-16">
-            <div className="overflow-hidden rounded-xl border bg-surface-muted/55">
-                <div className="border-b px-4 py-3">
-                    <p className="text-sm font-semibold">
-                        Materiales del vale {folio}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                        Cantidades y unidades de las partidas que coinciden con
-                        los filtros actuales.
-                    </p>
-                </div>
-                <Table
-                    className="min-w-[680px]"
-                    containerClassName="overflow-visible"
-                >
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Material</TableHead>
-                            <TableHead>Unidad</TableHead>
-                            <TableHead className="text-right">
-                                Entregado
-                            </TableHead>
-                            <TableHead className="text-right">
-                                Aplicado
-                            </TableHead>
-                            <TableHead className="text-right">
-                                Pendiente
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {rows.map((row) => (
-                            <TableRow key={row.id}>
-                                <TableCell className="max-w-md font-medium whitespace-normal">
-                                    {row.description}
-                                </TableCell>
-                                <TableCell>{row.unit.symbol}</TableCell>
-                                <BreakdownQuantity value={row.quantity} />
-                                <BreakdownQuantity value={row.used_quantity} />
-                                <BreakdownQuantity
-                                    value={row.pending_quantity}
-                                    emphasized
-                                />
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
-        </div>
-    );
-}
-
-function BreakdownQuantity({
-    value,
-    emphasized = false,
-}: {
-    value: string;
-    emphasized?: boolean;
-}) {
-    const negative = Number(value) < 0;
-
-    return (
-        <TableCell
-            className={cn(
-                'text-right tabular-nums',
-                emphasized && 'font-semibold text-warning',
-                negative && 'text-danger',
-            )}
-        >
-            {formatQuantity(value)}
-        </TableCell>
-    );
-}
-
-function AbstractQuantity({
-    value,
-    emphasized = false,
-}: {
-    value: number;
-    emphasized?: boolean;
-}) {
-    const negative = value < 0;
-
-    return (
-        <TableCell
-            className={cn(
-                'text-right tabular-nums',
-                emphasized && 'font-semibold text-warning',
-                negative && 'text-danger',
-            )}
-        >
-            {formatQuantity(value)}{' '}
-            <span className="text-xs font-normal text-muted-foreground">
-                mat.
-            </span>
-        </TableCell>
     );
 }
 

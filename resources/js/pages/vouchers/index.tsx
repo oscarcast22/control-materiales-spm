@@ -1,10 +1,10 @@
 import { Head, router } from '@inertiajs/react';
-import { FilePlus2, Search, Wrench } from 'lucide-react';
+import { ChevronRight, FilePlus2, Search, Send, Wrench } from 'lucide-react';
 import type { FormEvent } from 'react';
+import { Fragment, useState } from 'react';
 import { CancelledVoucherDialog } from '@/components/cancelled-voucher-dialog';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
-import { LoanedVoucherDialog } from '@/components/loaned-voucher-dialog';
 import { Page, PageHeader } from '@/components/page';
 import { Pagination } from '@/components/pagination';
 import { QuickApplicationDialog } from '@/components/quick-application-dialog';
@@ -15,6 +15,7 @@ import { StatusBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FormField, FormLabel } from '@/components/ui/form-field';
+import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import {
     Table,
@@ -28,8 +29,13 @@ import {
     VoucherModalLink,
     useVoucherDialogs,
 } from '@/components/voucher-dialogs';
+import {
+    AbstractMaterialQuantity,
+    VoucherMaterialDetailRow,
+} from '@/components/voucher-material-summary';
 import { useReactiveFilters } from '@/hooks/use-reactive-filters';
 import { formatDate } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import type {
     MaterialApplicationFormOptions,
     Named,
@@ -113,6 +119,22 @@ export default function VoucherIndex({
         serialize: serializeVoucherFilters,
     });
     const dialogs = useVoucherDialogs();
+    const [expandedVouchers, setExpandedVouchers] = useState<Set<number>>(
+        () => new Set(),
+    );
+    const toggleVoucher = (voucherId: number) => {
+        setExpandedVouchers((current) => {
+            const next = new Set(current);
+
+            if (next.has(voucherId)) {
+                next.delete(voucherId);
+            } else {
+                next.add(voucherId);
+            }
+
+            return next;
+        });
+    };
     const submit = (event: FormEvent) => {
         event.preventDefault();
         flush();
@@ -154,7 +176,12 @@ export default function VoucherIndex({
                             <CancelledVoucherDialog
                                 voucherTypes={voucherTypes}
                             />
-                            <LoanedVoucherDialog voucherTypes={voucherTypes} />
+                            <Button variant="outline" asChild>
+                                <VoucherModalLink mode="createLoaned">
+                                    <Send data-icon="inline-start" />
+                                    Registrar prestado
+                                </VoucherModalLink>
+                            </Button>
                             <QuickApplicationDialog
                                 formOptions={applicationFormOptions}
                                 trigger={
@@ -337,7 +364,7 @@ export default function VoucherIndex({
                 </FilterBar>
 
                 <DataTableSurface label="Listado de vales">
-                    <Table className="min-w-[980px]">
+                    <Table className="min-w-[1180px]">
                         <TableHeader>
                             <TableRow>
                                 <SortableTableHead
@@ -357,14 +384,6 @@ export default function VoucherIndex({
                                     onSort={() => changeSort('issued_on')}
                                 />
                                 <SortableTableHead
-                                    label="Tipo y movimiento"
-                                    active={form.sort === 'voucher_type'}
-                                    direction={
-                                        form.sort_direction as 'asc' | 'desc'
-                                    }
-                                    onSort={() => changeSort('voucher_type')}
-                                />
-                                <SortableTableHead
                                     label="Recibió"
                                     active={form.sort === 'received_by'}
                                     direction={
@@ -374,12 +393,30 @@ export default function VoucherIndex({
                                 />
                                 <TableHead>Destino</TableHead>
                                 <SortableTableHead
-                                    label="Partidas"
-                                    active={form.sort === 'items_count'}
+                                    label="Entregado"
+                                    active={form.sort === 'delivered'}
                                     direction={
                                         form.sort_direction as 'asc' | 'desc'
                                     }
-                                    onSort={() => changeSort('items_count')}
+                                    onSort={() => changeSort('delivered')}
+                                    align="right"
+                                />
+                                <SortableTableHead
+                                    label="Aplicado"
+                                    active={form.sort === 'used'}
+                                    direction={
+                                        form.sort_direction as 'asc' | 'desc'
+                                    }
+                                    onSort={() => changeSort('used')}
+                                    align="right"
+                                />
+                                <SortableTableHead
+                                    label="Pendiente"
+                                    active={form.sort === 'pending'}
+                                    direction={
+                                        form.sort_direction as 'asc' | 'desc'
+                                    }
+                                    onSort={() => changeSort('pending')}
                                     align="right"
                                 />
                                 <TableHead>Estado</TableHead>
@@ -389,89 +426,183 @@ export default function VoucherIndex({
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {vouchers.data.map((voucher) => (
-                                <TableRow
-                                    key={voucher.id}
-                                    className="cursor-pointer"
-                                    onClick={(event) => {
-                                        if (
-                                            !(
-                                                event.target as HTMLElement
-                                            ).closest(
-                                                'a,button,input,select,textarea',
-                                            )
-                                        ) {
-                                            dialogs.openDetail(voucher.id);
-                                        }
-                                    }}
-                                >
-                                    <TableCell>
-                                        <VoucherModalLink
-                                            mode="detail"
-                                            voucherId={voucher.id}
-                                            className="font-semibold text-primary underline-offset-4 hover:underline"
+                            {vouchers.data.map((voucher) => {
+                                const expanded = expandedVouchers.has(
+                                    voucher.id,
+                                );
+                                const detailId = `voucher-${voucher.id}-materials`;
+
+                                return (
+                                    <Fragment key={voucher.id}>
+                                        <TableRow
+                                            className="cursor-pointer"
+                                            onClick={(event) => {
+                                                if (
+                                                    !(
+                                                        event.target as HTMLElement
+                                                    ).closest(
+                                                        'a,button,input,select,textarea',
+                                                    )
+                                                ) {
+                                                    dialogs.openDetail(
+                                                        voucher.id,
+                                                    );
+                                                }
+                                            }}
                                         >
-                                            Vale {voucher.folio}
-                                        </VoucherModalLink>
-                                    </TableCell>
-                                    <TableCell>
-                                        {formatDate(voucher.issued_on)}
-                                    </TableCell>
-                                    <TableCell>
-                                        <p className="font-medium">
-                                            {voucher.voucher_type.name}
-                                        </p>
-                                        <p className="mt-0.5 text-xs text-muted-foreground">
-                                            {voucher.direction === 'entry'
-                                                ? 'Entrada'
-                                                : voucher.direction === 'exit'
-                                                  ? 'Salida'
-                                                  : 'Sin movimiento'}
-                                        </p>
-                                    </TableCell>
-                                    <TableCell>
-                                        {voucher.received_by?.name ?? '—'}
-                                    </TableCell>
-                                    <TableCell className="max-w-md truncate">
-                                        {voucher.destination_summary ?? '—'}
-                                    </TableCell>
-                                    <TableCell className="text-right tabular-nums">
-                                        {voucher.items_count}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            <StatusBadge
-                                                state={voucher.balance_state}
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    {voucher.items.length >
+                                                    0 ? (
+                                                        <IconButton
+                                                            type="button"
+                                                            variant="ghost"
+                                                            label={`${expanded ? 'Ocultar' : 'Mostrar'} materiales del vale ${voucher.folio}`}
+                                                            aria-expanded={
+                                                                expanded
+                                                            }
+                                                            aria-controls={
+                                                                detailId
+                                                            }
+                                                            onClick={(
+                                                                event,
+                                                            ) => {
+                                                                event.stopPropagation();
+                                                                toggleVoucher(
+                                                                    voucher.id,
+                                                                );
+                                                            }}
+                                                            className="-ml-2 shrink-0 text-muted-foreground hover:text-primary"
+                                                        >
+                                                            <ChevronRight
+                                                                aria-hidden="true"
+                                                                strokeWidth={
+                                                                    1.5
+                                                                }
+                                                                className={cn(
+                                                                    'size-4 transition-transform duration-200 ease-out motion-reduce:transition-none',
+                                                                    expanded &&
+                                                                        'rotate-90',
+                                                                )}
+                                                            />
+                                                        </IconButton>
+                                                    ) : (
+                                                        <span
+                                                            aria-hidden="true"
+                                                            className="-ml-2 size-10 shrink-0"
+                                                        />
+                                                    )}
+                                                    <div>
+                                                        <VoucherModalLink
+                                                            mode="detail"
+                                                            voucherId={
+                                                                voucher.id
+                                                            }
+                                                            className="font-semibold text-primary underline-offset-4 hover:underline"
+                                                        >
+                                                            Vale {voucher.folio}
+                                                        </VoucherModalLink>
+                                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                                            {
+                                                                voucher
+                                                                    .voucher_type
+                                                                    .name
+                                                            }{' '}
+                                                            ·{' '}
+                                                            {voucherMovementLabel(
+                                                                voucher,
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                {formatDate(voucher.issued_on)}
+                                            </TableCell>
+                                            <TableCell>
+                                                {voucher.received_by?.name ??
+                                                    '—'}
+                                            </TableCell>
+                                            <TableCell className="w-64 max-w-64 whitespace-normal">
+                                                <p className="line-clamp-2 leading-5">
+                                                    {voucher.destination_summary ??
+                                                        '—'}
+                                                </p>
+                                            </TableCell>
+                                            <AbstractMaterialQuantity
+                                                value={
+                                                    voucher.material_totals
+                                                        .registered_quantity
+                                                }
                                             />
-                                            {voucher.needs_review && (
-                                                <Badge variant="warning">
-                                                    Requiere revisión
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            asChild
-                                        >
-                                            <VoucherModalLink
-                                                mode="edit"
-                                                voucherId={voucher.id}
-                                            >
-                                                Editar
-                                                <span className="sr-only">
-                                                    vale {voucher.folio}
-                                                </span>
-                                            </VoucherModalLink>
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                                            <AbstractMaterialQuantity
+                                                value={
+                                                    voucher.material_totals
+                                                        .applied_quantity
+                                                }
+                                            />
+                                            <AbstractMaterialQuantity
+                                                value={
+                                                    voucher.material_totals
+                                                        .pending_quantity
+                                                }
+                                                emphasized
+                                            />
+                                            <TableCell>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    <StatusBadge
+                                                        state={
+                                                            voucher.balance_state
+                                                        }
+                                                    />
+                                                    {voucher.needs_review && (
+                                                        <Badge variant="warning">
+                                                            Requiere revisión
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    asChild
+                                                >
+                                                    <VoucherModalLink
+                                                        mode="edit"
+                                                        voucherId={voucher.id}
+                                                    >
+                                                        Editar
+                                                        <span className="sr-only">
+                                                            vale {voucher.folio}
+                                                        </span>
+                                                    </VoucherModalLink>
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                        {voucher.items.length > 0 && (
+                                            <VoucherMaterialDetailRow
+                                                expanded={expanded}
+                                                id={detailId}
+                                                colSpan={9}
+                                                folio={voucher.folio}
+                                                items={voucher.items}
+                                                primaryLabel={primaryQuantityLabel(
+                                                    voucher,
+                                                )}
+                                                balancesApply={
+                                                    voucher.material_totals
+                                                        .applied_quantity !==
+                                                    null
+                                                }
+                                            />
+                                        )}
+                                    </Fragment>
+                                );
+                            })}
                             {vouchers.data.length === 0 && (
                                 <TableEmpty
-                                    colSpan={8}
+                                    colSpan={9}
                                     title="No se encontraron vales"
                                     description="Ajusta los filtros o captura un nuevo vale para comenzar."
                                 />
@@ -506,4 +637,36 @@ export default function VoucherIndex({
             </Page>
         </>
     );
+}
+
+function voucherMovementLabel(voucher: Voucher) {
+    if (voucher.status === 'loaned') {
+        return 'Prestado';
+    }
+
+    if (voucher.status === 'cancelled') {
+        return 'Cancelado';
+    }
+
+    if (voucher.direction === 'entry') {
+        return 'Entrada';
+    }
+
+    if (voucher.direction === 'exit') {
+        return 'Salida';
+    }
+
+    return 'Sin movimiento';
+}
+
+function primaryQuantityLabel(voucher: Voucher) {
+    if (voucher.status === 'loaned') {
+        return 'Prestado';
+    }
+
+    if (voucher.status === 'cancelled') {
+        return 'Registrado';
+    }
+
+    return voucher.direction === 'entry' ? 'Recibido' : 'Entregado';
 }

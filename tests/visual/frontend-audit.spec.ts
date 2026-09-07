@@ -670,10 +670,51 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
             await expect(
                 page.getByRole('columnheader', { name: 'Fecha', exact: true }),
             ).toHaveAttribute('aria-sort', 'none');
+
+            for (const column of ['Entregado', 'Aplicado', 'Pendiente']) {
+                await expect(
+                    page.getByRole('columnheader', {
+                        name: column,
+                        exact: true,
+                    }),
+                ).toHaveAttribute('aria-sort', 'none');
+            }
+
+            await expect(
+                page.getByRole('columnheader', {
+                    name: 'Partidas',
+                    exact: true,
+                }),
+            ).toHaveCount(0);
             await expect(
                 page.getByRole('button', { name: 'Aplicar filtros' }),
             ).toHaveCount(0);
             await expect(page.getByText('Sin filtros activos')).toBeVisible();
+
+            const voucherMaterialToggles = page.getByRole('button', {
+                name: /materiales del vale/,
+            });
+
+            if ((await voucherMaterialToggles.count()) > 0) {
+                const firstToggle = voucherMaterialToggles.first();
+                await firstToggle.click();
+                await expect(firstToggle).toHaveAttribute(
+                    'aria-expanded',
+                    'true',
+                );
+                const detailId = await firstToggle.getAttribute(
+                    'aria-controls',
+                );
+                await expect(page.locator(`#${detailId}`)).toBeVisible();
+
+                const voucherRow = firstToggle.locator('xpath=ancestor::tr');
+                await voucherRow.getByRole('cell').nth(1).click();
+                await expect(page.getByRole('dialog')).toBeVisible();
+                await page
+                    .getByRole('dialog')
+                    .getByRole('button', { name: 'Cerrar diálogo' })
+                    .click();
+            }
 
             await page.goto('/vouchers/create', { waitUntil: 'networkidle' });
             const voucherTypeSelect = page.locator('#voucher-type');
@@ -771,6 +812,13 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                 page.getByRole('heading', {
                     name: 'Registrar folio prestado',
                 }),
+            ).toBeVisible();
+            await expect(
+                page.getByLabel('Persona responsable (opcional)'),
+            ).toBeVisible();
+            await expect(page.getByLabel('Técnico (opcional)')).toBeVisible();
+            await expect(
+                page.getByRole('heading', { name: 'Material prestado' }),
             ).toBeVisible();
             await page.waitForTimeout(250);
             await page.screenshot({
@@ -961,6 +1009,14 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                         'true',
                     );
                 }
+
+                const trackingRow = firstToggle.locator('xpath=ancestor::tr');
+                await trackingRow.getByRole('cell').nth(1).click();
+                await expect(page.getByRole('dialog')).toBeVisible();
+                await page
+                    .getByRole('dialog')
+                    .getByRole('button', { name: 'Cerrar diálogo' })
+                    .click();
 
                 await page.waitForTimeout(250);
                 await page.screenshot({
