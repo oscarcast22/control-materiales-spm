@@ -3,17 +3,15 @@ import { Send } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
+import {
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+} from '@/components/modal-shell';
 import { SimpleSelect } from '@/components/simple-select';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { VoucherType } from '@/types';
@@ -50,113 +48,135 @@ export function LoanedVoucherDialog({
                     Registrar prestado
                 </Button>
             </DialogTrigger>
-            <DialogContent>
-                <form onSubmit={submit} className="flex flex-col gap-5">
-                    <DialogHeader>
-                        <DialogTitle>Registrar folio prestado</DialogTitle>
-                        <DialogDescription>
-                            Conserva la continuidad de la serie. Este registro
-                            no tendrá técnico, destino ni materiales.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <FieldGroup className="grid gap-4 sm:grid-cols-2">
-                        <Field
-                            data-invalid={
-                                Boolean(form.errors.voucher_type_id) ||
-                                undefined
-                            }
-                        >
-                            <FieldLabel htmlFor="loaned-voucher-type">
-                                Tipo de vale
-                            </FieldLabel>
-                            <SimpleSelect
-                                id="loaned-voucher-type"
-                                value={form.data.voucher_type_id}
-                                onValueChange={(value) =>
-                                    form.setData('voucher_type_id', value)
+            <ModalContent size="form">
+                <form
+                    onSubmit={submit}
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                >
+                    <ModalHeader
+                        icon={<Send aria-hidden="true" />}
+                        title="Registrar folio prestado"
+                    />
+                    <ModalBody>
+                        <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                            <Field
+                                data-invalid={
+                                    Boolean(form.errors.voucher_type_id) ||
+                                    undefined
                                 }
-                                options={voucherTypes.map((type) => ({
-                                    value: String(type.id),
-                                    label: type.name,
-                                }))}
-                                placeholder="Seleccionar tipo"
-                                invalid={Boolean(form.errors.voucher_type_id)}
-                            />
-                            <InputError message={form.errors.voucher_type_id} />
-                        </Field>
-                        <Field
-                            data-invalid={
-                                Boolean(form.errors.folio) || undefined
-                            }
-                        >
-                            <FieldLabel htmlFor="loaned-voucher-folio">
-                                Folio
-                            </FieldLabel>
-                            <Input
-                                id="loaned-voucher-folio"
-                                value={form.data.folio}
-                                onChange={(event) =>
-                                    form.setData('folio', event.target.value)
-                                }
-                                placeholder="Ej. 16576"
-                                aria-invalid={
+                            >
+                                <FieldLabel htmlFor="loaned-voucher-type">
+                                    Tipo de vale
+                                </FieldLabel>
+                                <SimpleSelect
+                                    id="loaned-voucher-type"
+                                    value={form.data.voucher_type_id}
+                                    onValueChange={(value) =>
+                                        form.setData('voucher_type_id', value)
+                                    }
+                                    options={voucherTypes.map((type) => ({
+                                        value: String(type.id),
+                                        label: type.name,
+                                    }))}
+                                    placeholder="Seleccionar tipo"
+                                    invalid={Boolean(
+                                        form.errors.voucher_type_id,
+                                    )}
+                                />
+                                <InputError
+                                    message={form.errors.voucher_type_id}
+                                />
+                            </Field>
+                            <Field
+                                data-invalid={
                                     Boolean(form.errors.folio) || undefined
                                 }
-                            />
-                            <InputError message={form.errors.folio} />
-                        </Field>
-                        <Field
-                            data-invalid={
-                                Boolean(form.errors.issued_on) || undefined
-                            }
-                        >
-                            <FieldLabel htmlFor="loaned-voucher-date">
-                                Fecha
-                            </FieldLabel>
-                            <Input
-                                id="loaned-voucher-date"
-                                type="date"
-                                value={form.data.issued_on}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'issued_on',
-                                        event.target.value,
-                                    )
-                                }
-                                aria-invalid={
+                            >
+                                <FieldLabel htmlFor="loaned-voucher-folio">
+                                    Folio
+                                </FieldLabel>
+                                <Input
+                                    id="loaned-voucher-folio"
+                                    value={form.data.folio}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'folio',
+                                            event.target.value,
+                                        )
+                                    }
+                                    placeholder="Ej. 16576"
+                                    aria-invalid={
+                                        Boolean(form.errors.folio) || undefined
+                                    }
+                                />
+                                <InputError message={form.errors.folio} />
+                            </Field>
+                            <Field
+                                data-invalid={
                                     Boolean(form.errors.issued_on) || undefined
                                 }
-                            />
-                            <InputError message={form.errors.issued_on} />
-                        </Field>
-                        <Field
-                            data-invalid={
-                                Boolean(form.errors.loaned_to_name) || undefined
-                            }
-                        >
-                            <FieldLabel htmlFor="loaned-voucher-name">
-                                Prestado a (opcional)
-                            </FieldLabel>
-                            <Input
-                                id="loaned-voucher-name"
-                                value={form.data.loaned_to_name}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'loaned_to_name',
-                                        event.target.value,
-                                    )
-                                }
-                                placeholder="Nombre libre"
-                                autoComplete="off"
-                                aria-invalid={
+                            >
+                                <FieldLabel htmlFor="loaned-voucher-date">
+                                    Fecha
+                                </FieldLabel>
+                                <Input
+                                    id="loaned-voucher-date"
+                                    type="date"
+                                    value={form.data.issued_on}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'issued_on',
+                                            event.target.value,
+                                        )
+                                    }
+                                    aria-invalid={
+                                        Boolean(form.errors.issued_on) ||
+                                        undefined
+                                    }
+                                />
+                                <InputError message={form.errors.issued_on} />
+                            </Field>
+                            <Field
+                                data-invalid={
                                     Boolean(form.errors.loaned_to_name) ||
                                     undefined
                                 }
-                            />
-                            <InputError message={form.errors.loaned_to_name} />
-                        </Field>
-                    </FieldGroup>
-                    <DialogFooter>
+                            >
+                                <FieldLabel htmlFor="loaned-voucher-name">
+                                    Prestado a (opcional)
+                                </FieldLabel>
+                                <Input
+                                    id="loaned-voucher-name"
+                                    value={form.data.loaned_to_name}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'loaned_to_name',
+                                            event.target.value,
+                                        )
+                                    }
+                                    placeholder="Nombre libre"
+                                    autoComplete="off"
+                                    aria-invalid={
+                                        Boolean(form.errors.loaned_to_name) ||
+                                        undefined
+                                    }
+                                />
+                                <InputError
+                                    message={form.errors.loaned_to_name}
+                                />
+                            </Field>
+                        </FieldGroup>
+                    </ModalBody>
+                    <ModalFooter>
+                        <DialogClose asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={form.processing}
+                            >
+                                Cancelar
+                            </Button>
+                        </DialogClose>
                         <Button
                             type="submit"
                             disabled={form.processing}
@@ -166,9 +186,9 @@ export function LoanedVoucherDialog({
                                 ? 'Registrando…'
                                 : 'Registrar folio'}
                         </Button>
-                    </DialogFooter>
+                    </ModalFooter>
                 </form>
-            </DialogContent>
+            </ModalContent>
         </Dialog>
     );
 }

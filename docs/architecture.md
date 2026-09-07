@@ -37,7 +37,7 @@ La pantalla y el XLSX de seguimiento consumen el mismo agregador para evitar res
 
 Las consultas de vales y seguimiento comparten el mismo alcance por tipo de vale. El parámetro `voucher_type_id` acepta un identificador activo o `all`; cuando se omite, el sistema usa Almacén (`warehouse`). El frontend conserva este alcance en ordenamiento, paginación, enlaces de detalle y exportación, y actualiza los resultados mediante visitas parciales de Inertia. El resumen no acepta este filtro: siempre agrega Almacén y Patio en un panorama general.
 
-Seguimiento y su exportación aceptan el parámetro textual `search`. La búsqueda localiza vales completos por folio, técnico receptor, destino, descripción de actividad o material y se combina con los demás filtros activos.
+Vales, Mis vales, Seguimiento y su exportación aceptan el parámetro textual `search`. La búsqueda localiza vales completos por folio u orden de servicio vigente; Seguimiento además busca técnico receptor, destino, descripción de actividad o material. El selector rápido reutiliza el alcance de folio u orden y conserva sus filtros de salida activa con saldo pendiente. Las aplicaciones anuladas no producen coincidencias.
 
 Catálogos acepta `section=people|materials|destinations|programs` y abre Personas cuando el parámetro falta o es inválido. Personas, Materiales y Ubicaciones se consultan en páginas de 25 registros; el programa fijo, las acciones y los indicadores se presentan juntos. `search`, `status` y `review` se aplican en el servidor, con `role` exclusivo de Personas y `voucher_type_id` exclusivo de Materiales. La búsqueda de nombres usa claves normalizadas y alias. Los cambios de filtro y página reemplazan únicamente las props `catalog` y `filters` mediante visitas parciales de Inertia; las unidades y tipos de vale sólo se cargan para la sección que los necesita.
 
@@ -89,7 +89,7 @@ erDiagram
 | `destination_voucher`          | Relación de una o varias ubicaciones con cada vale.                                                                |
 | `vouchers`                     | Cabecera del documento, estado, revisión y responsables.                                                           |
 | `voucher_items`                | Cantidad entregada y referencias al material y unidad canónicos; la descripción se mantiene sincronizada para búsquedas y presentación. |
-| `material_application_reports` | Agrupa una aplicación capturada en bloque: fecha, orden de servicio, comentario común, desglose de materiales y evidencia opcional. Los históricos pueden conservar orden nula. |
+| `material_application_reports` | Agrupa una aplicación capturada en bloque: fecha, tipo y número de orden de servicio, ubicación o dirección libre, detalles comunes, desglose de materiales y evidencia opcional. Los históricos pueden conservar orden y tipo nulos. |
 | `material_applications`        | Cantidad aplicada a una partida; una anulación conserva fecha, usuario y motivo.                                   |
 | `voucher_attachments`          | Metadatos de evidencia guardada en almacenamiento privado.                                                         |
 | `audit_events`                 | Valores anteriores y posteriores de operaciones sensibles.                                                         |
@@ -100,19 +100,20 @@ erDiagram
 
 - `vouchers(storage_location_id, folio_key)` es único. `folio_key` deriva del folio normalizado.
 - Las cantidades se almacenan con decimal de tres posiciones por compatibilidad de datos, pero toda captura operativa acepta únicamente números enteros positivos (o cero al anular una aplicación desde su edición).
-- Una aplicación nueva requiere orden de servicio y no puede superar el pendiente; las partidas se bloquean durante la transacción para evitar carreras.
+- Una aplicación nueva requiere tipo y número de orden de servicio y no puede superar el pendiente; las partidas se bloquean durante la transacción para evitar carreras. Los tipos se validan contra un enum extensible que inicialmente ofrece Normal y 072; la columna se conserva como texto para permitir nuevas opciones mediante cambios de aplicación sin alterar el esquema.
 - Una aplicación anulada deja de afectar las sumas, pero permanece auditable. Corregir una cantidad requiere motivo, anula el valor anterior y crea su reemplazo dentro del mismo grupo de aplicación.
 - Una partida con aplicaciones vigentes no puede cambiar de material, cantidad ni eliminarse; primero se anulan las aplicaciones con motivo.
 - La unidad de cada partida siempre deriva de la unidad predeterminada del material. Corregir el nombre o la unidad canónica del material se propaga a todos sus vales, conserva la cantidad numérica y deja auditoría.
 - Los códigos y relaciones de SPM-06, acciones e indicadores son inmutables; acciones e indicadores sólo permiten corregir nombre y estado.
 - No se puede desactivar una unidad usada por materiales activos, la última persona activa para una función necesaria, la última acción disponible ni el último indicador de una acción activa.
 - Un registro de catálogo sólo se elimina si no referencia vales ni otras dependencias que perderían información: unidades no usadas por materiales, partidas o ajustes reservados, y personas que no sean la última persona activa para una función necesaria. El programa SPM-06, sus acciones e indicadores no se eliminan desde la aplicación; únicamente se corrigen sus nombres y estados. La eliminación permitida deja auditoría y la base restringe las referencias históricas.
-- Un vale con movimientos vigentes no puede cancelarse.
+- Un vale con aplicaciones vigentes no puede cancelarse. Después de anularlas con motivo, el vale puede cancelarse con una razón opcional; la operación siempre conserva fecha, usuario y auditoría.
 - Un cancelado mínimo puede crearse sin movimiento, personas, destino ni partidas para conservar la serie física.
+- Las partidas de una salida cancelada se conservan sin alterar `quantity` ni el cálculo histórico `pendiente = entregado - aplicado`; la interfaz las clasifica como material sin usar y el estado cancelado excluye el vale de la responsabilidad operativa. Esta clasificación no crea entradas, devoluciones ni ajustes de inventario.
 - Un prestado mínimo sólo conserva tipo, folio, fecha y un nombre libre opcional; nunca se deriva de un vale operativo ni admite partidas.
 - Un vale operativo requiere al menos una ubicación o una descripción de uso o actividad; ambas pueden coexistir.
 - Toda salida activa de Almacén o Patio conserva `program_id`, `action_id` y `action_indicator_id`. El programa es siempre SPM-06; el indicador debe pertenecer a la acción. Entradas, cancelados y prestados conservan los tres campos en `null`.
-- Las aplicaciones conservan un resumen del destino existente al momento de registrarse, aunque el vale se edite después.
+- La ubicación o dirección de una aplicación es texto libre opcional e independiente del destino del vale. El catálogo de ubicaciones sólo aporta sugerencias de llenado y una aplicación nunca crea registros en él.
 - La continuidad numérica inicia por defecto en Almacén `16576` y Patio `3753`; los inicios se configuran por entorno.
 - Sólo las salidas activas desde `2026-01-01` alimentan el seguimiento. Entradas, prestados y cancelados quedan fuera.
 - Las agregaciones cuantitativas se separan por `material_id` y `unit_id`.

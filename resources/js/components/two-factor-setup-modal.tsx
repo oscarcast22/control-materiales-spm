@@ -4,10 +4,10 @@ import { Check, Copy, ScanLine } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
+import { ModalBody, ModalContent } from '@/components/modal-shell';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
-    DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
@@ -104,7 +104,7 @@ function TwoFactorSetupStep({
                     <div className="relative flex w-full items-center justify-center">
                         <div className="absolute inset-0 top-1/2 h-px w-full bg-border" />
                         <span className="relative bg-card px-2 py-1">
-                            or, enter the code manually
+                            o ingresa el código manualmente
                         </span>
                     </div>
 
@@ -323,8 +323,8 @@ export default function TwoFactorSetupModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader className="flex items-center justify-center">
+            <ModalContent size="flow" className="sm:max-w-md">
+                <DialogHeader className="flex shrink-0 items-center justify-center border-b border-border/80 px-5 pt-5 pr-16 pb-4 sm:px-6 sm:pt-6 sm:pr-16">
                     <GridScanIcon />
                     <DialogTitle>{modalConfig.title}</DialogTitle>
                     <DialogDescription className="text-center">
@@ -332,7 +332,7 @@ export default function TwoFactorSetupModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex flex-col items-center gap-5">
+                <ModalBody className="flex flex-col items-center gap-5">
                     {showVerificationStep ? (
                         <TwoFactorVerificationStep
                             onClose={handleClose}
@@ -347,8 +347,8 @@ export default function TwoFactorSetupModal({
                             errors={errors}
                         />
                     )}
-                </div>
-            </DialogContent>
+                </ModalBody>
+            </ModalContent>
         </Dialog>
     );
 }

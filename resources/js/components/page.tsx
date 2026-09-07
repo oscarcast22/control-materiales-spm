@@ -4,9 +4,11 @@ import { cn } from '@/lib/utils';
 export function Page({
     children,
     width = 'wide',
+    className,
 }: {
     children: ReactNode;
     width?: 'content' | 'wide' | 'full';
+    className?: string;
 }) {
     const widths = {
         content: 'max-w-[1280px]',
@@ -19,6 +21,7 @@ export function Page({
             className={cn(
                 'mx-auto flex w-full flex-1 flex-col gap-6 px-4 py-6 min-[1200px]:px-8 min-[1200px]:py-8 md:px-6',
                 widths[width],
+                className,
             )}
         >
             {children}

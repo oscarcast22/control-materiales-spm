@@ -13,20 +13,19 @@ import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { DataTableSurface } from '@/components/data-table';
 import InputError from '@/components/input-error';
+import {
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+} from '@/components/modal-shell';
 import PasswordInput from '@/components/password-input';
 import { SimpleSelect } from '@/components/simple-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -372,108 +371,115 @@ function MaterialDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <form onSubmit={submit} className="grid gap-5">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {material
+            <ModalContent size="form">
+                <form
+                    onSubmit={submit}
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                >
+                    <ModalHeader
+                        title={
+                            material
                                 ? material.needs_review
                                     ? 'Revisar material'
                                     : 'Editar material'
-                                : 'Nuevo material'}
-                        </DialogTitle>
-                        <DialogDescription>
-                            La unidad y el nombre canónicos se reflejan en los
-                            vales relacionados sin convertir cantidades.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-2">
-                        <Label htmlFor="material-name">
-                            Nombre del material
-                        </Label>
-                        <Input
-                            id="material-name"
-                            autoFocus
-                            value={form.data.name}
-                            onChange={(event) =>
-                                form.setData('name', event.target.value)
-                            }
-                            aria-invalid={Boolean(form.errors.name)}
-                        />
-                        <InputError message={form.errors.name} />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="material-unit">Unidad habitual</Label>
-                        <SimpleSelect
-                            id="material-unit"
-                            value={form.data.default_unit_id}
-                            onValueChange={(value) =>
-                                form.setData('default_unit_id', value)
-                            }
-                            options={units
-                                .filter(
-                                    (unit) =>
-                                        unit.is_active ||
-                                        unit.id === material?.default_unit_id,
-                                )
-                                .map((unit) => ({
-                                    value: String(unit.id),
-                                    label: `${unit.name} (${unit.symbol})`,
-                                }))}
-                            placeholder="Seleccionar unidad"
-                            invalid={Boolean(form.errors.default_unit_id)}
-                        />
-                        <InputError message={form.errors.default_unit_id} />
-                    </div>
-                    <fieldset className="grid gap-2">
-                        <legend className="text-sm font-medium">
-                            Disponible en
-                        </legend>
-                        <div className="flex flex-wrap gap-4 rounded-xl border border-border bg-surface-subtle p-3">
-                            {voucherTypes.map((type) => {
-                                const value = String(type.id);
-
-                                return (
-                                    <Label
-                                        key={type.id}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Checkbox
-                                            checked={form.data.voucher_type_ids.includes(
-                                                value,
-                                            )}
-                                            onCheckedChange={(checked) =>
-                                                form.setData(
-                                                    'voucher_type_ids',
-                                                    checked
-                                                        ? [
-                                                              ...form.data
-                                                                  .voucher_type_ids,
-                                                              value,
-                                                          ]
-                                                        : form.data.voucher_type_ids.filter(
-                                                              (id) =>
-                                                                  id !== value,
-                                                          ),
-                                                )
-                                            }
-                                        />
-                                        {type.name}
-                                    </Label>
-                                );
-                            })}
+                                : 'Nuevo material'
+                        }
+                    />
+                    <ModalBody className="grid content-start gap-5">
+                        <div className="grid gap-2">
+                            <Label htmlFor="material-name">
+                                Nombre del material
+                            </Label>
+                            <Input
+                                id="material-name"
+                                autoFocus
+                                value={form.data.name}
+                                onChange={(event) =>
+                                    form.setData('name', event.target.value)
+                                }
+                                aria-invalid={Boolean(form.errors.name)}
+                            />
+                            <InputError message={form.errors.name} />
                         </div>
-                        <InputError message={form.errors.voucher_type_ids} />
-                    </fieldset>
-                    {material && (
-                        <CatalogStatusField
-                            value={form.data.is_active}
-                            onValueChange={(value) =>
-                                form.setData('is_active', value)
-                            }
-                        />
-                    )}
-                    <DialogFooter
+                        <div className="grid gap-2">
+                            <Label htmlFor="material-unit">
+                                Unidad habitual
+                            </Label>
+                            <SimpleSelect
+                                id="material-unit"
+                                value={form.data.default_unit_id}
+                                onValueChange={(value) =>
+                                    form.setData('default_unit_id', value)
+                                }
+                                options={units
+                                    .filter(
+                                        (unit) =>
+                                            unit.is_active ||
+                                            unit.id ===
+                                                material?.default_unit_id,
+                                    )
+                                    .map((unit) => ({
+                                        value: String(unit.id),
+                                        label: `${unit.name} (${unit.symbol})`,
+                                    }))}
+                                placeholder="Seleccionar unidad"
+                                invalid={Boolean(form.errors.default_unit_id)}
+                            />
+                            <InputError message={form.errors.default_unit_id} />
+                        </div>
+                        <fieldset className="grid gap-2">
+                            <legend className="text-sm font-medium">
+                                Disponible en
+                            </legend>
+                            <div className="flex flex-wrap gap-4 rounded-xl border border-border bg-surface-subtle p-3">
+                                {voucherTypes.map((type) => {
+                                    const value = String(type.id);
+
+                                    return (
+                                        <Label
+                                            key={type.id}
+                                            className="flex items-center gap-2"
+                                        >
+                                            <Checkbox
+                                                checked={form.data.voucher_type_ids.includes(
+                                                    value,
+                                                )}
+                                                onCheckedChange={(checked) =>
+                                                    form.setData(
+                                                        'voucher_type_ids',
+                                                        checked
+                                                            ? [
+                                                                  ...form.data
+                                                                      .voucher_type_ids,
+                                                                  value,
+                                                              ]
+                                                            : form.data.voucher_type_ids.filter(
+                                                                  (id) =>
+                                                                      id !==
+                                                                      value,
+                                                              ),
+                                                    )
+                                                }
+                                            />
+                                            {type.name}
+                                        </Label>
+                                    );
+                                })}
+                            </div>
+                            <InputError
+                                message={form.errors.voucher_type_ids}
+                            />
+                        </fieldset>
+                        {material && (
+                            <CatalogStatusField
+                                value={form.data.is_active}
+                                onValueChange={(value) =>
+                                    form.setData('is_active', value)
+                                }
+                            />
+                        )}
+                    </ModalBody>
+                    <ModalFooter
                         className={material ? 'sm:justify-between' : undefined}
                     >
                         {material && (
@@ -503,9 +509,9 @@ function MaterialDialog({
                                       : 'Agregar material'}
                             </Button>
                         </div>
-                    </DialogFooter>
+                    </ModalFooter>
                 </form>
-            </DialogContent>
+            </ModalContent>
         </Dialog>
     );
 }
@@ -530,54 +536,52 @@ function UnitManager({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Gestionar unidades</DialogTitle>
-                    <DialogDescription>
-                        Las unidades son compartidas por los materiales.
-                        Renombrarlas actualiza cómo se muestran los vales
-                        relacionados.
-                    </DialogDescription>
-                </DialogHeader>
-                <form
-                    onSubmit={submit}
-                    className="grid gap-3 rounded-xl border border-border bg-surface-subtle p-4 sm:grid-cols-[1fr_130px_auto]"
-                >
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="new-unit-name">Nombre</Label>
-                        <Input
-                            id="new-unit-name"
-                            value={form.data.name}
-                            onChange={(event) =>
-                                form.setData('name', event.target.value)
-                            }
-                            placeholder="Ej. Litro"
-                        />
-                        <InputError message={form.errors.name} />
+            <ModalContent size="flow">
+                <ModalHeader
+                    icon={<Ruler aria-hidden="true" />}
+                    title="Gestionar unidades"
+                />
+                <ModalBody className="grid content-start gap-5">
+                    <form
+                        onSubmit={submit}
+                        className="grid gap-3 rounded-xl border border-border bg-surface-subtle p-4 sm:grid-cols-[1fr_130px_auto]"
+                    >
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="new-unit-name">Nombre</Label>
+                            <Input
+                                id="new-unit-name"
+                                value={form.data.name}
+                                onChange={(event) =>
+                                    form.setData('name', event.target.value)
+                                }
+                                placeholder="Ej. Litro"
+                            />
+                            <InputError message={form.errors.name} />
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="new-unit-symbol">Símbolo</Label>
+                            <Input
+                                id="new-unit-symbol"
+                                value={form.data.symbol}
+                                onChange={(event) =>
+                                    form.setData('symbol', event.target.value)
+                                }
+                                placeholder="l"
+                            />
+                            <InputError message={form.errors.symbol} />
+                        </div>
+                        <Button className="self-end" disabled={form.processing}>
+                            <Plus aria-hidden="true" />
+                            Agregar
+                        </Button>
+                    </form>
+                    <div className="grid gap-2">
+                        {units.map((unit) => (
+                            <UnitRow key={unit.id} unit={unit} />
+                        ))}
                     </div>
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="new-unit-symbol">Símbolo</Label>
-                        <Input
-                            id="new-unit-symbol"
-                            value={form.data.symbol}
-                            onChange={(event) =>
-                                form.setData('symbol', event.target.value)
-                            }
-                            placeholder="l"
-                        />
-                        <InputError message={form.errors.symbol} />
-                    </div>
-                    <Button className="self-end" disabled={form.processing}>
-                        <Plus aria-hidden="true" />
-                        Agregar
-                    </Button>
-                </form>
-                <div className="grid gap-2">
-                    {units.map((unit) => (
-                        <UnitRow key={unit.id} unit={unit} />
-                    ))}
-                </div>
-            </DialogContent>
+                </ModalBody>
+            </ModalContent>
         </Dialog>
     );
 }
@@ -806,44 +810,45 @@ function DestinationDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <form onSubmit={submit} className="grid gap-5">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {destination
+            <ModalContent size="form">
+                <form
+                    onSubmit={submit}
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                >
+                    <ModalHeader
+                        title={
+                            destination
                                 ? destination.needs_review
                                     ? 'Revisar ubicación'
                                     : 'Editar ubicación'
-                                : 'Nueva ubicación'}
-                        </DialogTitle>
-                        <DialogDescription>
-                            El nombre anterior se conservará como otro nombre
-                            conocido para reconocer el histórico.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-2">
-                        <Label htmlFor="destination-name">
-                            Nombre de la ubicación
-                        </Label>
-                        <Input
-                            id="destination-name"
-                            autoFocus
-                            value={form.data.name}
-                            onChange={(event) =>
-                                form.setData('name', event.target.value)
-                            }
-                        />
-                        <InputError message={form.errors.name} />
-                    </div>
-                    {destination && (
-                        <CatalogStatusField
-                            value={form.data.is_active}
-                            onValueChange={(value) =>
-                                form.setData('is_active', value)
-                            }
-                        />
-                    )}
-                    <DialogFooter
+                                : 'Nueva ubicación'
+                        }
+                    />
+                    <ModalBody className="grid content-start gap-5">
+                        <div className="grid gap-2">
+                            <Label htmlFor="destination-name">
+                                Nombre de la ubicación
+                            </Label>
+                            <Input
+                                id="destination-name"
+                                autoFocus
+                                value={form.data.name}
+                                onChange={(event) =>
+                                    form.setData('name', event.target.value)
+                                }
+                            />
+                            <InputError message={form.errors.name} />
+                        </div>
+                        {destination && (
+                            <CatalogStatusField
+                                value={form.data.is_active}
+                                onValueChange={(value) =>
+                                    form.setData('is_active', value)
+                                }
+                            />
+                        )}
+                    </ModalBody>
+                    <ModalFooter
                         className={
                             destination ? 'sm:justify-between' : undefined
                         }
@@ -875,9 +880,9 @@ function DestinationDialog({
                                       : 'Agregar ubicación'}
                             </Button>
                         </div>
-                    </DialogFooter>
+                    </ModalFooter>
                 </form>
-            </DialogContent>
+            </ModalContent>
         </Dialog>
     );
 }
@@ -1160,67 +1165,72 @@ function PersonDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <form onSubmit={submit} className="grid gap-5">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {person
+            <ModalContent size="form">
+                <form
+                    onSubmit={submit}
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                >
+                    <ModalHeader
+                        title={
+                            person
                                 ? person.needs_review
                                     ? 'Revisar persona'
                                     : 'Editar persona'
-                                : 'Nueva persona'}
-                        </DialogTitle>
-                        <DialogDescription>
-                            Selecciona todas las funciones que puede realizar.
-                            Debe conservar al menos una.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-2">
-                        <Label htmlFor="person-name">Nombre completo</Label>
-                        <Input
-                            id="person-name"
-                            autoFocus
-                            value={form.data.name}
-                            onChange={(event) =>
-                                form.setData('name', event.target.value)
-                            }
-                        />
-                        <InputError message={form.errors.name} />
-                    </div>
-                    <fieldset className="grid gap-2">
-                        <legend className="text-sm font-medium">
-                            Funciones
-                        </legend>
-                        <div className="grid gap-3 rounded-xl border border-border bg-surface-subtle p-4 sm:grid-cols-2">
-                            {roles.map(([key, label]) => (
-                                <Label
-                                    key={key}
-                                    className="flex items-center gap-2"
-                                >
-                                    <Checkbox
-                                        checked={form.data[key]}
-                                        disabled={
-                                            key === 'can_receive_material' &&
-                                            Boolean(person?.account)
-                                        }
-                                        onCheckedChange={(value) =>
-                                            form.setData(key, Boolean(value))
-                                        }
-                                    />
-                                    {label}
-                                </Label>
-                            ))}
+                                : 'Nueva persona'
+                        }
+                    />
+                    <ModalBody className="grid content-start gap-5">
+                        <div className="grid gap-2">
+                            <Label htmlFor="person-name">Nombre completo</Label>
+                            <Input
+                                id="person-name"
+                                autoFocus
+                                value={form.data.name}
+                                onChange={(event) =>
+                                    form.setData('name', event.target.value)
+                                }
+                            />
+                            <InputError message={form.errors.name} />
                         </div>
-                    </fieldset>
-                    {person && (
-                        <CatalogStatusField
-                            value={form.data.is_active}
-                            onValueChange={(value) =>
-                                form.setData('is_active', value)
-                            }
-                        />
-                    )}
-                    <DialogFooter
+                        <fieldset className="grid gap-2">
+                            <legend className="text-sm font-medium">
+                                Funciones
+                            </legend>
+                            <div className="grid gap-3 rounded-xl border border-border bg-surface-subtle p-4 sm:grid-cols-2">
+                                {roles.map(([key, label]) => (
+                                    <Label
+                                        key={key}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Checkbox
+                                            checked={form.data[key]}
+                                            disabled={
+                                                key ===
+                                                    'can_receive_material' &&
+                                                Boolean(person?.account)
+                                            }
+                                            onCheckedChange={(value) =>
+                                                form.setData(
+                                                    key,
+                                                    Boolean(value),
+                                                )
+                                            }
+                                        />
+                                        {label}
+                                    </Label>
+                                ))}
+                            </div>
+                        </fieldset>
+                        {person && (
+                            <CatalogStatusField
+                                value={form.data.is_active}
+                                onValueChange={(value) =>
+                                    form.setData('is_active', value)
+                                }
+                            />
+                        )}
+                    </ModalBody>
+                    <ModalFooter
                         className={person ? 'sm:justify-between' : undefined}
                     >
                         {person && (
@@ -1250,9 +1260,9 @@ function PersonDialog({
                                       : 'Agregar persona'}
                             </Button>
                         </div>
-                    </DialogFooter>
+                    </ModalFooter>
                 </form>
-            </DialogContent>
+            </ModalContent>
         </Dialog>
     );
 }
@@ -1298,197 +1308,207 @@ function TechnicianAccountDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>
-                        {account
+            <ModalContent size="flow">
+                <ModalHeader
+                    icon={<KeyRound aria-hidden="true" />}
+                    title={
+                        account
                             ? 'Administrar acceso técnico'
-                            : 'Crear acceso técnico'}
-                    </DialogTitle>
-                    <DialogDescription>
-                        Cuenta vinculada a {person.name}. El nombre de usuario
-                        será el identificador principal para iniciar sesión.
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={submitDetails} className="grid gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="technician-username">
-                            Nombre de usuario
-                        </Label>
-                        <Input
-                            id="technician-username"
-                            value={details.data.username}
-                            onChange={(event) =>
-                                details.setData(
-                                    'username',
-                                    event.target.value.toLowerCase(),
-                                )
-                            }
-                            placeholder="nombre.apellido"
-                            autoComplete="off"
-                            required
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Sólo letras minúsculas, números, punto, guion y
-                            guion bajo.
-                        </p>
-                        <InputError message={details.errors.username} />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="technician-email">
-                            Correo (opcional)
-                        </Label>
-                        <Input
-                            id="technician-email"
-                            type="email"
-                            value={details.data.email}
-                            onChange={(event) =>
-                                details.setData('email', event.target.value)
-                            }
-                            placeholder="nombre@ejemplo.com"
-                            autoComplete="off"
-                        />
-                        <InputError message={details.errors.email} />
-                    </div>
-                    {!account && (
-                        <div className="grid gap-4 rounded-xl border bg-muted/25 p-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="technician-password">
-                                    Contraseña temporal
-                                </Label>
-                                <PasswordInput
-                                    id="technician-password"
-                                    value={details.data.password}
-                                    onChange={(event) =>
-                                        details.setData(
-                                            'password',
-                                            event.target.value,
-                                        )
-                                    }
-                                    autoComplete="new-password"
-                                    required
-                                />
-                                <InputError message={details.errors.password} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="technician-password-confirmation">
-                                    Confirmar contraseña
-                                </Label>
-                                <PasswordInput
-                                    id="technician-password-confirmation"
-                                    value={details.data.password_confirmation}
-                                    onChange={(event) =>
-                                        details.setData(
-                                            'password_confirmation',
-                                            event.target.value,
-                                        )
-                                    }
-                                    autoComplete="new-password"
-                                    required
-                                />
-                            </div>
-                        </div>
-                    )}
-                    {account && (
-                        <Label className="flex items-center gap-3 rounded-xl border p-3">
-                            <Checkbox
-                                checked={details.data.is_active}
-                                onCheckedChange={(value) =>
-                                    details.setData('is_active', Boolean(value))
+                            : 'Crear acceso técnico'
+                    }
+                    description={`Cuenta vinculada a ${person.name}. El nombre de usuario será el identificador principal para iniciar sesión.`}
+                />
+                <ModalBody className="grid content-start gap-5">
+                    <form onSubmit={submitDetails} className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="technician-username">
+                                Nombre de usuario
+                            </Label>
+                            <Input
+                                id="technician-username"
+                                value={details.data.username}
+                                onChange={(event) =>
+                                    details.setData(
+                                        'username',
+                                        event.target.value.toLowerCase(),
+                                    )
                                 }
+                                placeholder="nombre.apellido"
+                                autoComplete="off"
+                                required
                             />
-                            <span>
-                                <span className="block font-medium">
-                                    Acceso activo
-                                </span>
-                                <span className="block text-xs text-muted-foreground">
-                                    Al pausarlo, la persona no podrá iniciar ni
-                                    conservar sesión.
-                                </span>
-                            </span>
-                        </Label>
-                    )}
-                    <InputError
-                        message={
-                            (details.errors as Record<string, string>).account
-                        }
-                    />
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button disabled={details.processing}>
-                            {account ? 'Guardar acceso' : 'Crear cuenta'}
-                        </Button>
-                    </div>
-                </form>
-                {account && (
-                    <form
-                        onSubmit={submitReset}
-                        className="mt-2 grid gap-4 border-t pt-5"
-                    >
-                        <div>
-                            <h3 className="font-semibold">
-                                Restablecer contraseña
-                            </h3>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Define una nueva contraseña; la anterior nunca
-                                se muestra.
+                            <p className="text-xs text-muted-foreground">
+                                Sólo letras minúsculas, números, punto, guion y
+                                guion bajo.
                             </p>
+                            <InputError message={details.errors.username} />
                         </div>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                            <div className="grid gap-2">
-                                <Label htmlFor="reset-technician-password">
-                                    Nueva contraseña
-                                </Label>
-                                <PasswordInput
-                                    id="reset-technician-password"
-                                    value={reset.data.password}
-                                    onChange={(event) =>
-                                        reset.setData(
-                                            'password',
-                                            event.target.value,
+                        <div className="grid gap-2">
+                            <Label htmlFor="technician-email">
+                                Correo (opcional)
+                            </Label>
+                            <Input
+                                id="technician-email"
+                                type="email"
+                                value={details.data.email}
+                                onChange={(event) =>
+                                    details.setData('email', event.target.value)
+                                }
+                                placeholder="nombre@ejemplo.com"
+                                autoComplete="off"
+                            />
+                            <InputError message={details.errors.email} />
+                        </div>
+                        {!account && (
+                            <div className="grid gap-4 rounded-xl border bg-muted/25 p-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="technician-password">
+                                        Contraseña temporal
+                                    </Label>
+                                    <PasswordInput
+                                        id="technician-password"
+                                        value={details.data.password}
+                                        onChange={(event) =>
+                                            details.setData(
+                                                'password',
+                                                event.target.value,
+                                            )
+                                        }
+                                        autoComplete="new-password"
+                                        required
+                                    />
+                                    <InputError
+                                        message={details.errors.password}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="technician-password-confirmation">
+                                        Confirmar contraseña
+                                    </Label>
+                                    <PasswordInput
+                                        id="technician-password-confirmation"
+                                        value={
+                                            details.data.password_confirmation
+                                        }
+                                        onChange={(event) =>
+                                            details.setData(
+                                                'password_confirmation',
+                                                event.target.value,
+                                            )
+                                        }
+                                        autoComplete="new-password"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        {account && (
+                            <Label className="flex items-center gap-3 rounded-xl border p-3">
+                                <Checkbox
+                                    checked={details.data.is_active}
+                                    onCheckedChange={(value) =>
+                                        details.setData(
+                                            'is_active',
+                                            Boolean(value),
                                         )
                                     }
-                                    autoComplete="new-password"
-                                    required
                                 />
-                                <InputError message={reset.errors.password} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="reset-technician-password-confirmation">
-                                    Confirmar
-                                </Label>
-                                <PasswordInput
-                                    id="reset-technician-password-confirmation"
-                                    value={reset.data.password_confirmation}
-                                    onChange={(event) =>
-                                        reset.setData(
-                                            'password_confirmation',
-                                            event.target.value,
-                                        )
-                                    }
-                                    autoComplete="new-password"
-                                    required
-                                />
-                            </div>
+                                <span>
+                                    <span className="block font-medium">
+                                        Acceso activo
+                                    </span>
+                                    <span className="block text-xs text-muted-foreground">
+                                        Al pausarlo, la persona no podrá iniciar
+                                        ni conservar sesión.
+                                    </span>
+                                </span>
+                            </Label>
+                        )}
+                        <InputError
+                            message={
+                                (details.errors as Record<string, string>)
+                                    .account
+                            }
+                        />
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button disabled={details.processing}>
+                                {account ? 'Guardar acceso' : 'Crear cuenta'}
+                            </Button>
                         </div>
-                        <Button
-                            type="submit"
-                            variant="outline"
-                            disabled={reset.processing}
-                            className="justify-self-start"
-                        >
-                            <KeyRound data-icon="inline-start" /> Restablecer
-                            contraseña
-                        </Button>
                     </form>
-                )}
-            </DialogContent>
+                    {account && (
+                        <form
+                            onSubmit={submitReset}
+                            className="grid gap-4 border-t pt-5"
+                        >
+                            <div>
+                                <h3 className="font-semibold">
+                                    Restablecer contraseña
+                                </h3>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Define una nueva contraseña; la anterior
+                                    nunca se muestra.
+                                </p>
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="reset-technician-password">
+                                        Nueva contraseña
+                                    </Label>
+                                    <PasswordInput
+                                        id="reset-technician-password"
+                                        value={reset.data.password}
+                                        onChange={(event) =>
+                                            reset.setData(
+                                                'password',
+                                                event.target.value,
+                                            )
+                                        }
+                                        autoComplete="new-password"
+                                        required
+                                    />
+                                    <InputError
+                                        message={reset.errors.password}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="reset-technician-password-confirmation">
+                                        Confirmar
+                                    </Label>
+                                    <PasswordInput
+                                        id="reset-technician-password-confirmation"
+                                        value={reset.data.password_confirmation}
+                                        onChange={(event) =>
+                                            reset.setData(
+                                                'password_confirmation',
+                                                event.target.value,
+                                            )
+                                        }
+                                        autoComplete="new-password"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                disabled={reset.processing}
+                                className="justify-self-start"
+                            >
+                                <KeyRound data-icon="inline-start" />{' '}
+                                Restablecer contraseña
+                            </Button>
+                        </form>
+                    )}
+                </ModalBody>
+            </ModalContent>
         </Dialog>
     );
 }
@@ -1767,56 +1787,58 @@ function ActionDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <form onSubmit={submit} className="grid gap-5">
-                    <DialogHeader>
-                        <DialogTitle>Editar acción</DialogTitle>
-                        <DialogDescription>
-                            El código y el programa son parte del catálogo
-                            oficial y no pueden modificarse.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="action-program">Programa</Label>
-                            <div
-                                id="action-program"
-                                className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 font-mono text-sm font-semibold"
-                            >
-                                {action.program?.code ?? 'SPM-06'}
-                            </div>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
+            <ModalContent size="form">
+                <form
+                    onSubmit={submit}
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                >
+                    <ModalHeader title="Editar acción" />
+                    <ModalBody className="grid content-start gap-5">
+                        <div className="grid gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="action-code">Código</Label>
+                                <Label htmlFor="action-program">Programa</Label>
                                 <div
-                                    id="action-code"
+                                    id="action-program"
                                     className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 font-mono text-sm font-semibold"
                                 >
-                                    {action.code}
+                                    {action.program?.code ?? 'SPM-06'}
                                 </div>
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="action-name">Nombre</Label>
-                                <Input
-                                    id="action-name"
-                                    value={form.data.name}
-                                    onChange={(event) =>
-                                        form.setData('name', event.target.value)
-                                    }
-                                    placeholder="Nombre breve"
-                                />
-                                <InputError message={form.errors.name} />
+                            <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="action-code">Código</Label>
+                                    <div
+                                        id="action-code"
+                                        className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 font-mono text-sm font-semibold"
+                                    >
+                                        {action.code}
+                                    </div>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="action-name">Nombre</Label>
+                                    <Input
+                                        id="action-name"
+                                        value={form.data.name}
+                                        onChange={(event) =>
+                                            form.setData(
+                                                'name',
+                                                event.target.value,
+                                            )
+                                        }
+                                        placeholder="Nombre breve"
+                                    />
+                                    <InputError message={form.errors.name} />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <CatalogStatusField
-                        value={form.data.is_active}
-                        onValueChange={(value) =>
-                            form.setData('is_active', value)
-                        }
-                    />
-                    <DialogFooter>
+                        <CatalogStatusField
+                            value={form.data.is_active}
+                            onValueChange={(value) =>
+                                form.setData('is_active', value)
+                            }
+                        />
+                    </ModalBody>
+                    <ModalFooter>
                         <div className="flex gap-2">
                             <Button
                                 type="button"
@@ -1829,9 +1851,9 @@ function ActionDialog({
                                 Guardar cambios
                             </Button>
                         </div>
-                    </DialogFooter>
+                    </ModalFooter>
                 </form>
-            </DialogContent>
+            </ModalContent>
         </Dialog>
     );
 }
@@ -1859,57 +1881,63 @@ function IndicatorDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <form onSubmit={submit} className="grid gap-5">
-                    <DialogHeader>
-                        <DialogTitle>Editar indicador</DialogTitle>
-                        <DialogDescription>
-                            El código y la acción son parte del catálogo oficial
-                            y no pueden modificarse.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="indicator-action">Acción</Label>
-                            <div
-                                id="indicator-action"
-                                className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 font-mono text-sm font-semibold"
-                            >
-                                {indicator.action?.code ?? '—'}
-                            </div>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
+            <ModalContent size="form">
+                <form
+                    onSubmit={submit}
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                >
+                    <ModalHeader title="Editar indicador" />
+                    <ModalBody className="grid content-start gap-5">
+                        <div className="grid gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="indicator-code">Código</Label>
+                                <Label htmlFor="indicator-action">Acción</Label>
                                 <div
-                                    id="indicator-code"
+                                    id="indicator-action"
                                     className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 font-mono text-sm font-semibold"
                                 >
-                                    {indicator.code}
+                                    {indicator.action?.code ?? '—'}
                                 </div>
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="indicator-name">Nombre</Label>
-                                <Input
-                                    id="indicator-name"
-                                    autoFocus
-                                    value={form.data.name}
-                                    onChange={(event) =>
-                                        form.setData('name', event.target.value)
-                                    }
-                                    placeholder="Nombre breve"
-                                />
-                                <InputError message={form.errors.name} />
+                            <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="indicator-code">
+                                        Código
+                                    </Label>
+                                    <div
+                                        id="indicator-code"
+                                        className="flex min-h-11 items-center rounded-md border border-input bg-muted/40 px-3 font-mono text-sm font-semibold"
+                                    >
+                                        {indicator.code}
+                                    </div>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="indicator-name">
+                                        Nombre
+                                    </Label>
+                                    <Input
+                                        id="indicator-name"
+                                        autoFocus
+                                        value={form.data.name}
+                                        onChange={(event) =>
+                                            form.setData(
+                                                'name',
+                                                event.target.value,
+                                            )
+                                        }
+                                        placeholder="Nombre breve"
+                                    />
+                                    <InputError message={form.errors.name} />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <CatalogStatusField
-                        value={form.data.is_active}
-                        onValueChange={(value) =>
-                            form.setData('is_active', value)
-                        }
-                    />
-                    <DialogFooter>
+                        <CatalogStatusField
+                            value={form.data.is_active}
+                            onValueChange={(value) =>
+                                form.setData('is_active', value)
+                            }
+                        />
+                    </ModalBody>
+                    <ModalFooter>
                         <div className="flex gap-2">
                             <Button
                                 type="button"
@@ -1922,9 +1950,9 @@ function IndicatorDialog({
                                 Guardar cambios
                             </Button>
                         </div>
-                    </DialogFooter>
+                    </ModalFooter>
                 </form>
-            </DialogContent>
+            </ModalContent>
         </Dialog>
     );
 }

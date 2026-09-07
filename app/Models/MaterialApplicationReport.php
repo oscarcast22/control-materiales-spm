@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ServiceOrderType;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,8 @@ use Illuminate\Support\Carbon;
  * @property int $voucher_id
  * @property Carbon $occurred_on
  * @property string|null $reference
+ * @property ServiceOrderType|null $service_order_type
+ * @property string|null $location
  * @property string|null $notes
  * @property int|null $created_by
  * @property-read Voucher $voucher
@@ -23,12 +26,15 @@ use Illuminate\Support\Carbon;
 class MaterialApplicationReport extends Model
 {
     protected $fillable = [
-        'voucher_id', 'occurred_on', 'reference', 'notes', 'created_by', 'updated_by',
+        'voucher_id', 'occurred_on', 'reference', 'service_order_type', 'location', 'notes', 'created_by', 'updated_by',
     ];
 
     protected function casts(): array
     {
-        return ['occurred_on' => 'date:Y-m-d'];
+        return [
+            'occurred_on' => 'date:Y-m-d',
+            'service_order_type' => ServiceOrderType::class,
+        ];
     }
 
     /** @return BelongsTo<Voucher, $this> */

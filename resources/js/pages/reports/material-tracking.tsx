@@ -211,7 +211,7 @@ export default function MaterialTracking({
 
                 <FilterBar
                     title="Filtrar seguimiento"
-                    description="Busca por folio, técnico, destino o material y delimita el periodo. Los cambios se aplican automáticamente."
+                    description="Busca por folio, orden de servicio, técnico, destino o material y delimita el periodo. Los cambios se aplican automáticamente."
                     activeFilters={activeFilters}
                     onClear={clearFilters}
                 >
@@ -238,7 +238,7 @@ export default function MaterialTracking({
                                                 true,
                                             )
                                         }
-                                        placeholder="Folio, destino, técnico o material"
+                                        placeholder="Folio, orden, destino, técnico o material"
                                     />
                                 </div>
                             </FormField>

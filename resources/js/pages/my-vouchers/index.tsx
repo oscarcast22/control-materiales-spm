@@ -96,7 +96,7 @@ export default function MyVouchers({ vouchers, filters, counts }: Props) {
                                     setSearch(event.target.value)
                                 }
                                 className="pl-9"
-                                placeholder="Buscar folio, material o destino"
+                                placeholder="Buscar folio, orden, material o destino"
                                 aria-label="Buscar en mis vales"
                             />
                         </div>

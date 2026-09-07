@@ -4,8 +4,8 @@ import {
     ClipboardCheck,
     ClipboardList,
     FileText,
+    MapPin,
     Pencil,
-    Printer,
     Trash2,
     Upload,
     Wrench,
@@ -13,6 +13,7 @@ import {
 import type { FormEvent } from 'react';
 import { ConfirmActionDialog } from '@/components/confirm-action-dialog';
 import { DataTableSurface, TableEmpty } from '@/components/data-table';
+import { ModalHeader } from '@/components/modal-shell';
 import { Page } from '@/components/page';
 import { QuickApplicationDialog } from '@/components/quick-application-dialog';
 import { StatusBadge } from '@/components/status-badge';
@@ -36,23 +37,27 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { VoucherCancelAction } from '@/components/voucher-cancel-action';
 import { VoucherModalLink } from '@/components/voucher-dialogs';
 import { formatBytes, formatDate, formatQuantity } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
     ApplicationReportLine,
+    MaterialApplicationFormOptions,
     MaterialApplicationReport,
     Voucher,
 } from '@/types';
 
 export default function VoucherShow({
     voucher,
+    applicationFormOptions,
     embedded = false,
     onEdit,
     onRefresh,
     backUrl = '/vouchers',
 }: {
     voucher: Voucher;
+    applicationFormOptions: MaterialApplicationFormOptions;
     embedded?: boolean;
     onEdit?: () => void;
     onRefresh?: () => void;
@@ -71,104 +76,130 @@ export default function VoucherShow({
     return (
         <>
             {!embedded && <Head title={`Vale ${voucher.folio}`} />}
-            <Page width="wide">
-                <div className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="flex items-start gap-3">
-                        {!embedded && (
-                            <IconButton
-                                label="Volver a vales"
-                                variant="ghost"
-                                asChild
-                            >
-                                <Link href={backUrl}>
-                                    <ArrowLeft />
-                                </Link>
-                            </IconButton>
-                        )}
-                        <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-[1.625rem] leading-8 font-bold tracking-[-0.02em] md:text-[2rem] md:leading-10">
-                                    Vale {voucher.folio}
-                                </h1>
-                                <StatusBadge state={voucher.balance_state} />
-                                {voucher.needs_review && (
-                                    <Badge variant="warning">
-                                        Requiere revisión
-                                    </Badge>
-                                )}
-                            </div>
-                            <p className="mt-1 text-muted-foreground">
-                                {voucher.voucher_type.name} ·{' '}
-                                {voucher.direction === 'entry'
-                                    ? 'Entrada'
-                                    : voucher.direction === 'exit'
-                                      ? 'Salida'
-                                      : 'Sin movimiento'}{' '}
-                                del {formatDate(voucher.issued_on)}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {voucher.permissions.print && (
-                            <Button variant="outline" asChild>
-                                <a
-                                    href={`/vouchers/${voucher.id}/print`}
-                                    target="_blank"
-                                >
-                                    <Printer data-icon="inline-start" />
-                                    Imprimir
-                                </a>
-                            </Button>
-                        )}
-                        {voucher.permissions.update &&
-                            (embedded ? (
+            {embedded && (
+                <ModalHeader
+                    title={
+                        <span className="flex flex-wrap items-center gap-2">
+                            <span>Vale {voucher.folio}</span>
+                            <StatusBadge state={voucher.balance_state} />
+                            {voucher.needs_review && (
+                                <Badge variant="warning">
+                                    Requiere revisión
+                                </Badge>
+                            )}
+                        </span>
+                    }
+                    description={`${voucher.voucher_type.name} · ${voucher.direction === 'entry' ? 'Entrada' : voucher.direction === 'exit' ? 'Salida' : 'Sin movimiento'} del ${formatDate(voucher.issued_on)}`}
+                    actions={
+                        <>
+                            {voucher.permissions.update && (
                                 <Button variant="outline" onClick={onEdit}>
                                     <Pencil data-icon="inline-start" />
                                     Editar
                                 </Button>
-                            ) : (
-                                <Button variant="outline" asChild>
-                                    <VoucherModalLink
-                                        mode="edit"
-                                        voucherId={voucher.id}
-                                    >
+                            )}
+                            <VoucherCancelAction
+                                voucher={voucher}
+                                embedded
+                                onCancelled={onRefresh}
+                            />
+                        </>
+                    }
+                />
+            )}
+            <Page
+                width="wide"
+                className={
+                    embedded
+                        ? 'min-h-0 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6'
+                        : undefined
+                }
+            >
+                {!embedded && (
+                    <div className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="flex items-start gap-3">
+                            {!embedded && (
+                                <IconButton
+                                    label="Volver a vales"
+                                    variant="ghost"
+                                    asChild
+                                >
+                                    <Link href={backUrl}>
+                                        <ArrowLeft />
+                                    </Link>
+                                </IconButton>
+                            )}
+                            <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h1 className="text-[1.625rem] leading-8 font-bold tracking-[-0.02em] md:text-[2rem] md:leading-10">
+                                        Vale {voucher.folio}
+                                    </h1>
+                                    <StatusBadge
+                                        state={voucher.balance_state}
+                                    />
+                                    {voucher.needs_review && (
+                                        <Badge variant="warning">
+                                            Requiere revisión
+                                        </Badge>
+                                    )}
+                                </div>
+                                <p className="mt-1 text-muted-foreground">
+                                    {voucher.voucher_type.name} ·{' '}
+                                    {voucher.direction === 'entry'
+                                        ? 'Entrada'
+                                        : voucher.direction === 'exit'
+                                          ? 'Salida'
+                                          : 'Sin movimiento'}{' '}
+                                    del {formatDate(voucher.issued_on)}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {voucher.permissions.update &&
+                                (embedded ? (
+                                    <Button variant="outline" onClick={onEdit}>
                                         <Pencil data-icon="inline-start" />
                                         Editar
-                                    </VoucherModalLink>
-                                </Button>
-                            ))}
-                        {voucher.status === 'active' &&
-                            voucher.permissions.cancel && (
-                                <ConfirmActionDialog
-                                    trigger={
-                                        <Button variant="destructive">
-                                            Cancelar
-                                        </Button>
-                                    }
-                                    title="Cancelar vale"
-                                    description="La cancelación conserva el folio y deja una traza auditable. No se puede deshacer desde esta pantalla."
-                                    confirmLabel="Cancelar vale"
-                                    destructive
-                                    reasonLabel="Motivo de cancelación"
-                                    reasonPlaceholder="Explica por qué se cancela este vale"
-                                    onConfirm={(reason) =>
-                                        router.post(
-                                            `/vouchers/${voucher.id}/cancel`,
-                                            { reason, _dialog: embedded },
-                                            {
-                                                preserveScroll: true,
-                                                onSuccess: onRefresh,
-                                            },
-                                        )
-                                    }
-                                />
-                            )}
+                                    </Button>
+                                ) : (
+                                    <Button variant="outline" asChild>
+                                        <VoucherModalLink
+                                            mode="edit"
+                                            voucherId={voucher.id}
+                                        >
+                                            <Pencil data-icon="inline-start" />
+                                            Editar
+                                        </VoucherModalLink>
+                                    </Button>
+                                ))}
+                            <VoucherCancelAction
+                                voucher={voucher}
+                                embedded={embedded}
+                                onCancelled={onRefresh}
+                            />
+                        </div>
                     </div>
-                </div>
+                )}
                 {voucher.status === 'cancelled' && (
                     <Alert variant="destructive">
                         <AlertDescription>
-                            Vale cancelado: {voucher.cancellation_reason}
+                            <p className="font-medium text-foreground">
+                                Vale cancelado
+                            </p>
+                            <p>
+                                {voucher.direction === 'exit' &&
+                                voucher.items.length > 0
+                                    ? 'El material se clasificó como sin usar y no genera saldo pendiente.'
+                                    : 'Este vale no genera seguimiento operativo.'}
+                            </p>
+                            {voucher.cancellation_reason && (
+                                <p className="mt-1">
+                                    <span className="font-medium text-foreground">
+                                        Motivo:{' '}
+                                    </span>
+                                    {voucher.cancellation_reason}
+                                </p>
+                            )}
                         </AlertDescription>
                     </Alert>
                 )}
@@ -328,9 +359,9 @@ export default function VoucherShow({
                                         Aplicaciones registradas
                                     </h2>
                                     <p className="mt-0.5 text-sm text-muted-foreground">
-                                        Cada registro reúne la fecha, una orden
-                                        de servicio obligatoria y el desglose de
-                                        materiales utilizados.
+                                        Cada registro reúne fecha, tipo y número
+                                        de orden, ubicación o dirección,
+                                        detalles y materiales utilizados.
                                     </p>
                                 </div>
                             </div>
@@ -341,6 +372,7 @@ export default function VoucherShow({
                                 {canApply && (
                                     <QuickApplicationDialog
                                         voucher={voucher}
+                                        formOptions={applicationFormOptions}
                                         onSuccess={onRefresh}
                                         trigger={
                                             <Button>
@@ -374,6 +406,7 @@ export default function VoucherShow({
                                     key={report.key}
                                     report={report}
                                     voucher={voucher}
+                                    formOptions={applicationFormOptions}
                                     onRefresh={onRefresh}
                                 />
                             ))
@@ -440,6 +473,74 @@ export default function VoucherShow({
 
 function MaterialBalanceCard({ voucher }: { voucher: Voucher }) {
     const isEntry = voucher.direction === 'entry';
+    const isCancelledExit =
+        voucher.status === 'cancelled' && voucher.direction === 'exit';
+
+    if (voucher.status === 'cancelled') {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>
+                        {isCancelledExit
+                            ? 'Material sin usar'
+                            : 'Material registrado'}
+                    </CardTitle>
+                    <CardDescription>
+                        {isCancelledExit
+                            ? 'Las cantidades se conservan como referencia, pero no generan responsabilidad pendiente.'
+                            : 'Las cantidades se conservan como referencia del vale cancelado y no forman parte del seguimiento.'}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <DataTableSurface
+                        label={
+                            isCancelledExit
+                                ? 'Material sin usar'
+                                : 'Material registrado en el vale cancelado'
+                        }
+                    >
+                        <Table className="min-w-[520px]">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Material</TableHead>
+                                    <TableHead>Unidad</TableHead>
+                                    <TableHead className="text-right">
+                                        {isCancelledExit
+                                            ? 'Cantidad sin usar'
+                                            : 'Cantidad registrada'}
+                                    </TableHead>
+                                    <TableHead>Estado</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {voucher.items.map((item) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell className="font-medium">
+                                            {item.description}
+                                        </TableCell>
+                                        <TableCell>
+                                            {`${item.unit.name} (${item.unit.symbol})`}
+                                        </TableCell>
+                                        <TableCell className="text-right font-semibold tabular-nums">
+                                            {formatQuantity(item.quantity)}{' '}
+                                            {item.unit.symbol}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary">
+                                                {isCancelledExit
+                                                    ? 'Sin usar'
+                                                    : 'Cancelado'}
+                                            </Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </DataTableSurface>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card>
@@ -550,10 +651,12 @@ function BalanceBadge({
 function ApplicationReportCard({
     report,
     voucher,
+    formOptions,
     onRefresh,
 }: {
     report: MaterialApplicationReport;
     voucher: Voucher;
+    formOptions: MaterialApplicationFormOptions;
     onRefresh?: () => void;
 }) {
     const activeApplications = report.applications.filter(
@@ -575,6 +678,13 @@ function ApplicationReportCard({
                                     : 'Aplicación sin orden'}
                             </CardTitle>
                             <Badge variant="success">Vigente</Badge>
+                            <Badge variant="outline">
+                                {formOptions.service_order_types.find(
+                                    (type) =>
+                                        type.value ===
+                                        report.service_order_type,
+                                )?.label ?? 'Tipo sin registrar'}
+                            </Badge>
                             {!report.editable && (
                                 <Badge variant="outline">Histórico</Badge>
                             )}
@@ -608,6 +718,7 @@ function ApplicationReportCard({
                             <QuickApplicationDialog
                                 voucher={voucher}
                                 report={report}
+                                formOptions={formOptions}
                                 onSuccess={onRefresh}
                                 trigger={
                                     <Button variant="outline" size="sm">
@@ -622,12 +733,30 @@ function ApplicationReportCard({
                     )}
                 </div>
             </CardHeader>
-            {report.notes && (
-                <div className="border-b bg-muted/20 px-6 py-3 text-sm text-text-secondary">
-                    <span className="font-semibold text-foreground">
-                        Comentarios:{' '}
-                    </span>
-                    {report.notes}
+            {(report.location || report.notes) && (
+                <div className="flex flex-col gap-2 border-b bg-muted/20 px-6 py-3 text-sm text-text-secondary">
+                    {report.location && (
+                        <p className="flex items-start gap-2">
+                            <MapPin
+                                className="mt-0.5 size-4 shrink-0"
+                                aria-hidden="true"
+                            />
+                            <span>
+                                <span className="font-semibold text-foreground">
+                                    Ubicación o dirección:{' '}
+                                </span>
+                                {report.location}
+                            </span>
+                        </p>
+                    )}
+                    {report.notes && (
+                        <p>
+                            <span className="font-semibold text-foreground">
+                                Detalles:{' '}
+                            </span>
+                            {report.notes}
+                        </p>
+                    )}
                 </div>
             )}
             <CardContent>

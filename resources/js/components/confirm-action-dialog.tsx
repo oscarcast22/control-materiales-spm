@@ -1,20 +1,29 @@
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+    Field,
+    FieldDescription,
+    FieldError,
+    FieldLabel,
+} from '@/components/ui/field';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 
 export function ConfirmActionDialog({
     trigger,
+    open: controlledOpen,
+    onOpenChange,
     title,
     description,
     confirmLabel,
@@ -22,79 +31,134 @@ export function ConfirmActionDialog({
     destructive = false,
     reasonLabel,
     reasonPlaceholder,
+    reasonRequired = true,
 }: {
-    trigger: ReactNode;
+    trigger?: ReactNode;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
     title: string;
     description: string;
     confirmLabel: string;
-    onConfirm: (reason?: string) => void;
+    onConfirm: (reason?: string) => void | Promise<void>;
     destructive?: boolean;
     reasonLabel?: string;
     reasonPlaceholder?: string;
+    reasonRequired?: boolean;
 }) {
-    const [open, setOpen] = useState(false);
+    const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const [reason, setReason] = useState('');
+    const [processing, setProcessing] = useState(false);
+    const [error, setError] = useState('');
     const reasonId = useId();
-    const requiresReason = Boolean(reasonLabel);
-    const canConfirm = !requiresReason || reason.trim().length >= 5;
+    const hasReasonField = Boolean(reasonLabel);
+    const reasonLength = reason.trim().length;
+    const canConfirm =
+        !hasReasonField ||
+        (reasonRequired
+            ? reasonLength >= 5
+            : reasonLength === 0 || reasonLength >= 5);
 
-    const close = () => {
-        setOpen(false);
-        setReason('');
+    const open = controlledOpen ?? uncontrolledOpen;
+    const setOpen = (nextOpen: boolean) => {
+        if (controlledOpen === undefined) {
+            setUncontrolledOpen(nextOpen);
+        }
+
+        onOpenChange?.(nextOpen);
     };
 
-    const confirm = () => {
+    const close = () => {
+        if (processing) {
+            return;
+        }
+
+        setOpen(false);
+        setReason('');
+        setError('');
+    };
+
+    const confirm = async () => {
         if (!canConfirm) {
             return;
         }
 
-        onConfirm(requiresReason ? reason.trim() : undefined);
-        close();
+        setProcessing(true);
+        setError('');
+
+        try {
+            await onConfirm(
+                hasReasonField && reasonLength > 0 ? reason.trim() : undefined,
+            );
+            setProcessing(false);
+            setOpen(false);
+            setReason('');
+            setError('');
+        } catch {
+            setProcessing(false);
+            setError(
+                'No fue posible completar la acción. Revisa los datos e inténtalo de nuevo.',
+            );
+        }
     };
 
     return (
-        <Dialog
+        <AlertDialog
             open={open}
             onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : close())}
         >
-            <DialogTrigger asChild>{trigger}</DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
-                </DialogHeader>
+            {trigger && (
+                <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+            )}
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{title}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {description}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
                 {reasonLabel && (
-                    <div className="grid gap-2">
-                        <Label htmlFor={reasonId}>{reasonLabel}</Label>
+                    <Field invalid={Boolean(error)}>
+                        <FieldLabel htmlFor={reasonId}>
+                            {reasonLabel}
+                        </FieldLabel>
                         <Textarea
                             id={reasonId}
                             value={reason}
-                            onChange={(event) => setReason(event.target.value)}
+                            onChange={(event) => {
+                                setReason(event.target.value);
+                                setError('');
+                            }}
                             placeholder={reasonPlaceholder}
+                            maxLength={1000}
                             aria-describedby={`${reasonId}-help`}
+                            aria-invalid={Boolean(error) || undefined}
+                            disabled={processing}
                         />
-                        <p
-                            id={`${reasonId}-help`}
-                            className="text-xs text-muted-foreground"
-                        >
-                            Escribe al menos 5 caracteres.
-                        </p>
-                    </div>
+                        <FieldDescription id={`${reasonId}-help`}>
+                            {reasonRequired
+                                ? 'Escribe al menos 5 caracteres.'
+                                : 'Opcional. Si escribes un motivo, usa al menos 5 caracteres.'}
+                        </FieldDescription>
+                        <FieldError>{error}</FieldError>
+                    </Field>
                 )}
-                <DialogFooter>
-                    <Button type="button" variant="outline" onClick={close}>
+                {!reasonLabel && <FieldError>{error}</FieldError>}
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={processing}>
                         Volver
-                    </Button>
+                    </AlertDialogCancel>
                     <Button
                         type="button"
                         variant={destructive ? 'destructive' : 'default'}
-                        disabled={!canConfirm}
-                        onClick={confirm}
+                        disabled={!canConfirm || processing}
+                        aria-busy={processing}
+                        onClick={() => void confirm()}
                     >
-                        {confirmLabel}
+                        {processing && <Spinner data-icon="inline-start" />}
+                        {processing ? 'Procesando…' : confirmLabel}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }
