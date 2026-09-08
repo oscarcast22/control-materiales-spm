@@ -64,7 +64,7 @@ class VoucherPolicy
      */
     public function delete(User $user, Voucher $voucher): bool
     {
-        return false;
+        return $user->isAdministrator();
     }
 
     /**

@@ -193,6 +193,7 @@ export type Voucher = {
     permissions: {
         update: boolean;
         cancel: boolean;
+        delete: boolean;
         review: boolean;
         print: boolean;
         create_application: boolean;

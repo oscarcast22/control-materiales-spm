@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\DeleteVoucher;
 use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
 use App\Models\Action;
@@ -308,21 +309,39 @@ class VoucherController extends Controller
         }
         $validated = $request->validate([
             'reason' => ['nullable', 'string', 'min:5', 'max:1000'],
+            'void_applications' => ['sometimes', 'boolean'],
         ], [
             'reason.string' => 'El motivo de cancelación debe ser texto.',
             'reason.min' => 'Si escribes un motivo, usa al menos 5 caracteres.',
             'reason.max' => 'El motivo de cancelación no puede tener más de 1,000 caracteres.',
         ]);
+        $voidApplications = $request->boolean('void_applications');
 
-        DB::transaction(function () use ($voucher, $validated, $request): void {
-            $locked = Voucher::query()->with('items.applications')->lockForUpdate()->findOrFail($voucher->id);
+        DB::transaction(function () use ($voucher, $validated, $voidApplications, $request): void {
+            $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
             if ($locked->status !== VoucherStatus::Active) {
                 throw ValidationException::withMessages(['reason' => 'Este vale ya no está activo y no se puede cancelar.']);
             }
-            $hasAccounting = $locked->items->flatMap->applications->contains(fn ($row): bool => $row->voided_at === null);
-            if ($hasAccounting) {
-                throw ValidationException::withMessages(['reason' => 'No se puede cancelar un vale con aplicaciones activas.']);
+
+            $activeApplications = MaterialApplication::query()
+                ->whereHas('item', fn (Builder $query) => $query->where('voucher_id', $locked->id))
+                ->whereNull('voided_at')
+                ->lockForUpdate()
+                ->get();
+
+            if ($voidApplications) {
+                foreach ($activeApplications as $application) {
+                    $beforeApplication = $application->toArray();
+                    $application->update([
+                        'voided_at' => now(),
+                        'voided_by' => $request->user()?->id,
+                        'void_reason' => "Anulada al cancelar el vale {$locked->folio}.",
+                        'updated_by' => $request->user()?->id,
+                    ]);
+                    AuditEvent::record($application, 'voided_on_voucher_cancellation', $beforeApplication, $application->fresh()->toArray());
+                }
             }
+
             $before = $locked->toArray();
             $locked->update([
                 'status' => VoucherStatus::Cancelled,
@@ -335,6 +354,22 @@ class VoucherController extends Controller
         });
 
         return $this->mutationResponse($request, $voucher, 'Vale cancelado.');
+    }
+
+    public function destroy(Request $request, Voucher $voucher, DeleteVoucher $deleteVoucher): RedirectResponse
+    {
+        Gate::authorize('delete', $voucher);
+        $folio = $voucher->folio;
+        $deleteVoucher->handle($voucher);
+
+        $response = $request->boolean('_dialog') ? back() : redirect()->route('vouchers.index');
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => "Vale {$folio} eliminado definitivamente.",
+        ]);
+
+        return $response;
     }
 
     public function review(Request $request, Voucher $voucher): RedirectResponse
@@ -505,9 +540,14 @@ class VoucherController extends Controller
 
     private function mutationResponse(Request $request, Voucher $voucher, string $message): RedirectResponse
     {
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $message,
+        ]);
+
         return $request->boolean('_dialog')
-            ? back()->with('success', $message)
-            : redirect()->route('vouchers.show', $voucher)->with('success', $message);
+            ? back()
+            : redirect()->route('vouchers.show', $voucher);
     }
 
     /** @return array<string, mixed> */

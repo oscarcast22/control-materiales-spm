@@ -311,6 +311,7 @@ export function VoucherDialogsProvider({ children }: { children: ReactNode }) {
                                     void load('edit', voucherId)
                                 }
                                 onRefresh={refreshDetail}
+                                onDeleted={reset}
                             />
                         )}
                     </Suspense>

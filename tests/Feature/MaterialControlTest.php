@@ -7,11 +7,13 @@ use App\Enums\VoucherDirection;
 use App\Enums\VoucherStatus;
 use App\Models\Action;
 use App\Models\ActionIndicator;
+use App\Models\AuditEvent;
 use App\Models\Destination;
 use App\Models\DestinationAlias;
 use App\Models\LegacyImportRow;
 use App\Models\Material;
 use App\Models\MaterialApplication;
+use App\Models\MaterialApplicationAttachment;
 use App\Models\MaterialApplicationReport;
 use App\Models\Person;
 use App\Models\Program;
@@ -19,6 +21,7 @@ use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Voucher;
+use App\Models\VoucherAttachment;
 use App\Models\VoucherItem;
 use App\Support\MaterialTracking;
 use App\Support\Normalizer;
@@ -72,7 +75,11 @@ class MaterialControlTest extends TestCase
         $response = $this->actingAs($user)->post(route('vouchers.store'), $payload);
 
         $voucher = Voucher::query()->sole();
-        $response->assertRedirect(route('vouchers.show', $voucher));
+        $response
+            ->assertRedirect(route('vouchers.show', $voucher))
+            ->assertInertiaFlash('toast.type', 'success')
+            ->assertInertiaFlash('toast.message', 'Vale 001-A capturado correctamente.')
+            ->assertSessionMissing('success');
         $this->assertSame('001-A', $voucher->folio);
         $this->assertSame(2, $voucher->items()->count());
         $this->assertSame([$destination->id], $voucher->destinations()->pluck('destinations.id')->all());
@@ -271,7 +278,11 @@ class MaterialControlTest extends TestCase
         ]);
 
         $voucher = Voucher::query()->sole();
-        $response->assertRedirect(route('vouchers.show', $voucher));
+        $response
+            ->assertRedirect(route('vouchers.show', $voucher))
+            ->assertInertiaFlash('toast.type', 'success')
+            ->assertInertiaFlash('toast.message', 'Folio 16576 registrado como cancelado.')
+            ->assertSessionMissing('success');
         $this->assertSame(VoucherStatus::Cancelled, $voucher->status);
         $this->assertNull($voucher->direction);
         $this->assertNull($voucher->received_by_id);
@@ -900,7 +911,7 @@ class MaterialControlTest extends TestCase
             'quantity' => 3,
         ]);
 
-        $this->actingAs($user)->post(route('applications.store'), [
+        $applicationResponse = $this->actingAs($user)->post(route('applications.store'), [
             'voucher_id' => $item->voucher_id,
             'occurred_on' => '2026-08-24',
             'reference' => 'Reporte 17',
@@ -910,7 +921,12 @@ class MaterialControlTest extends TestCase
                 ['voucher_item_id' => $item->id, 'quantity' => 6],
                 ['voucher_item_id' => $secondItem->id, 'quantity' => 2],
             ],
-        ])->assertSessionHasNoErrors();
+        ]);
+        $applicationResponse
+            ->assertSessionHasNoErrors()
+            ->assertInertiaFlash('toast.type', 'success')
+            ->assertInertiaFlash('toast.message', 'Aplicaciones registradas correctamente.')
+            ->assertSessionMissing('success');
 
         $item->refresh()->load('applications');
         $this->assertSame('6.000', $item->usedQuantity());
@@ -1115,7 +1131,7 @@ class MaterialControlTest extends TestCase
         ]);
     }
 
-    public function test_a_voucher_with_active_movements_cannot_be_cancelled(): void
+    public function test_cancelling_a_voucher_can_preserve_active_applications_as_read_only_history(): void
     {
         $user = User::factory()->create();
         $item = $this->voucherItem(10);
@@ -1123,19 +1139,157 @@ class MaterialControlTest extends TestCase
 
         $this->actingAs($user)->post(route('vouchers.cancel', $item->voucher), [
             'reason' => 'El vale ya no corresponde',
-        ])->assertSessionHasErrors('reason');
+            'void_applications' => false,
+        ])->assertSessionHasNoErrors();
 
-        $this->assertSame(VoucherStatus::Active, $item->voucher->fresh()->status);
+        $voucher = $item->voucher->fresh();
+        $this->assertSame(VoucherStatus::Cancelled, $voucher->status);
+        $this->assertNull($application->fresh()->voided_at);
+        $this->assertSame('cancelled', VoucherData::make($voucher, true)['balance_state']);
+        $this->assertFalse(VoucherData::make($voucher, true)['application_reports'][0]['permissions']['update']);
 
         $this->actingAs($user)->post(route('applications.void', $application), [
-            'reason' => 'La aplicación no correspondía a este vale',
-        ])->assertSessionHasNoErrors();
+            'reason' => 'Intento posterior a la cancelación',
+        ])->assertForbidden();
+
+        $this->actingAs($user)->get(route('reports.material-tracking', [
+            'voucher_type_id' => 'all',
+        ]))->assertInertia(fn (Assert $page) => $page
+            ->where('metrics.delivered_vouchers', 0)
+            ->has('rows', 0));
+    }
+
+    public function test_cancelling_a_voucher_can_void_all_active_applications_with_audit(): void
+    {
+        $user = User::factory()->create();
+        $item = $this->voucherItem(10);
+        $first = MaterialApplication::factory()->create(['voucher_item_id' => $item->id, 'quantity' => 1]);
+        $second = MaterialApplication::factory()->create(['voucher_item_id' => $item->id, 'quantity' => 2]);
+
         $this->actingAs($user)->post(route('vouchers.cancel', $item->voucher), [
             'reason' => '',
+            'void_applications' => true,
         ])->assertSessionHasNoErrors();
 
         $this->assertSame(VoucherStatus::Cancelled, $item->voucher->fresh()->status);
-        $this->assertNull($item->voucher->fresh()->cancellation_reason);
+        foreach ([$first, $second] as $application) {
+            $application->refresh();
+            $this->assertNotNull($application->voided_at);
+            $this->assertSame($user->id, $application->voided_by);
+            $this->assertSame("Anulada al cancelar el vale {$item->voucher->folio}.", $application->void_reason);
+            $this->assertDatabaseHas('audit_events', [
+                'event' => 'voided_on_voucher_cancellation',
+                'auditable_type' => MaterialApplication::class,
+                'auditable_id' => $application->id,
+            ]);
+        }
+    }
+
+    public function test_an_administrator_can_permanently_delete_a_voucher_and_its_complete_footprint(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create();
+        $item = $this->voucherItem(10);
+        $voucher = $item->voucher;
+        $report = MaterialApplicationReport::create([
+            'voucher_id' => $voucher->id,
+            'occurred_on' => '2026-08-25',
+            'reference' => 'OS-DELETE',
+            'service_order_type' => ServiceOrderType::Normal,
+            'created_by' => $user->id,
+        ]);
+        $application = MaterialApplication::factory()->create([
+            'voucher_item_id' => $item->id,
+            'application_report_id' => $report->id,
+            'quantity' => 2,
+        ]);
+        $voucherAttachment = VoucherAttachment::create([
+            'voucher_id' => $voucher->id,
+            'disk' => 'local',
+            'path' => 'voucher-attachments/delete-voucher.pdf',
+            'original_name' => 'vale.pdf',
+            'mime_type' => 'application/pdf',
+            'size' => 10,
+            'uploaded_by' => $user->id,
+        ]);
+        $applicationAttachment = MaterialApplicationAttachment::create([
+            'application_report_id' => $report->id,
+            'disk' => 'local',
+            'path' => 'application-attachments/delete-application.pdf',
+            'original_name' => 'aplicacion.pdf',
+            'mime_type' => 'application/pdf',
+            'size' => 10,
+            'uploaded_by' => $user->id,
+        ]);
+        Storage::disk('local')->put($voucherAttachment->path, 'voucher');
+        Storage::disk('local')->put($applicationAttachment->path, 'application');
+        $trace = LegacyImportRow::create([
+            'source_hash' => str_repeat('a', 64),
+            'source_name' => 'control.xlsx',
+            'sheet_name' => 'Vale de Almacen',
+            'row_number' => 10,
+            'raw_data' => ['folio' => $voucher->folio],
+            'imported_type' => Voucher::class,
+            'imported_id' => $voucher->id,
+        ]);
+
+        foreach ([$voucher, $item, $report, $application, $voucherAttachment, $applicationAttachment] as $auditable) {
+            AuditEvent::record($auditable, 'created', null, $auditable->toArray());
+        }
+        AuditEvent::create([
+            'user_id' => $user->id,
+            'event' => 'removed',
+            'auditable_type' => VoucherItem::class,
+            'auditable_id' => 999999,
+            'before' => ['id' => 999999, 'voucher_id' => $voucher->id],
+        ]);
+        $unrelatedAudit = AuditEvent::record($item->material, 'updated', null, $item->material->toArray());
+
+        $this->actingAs($user)
+            ->delete(route('vouchers.destroy', $voucher))
+            ->assertRedirect(route('vouchers.index'))
+            ->assertInertiaFlash('toast.type', 'success')
+            ->assertInertiaFlash('toast.message', "Vale {$voucher->folio} eliminado definitivamente.")
+            ->assertSessionMissing('success');
+
+        $this->assertDatabaseMissing('vouchers', ['id' => $voucher->id]);
+        $this->assertDatabaseMissing('voucher_items', ['id' => $item->id]);
+        $this->assertDatabaseMissing('material_application_reports', ['id' => $report->id]);
+        $this->assertDatabaseMissing('material_applications', ['id' => $application->id]);
+        $this->assertDatabaseMissing('voucher_attachments', ['id' => $voucherAttachment->id]);
+        $this->assertDatabaseMissing('material_application_attachments', ['id' => $applicationAttachment->id]);
+        $this->assertDatabaseMissing('legacy_import_rows', ['id' => $trace->id]);
+        $this->assertSame(1, AuditEvent::query()->count());
+        $this->assertDatabaseHas('audit_events', ['id' => $unrelatedAudit->id]);
+        Storage::disk('local')->assertMissing($voucherAttachment->path);
+        Storage::disk('local')->assertMissing($applicationAttachment->path);
+    }
+
+    public function test_a_technician_cannot_permanently_delete_a_voucher(): void
+    {
+        $item = $this->voucherItem(10);
+        $technician = User::factory()->technician($item->voucher->receivedBy)->create();
+
+        $this->actingAs($technician)
+            ->delete(route('vouchers.destroy', $item->voucher))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('vouchers', ['id' => $item->voucher_id]);
+    }
+
+    public function test_an_administrator_can_delete_cancelled_and_loaned_vouchers(): void
+    {
+        $user = User::factory()->create();
+
+        foreach ([VoucherStatus::Cancelled, VoucherStatus::Loaned] as $status) {
+            $voucher = Voucher::factory()->create(['status' => $status]);
+
+            $this->actingAs($user)
+                ->delete(route('vouchers.destroy', $voucher))
+                ->assertRedirect(route('vouchers.index'));
+
+            $this->assertDatabaseMissing('vouchers', ['id' => $voucher->id]);
+        }
     }
 
     public function test_a_registered_exit_can_be_cancelled_as_unused_without_changing_its_quantities(): void
@@ -1222,7 +1376,11 @@ class MaterialControlTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $voucher = Voucher::query()->sole();
-        $response->assertRedirect(route('vouchers.show', $voucher));
+        $response
+            ->assertRedirect(route('vouchers.show', $voucher))
+            ->assertInertiaFlash('toast.type', 'success')
+            ->assertInertiaFlash('toast.message', 'Folio 16582 registrado como prestado.')
+            ->assertSessionMissing('success');
         $this->assertSame(VoucherStatus::Loaned, $voucher->status);
         $this->assertSame('Marco Ruiz', $voucher->loaned_to_name);
         $this->assertNull($voucher->direction);

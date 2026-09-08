@@ -1,18 +1,23 @@
 import { router } from '@inertiajs/react';
-import { Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { ConfirmActionDialog } from '@/components/confirm-action-dialog';
-import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { Voucher } from '@/types';
 
 export function VoucherCancelAction({
     voucher,
     embedded = false,
     onCancelled,
+    open,
+    onOpenChange,
 }: {
     voucher: Voucher;
     embedded?: boolean;
     onCancelled?: () => void;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
 }) {
+    const [voidApplications, setVoidApplications] = useState(true);
     const hasActiveApplications = voucher.items.some((item) =>
         item.applications.some((application) => !application.voided_at),
     );
@@ -21,35 +26,16 @@ export function VoucherCancelAction({
         return null;
     }
 
-    if (hasActiveApplications) {
-        return (
-            <div className="flex max-w-56 flex-col items-start gap-1">
-                <Button
-                    variant="outline"
-                    className="border-danger/35 text-destructive hover:border-danger/55 hover:bg-danger-subtle hover:text-destructive"
-                    disabled
-                >
-                    <Trash2 data-icon="inline-start" />
-                    Cancelar vale
-                </Button>
-                <p className="text-xs leading-4 text-muted-foreground">
-                    Anula primero las aplicaciones vigentes.
-                </p>
-            </div>
-        );
-    }
-
     return (
         <ConfirmActionDialog
-            trigger={
-                <Button
-                    variant="outline"
-                    className="border-danger/35 text-destructive hover:border-danger/55 hover:bg-danger-subtle hover:text-destructive"
-                >
-                    <Trash2 data-icon="inline-start" />
-                    Cancelar vale
-                </Button>
-            }
+            open={open}
+            onOpenChange={(nextOpen) => {
+                if (nextOpen) {
+                    setVoidApplications(true);
+                }
+
+                onOpenChange(nextOpen);
+            }}
             title="Cancelar vale"
             description={
                 voucher.direction === 'exit'
@@ -61,11 +47,17 @@ export function VoucherCancelAction({
             reasonLabel="Motivo de cancelación (opcional)"
             reasonPlaceholder="Explica por qué se cancela este vale"
             reasonRequired={false}
+            cancelLabel="Volver"
             onConfirm={(reason) =>
                 new Promise<void>((resolve, reject) => {
                     router.post(
                         `/vouchers/${voucher.id}/cancel`,
-                        { reason, _dialog: embedded },
+                        {
+                            reason,
+                            void_applications:
+                                hasActiveApplications && voidApplications,
+                            _dialog: embedded,
+                        },
                         {
                             preserveScroll: true,
                             onSuccess: () => {
@@ -82,6 +74,28 @@ export function VoucherCancelAction({
                     );
                 })
             }
-        />
+        >
+            {hasActiveApplications && (
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-strong bg-muted/35 p-4">
+                    <Checkbox
+                        className="mt-0.5"
+                        checked={voidApplications}
+                        onCheckedChange={(checked) =>
+                            setVoidApplications(checked === true)
+                        }
+                    />
+                    <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-foreground">
+                            Anular las aplicaciones vigentes
+                        </span>
+                        <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+                            {voidApplications
+                                ? 'Se conservarán como anuladas y dejarán de contar como material aplicado.'
+                                : 'Se conservarán vigentes como antecedente de sólo lectura, sin generar pendiente ni seguimiento.'}
+                        </span>
+                    </span>
+                </label>
+            )}
+        </ConfirmActionDialog>
     );
 }

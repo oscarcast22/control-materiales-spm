@@ -58,31 +58,34 @@ export function ModalHeader({
                 className,
             )}
         >
-            <div className="flex min-w-0 items-start gap-3">
-                {icon && (
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary-subtle text-primary shadow-[var(--shadow-control)] [&>svg]:size-5">
-                        {icon}
-                    </span>
-                )}
-                <div className="min-w-0">
-                    <DialogTitle className="leading-6">{title}</DialogTitle>
-                    {description && (
-                        <DialogDescription className="mt-1 max-w-3xl leading-5">
-                            {description}
-                        </DialogDescription>
-                    )}
-                </div>
-            </div>
-            {actions && (
+            <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3">
                 <div
-                    className={cn(
-                        'flex min-w-0 flex-wrap items-center gap-2 border-t border-border/80 pt-3',
-                        description ? 'mt-4' : 'mt-3',
-                    )}
+                    data-slot="modal-header-copy"
+                    className="flex max-w-full min-w-0 items-start gap-3"
                 >
-                    {actions}
+                    {icon && (
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary-subtle text-primary shadow-[var(--shadow-control)] [&>svg]:size-5">
+                            {icon}
+                        </span>
+                    )}
+                    <div className="min-w-0">
+                        <DialogTitle className="leading-6">{title}</DialogTitle>
+                        {description && (
+                            <DialogDescription className="mt-1 max-w-3xl leading-5">
+                                {description}
+                            </DialogDescription>
+                        )}
+                    </div>
                 </div>
-            )}
+                {actions && (
+                    <div
+                        data-slot="modal-header-actions"
+                        className="flex shrink-0 items-center gap-2"
+                    >
+                        {actions}
+                    </div>
+                )}
+            </div>
         </DialogHeader>
     );
 }

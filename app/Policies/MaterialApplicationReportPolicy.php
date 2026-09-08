@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\VoucherStatus;
 use App\Models\MaterialApplicationReport;
 use App\Models\User;
 
@@ -14,6 +15,12 @@ class MaterialApplicationReportPolicy
 
     public function update(User $user, MaterialApplicationReport $report): bool
     {
+        $report->loadMissing('voucher');
+
+        if ($report->voucher->status !== VoucherStatus::Active) {
+            return false;
+        }
+
         if ($user->isAdministrator()) {
             return true;
         }

@@ -17,6 +17,19 @@ type AuditViewport = {
     theme: 'light' | 'dark';
 };
 
+type ToastType = 'success' | 'info' | 'warning' | 'error';
+
+const toastVariants: Array<{
+    type: ToastType;
+    label: string;
+    colorToken: string;
+}> = [
+    { type: 'success', label: 'Éxito:', colorToken: '--success' },
+    { type: 'info', label: 'Información:', colorToken: '--info' },
+    { type: 'warning', label: 'Advertencia:', colorToken: '--warning' },
+    { type: 'error', label: 'Error:', colorToken: '--danger' },
+];
+
 const allViewports: AuditViewport[] = [
     { name: 'desktop-light', width: 1440, height: 1000, theme: 'light' },
     { name: 'desktop-dark', width: 1440, height: 1000, theme: 'dark' },
@@ -119,6 +132,136 @@ async function assertFloatingSurfaceDoesNotZoom(surface: Locator) {
     ).toBe('none');
 }
 
+async function assertUsesColorTokens(
+    element: Locator,
+    colorToken: string,
+    backgroundToken?: string,
+) {
+    const colors = await element.evaluate(
+        (target, tokens) => {
+            const probe = document.createElement('span');
+
+            probe.style.color = `var(${tokens.colorToken})`;
+
+            if (tokens.backgroundToken) {
+                probe.style.backgroundColor = `var(${tokens.backgroundToken})`;
+            }
+
+            document.body.append(probe);
+
+            const targetStyles = getComputedStyle(target);
+            const probeStyles = getComputedStyle(probe);
+            const result = {
+                color: targetStyles.color,
+                expectedColor: probeStyles.color,
+                backgroundColor: targetStyles.backgroundColor,
+                expectedBackgroundColor: probeStyles.backgroundColor,
+            };
+
+            probe.remove();
+
+            return result;
+        },
+        { colorToken, backgroundToken },
+    );
+
+    expect(colors.color).toBe(colors.expectedColor);
+
+    if (backgroundToken) {
+        expect(colors.backgroundColor).toBe(colors.expectedBackgroundColor);
+    }
+}
+
+async function assertToastDesign(page: Page, viewport: AuditViewport) {
+    const toaster = page.locator('[data-sonner-toaster]');
+    const borderColors = new Set<string>();
+
+    for (const variant of toastVariants) {
+        const message = `Notificación de ${variant.type}`;
+
+        await page.evaluate(
+            ({ type, message }) => {
+                document.dispatchEvent(
+                    new CustomEvent('inertia:flash', {
+                        detail: { flash: { toast: { type, message } } },
+                    }),
+                );
+            },
+            { type: variant.type, message },
+        );
+
+        const toast = page
+            .locator('[data-sonner-toast]')
+            .filter({ hasText: message });
+
+        await expect(toast).toBeVisible();
+        await expect(toaster).toHaveAttribute('data-x-position', 'right');
+        await expect(toaster).toHaveAttribute('data-y-position', 'top');
+        await expect
+            .poll(async () => (await toast.boundingBox())?.y ?? -1)
+            .toBeGreaterThanOrEqual(viewport.width < 600 ? 11 : 19);
+        await expect(toast.locator('[data-icon]')).toContainText(variant.label);
+        await assertUsesColorTokens(
+            toast.locator('[data-icon]'),
+            variant.colorToken,
+        );
+        await assertUsesColorTokens(
+            toast.locator('[data-title]'),
+            '--text-primary',
+        );
+
+        const toastBox = await toast.boundingBox();
+        const closeButton = toast.getByRole('button', {
+            name: 'Cerrar notificación',
+        });
+        const closeBox = await closeButton.boundingBox();
+
+        expect(toastBox).not.toBeNull();
+        expect(closeBox).not.toBeNull();
+        expect(toastBox!.y).toBeLessThanOrEqual(24);
+        expect(
+            viewport.width - (toastBox!.x + toastBox!.width),
+        ).toBeGreaterThanOrEqual(viewport.width < 600 ? 11 : 23);
+        expect(closeBox!.width).toBeGreaterThanOrEqual(28);
+        expect(closeBox!.height).toBeGreaterThanOrEqual(28);
+        const surfaceStyles = await toast.evaluate((element) => {
+            const styles = getComputedStyle(element);
+
+            return {
+                backdropFilter: styles.backdropFilter,
+                backgroundImage: styles.backgroundImage,
+                borderColor: styles.borderColor,
+                borderRadius: styles.borderRadius,
+                boxShadow: styles.boxShadow,
+            };
+        });
+
+        borderColors.add(surfaceStyles.borderColor);
+        expect(surfaceStyles.backdropFilter).not.toBe('none');
+        expect(surfaceStyles.backgroundImage).toContain('radial-gradient');
+        expect(surfaceStyles.backgroundImage).toContain(
+            'radial-gradient(90% 180%',
+        );
+        expect(surfaceStyles.backgroundImage).toContain('78%');
+        expect(surfaceStyles.borderRadius).toBe('16px');
+        expect(surfaceStyles.boxShadow).not.toContain('3px 0px 0px 0px inset');
+
+        if (viewport.name === 'desktop-light' || variant.type === 'success') {
+            await page.screenshot({
+                path: path.join(
+                    evidenceDir,
+                    `${viewport.name}--toast-${variant.type}.png`,
+                ),
+            });
+        }
+
+        await closeButton.click();
+        await expect(toast).toBeHidden();
+    }
+
+    expect(borderColors.size).toBe(1);
+}
+
 async function assertVoucherModalSelectScroll(
     page: Page,
     viewportName: string,
@@ -215,12 +358,59 @@ async function assertVoucherDetailModalHeader(
     });
 
     await expect(closeButton).toBeVisible();
+    const moreActions = dialog.getByRole('button', {
+        name: 'Más acciones del vale',
+    });
+
+    await expect(moreActions).toBeVisible();
     await expect(
-        dialog.getByRole('button', { name: 'Más acciones' }),
+        dialog.getByRole('button', {
+            name: 'Cancelar vale',
+            exact: true,
+        }),
     ).toHaveCount(0);
     const closeBox = await closeButton.boundingBox();
+    const actionsBox = await moreActions.boundingBox();
+    const headerCopyBox = await dialog
+        .locator('[data-slot="modal-header-copy"]')
+        .boundingBox();
+    const headerActionsBox = await dialog
+        .locator('[data-slot="modal-header-actions"]')
+        .boundingBox();
 
     expect(closeBox).not.toBeNull();
+    expect(actionsBox).not.toBeNull();
+    expect(headerCopyBox).not.toBeNull();
+    expect(headerActionsBox).not.toBeNull();
+    expect(actionsBox!.x + actionsBox!.width).toBeLessThanOrEqual(closeBox!.x);
+
+    if (!viewportName.startsWith('mobile')) {
+        expect(headerActionsBox!.x).toBeGreaterThanOrEqual(
+            headerCopyBox!.x + headerCopyBox!.width,
+        );
+        expect(
+            headerActionsBox!.x - (headerCopyBox!.x + headerCopyBox!.width),
+        ).toBeLessThanOrEqual(20);
+    }
+
+    await moreActions.click();
+    const cancelItem = page.getByRole('menuitem', { name: 'Cancelar vale' });
+    const deleteItem = page.getByRole('menuitem', { name: 'Eliminar vale' });
+
+    await expect(deleteItem).toBeVisible();
+    await assertUsesColorTokens(deleteItem, '--danger');
+
+    if (await cancelItem.isVisible()) {
+        await assertUsesColorTokens(cancelItem, '--foreground');
+        await cancelItem.hover();
+        await expect(cancelItem).toHaveAttribute('data-highlighted');
+        await assertUsesColorTokens(cancelItem, '--primary', '--hover');
+    }
+
+    await deleteItem.hover();
+    await expect(deleteItem).toHaveAttribute('data-highlighted');
+    await assertUsesColorTokens(deleteItem, '--danger', '--danger-subtle');
+    await page.keyboard.press('Escape');
     await page.screenshot({
         path: path.join(
             evidenceDir,
@@ -248,6 +438,28 @@ async function assertVoucherDetailModalHeader(
     await closeButton.click();
     await expect(dialog).toBeHidden();
 }
+
+test('notificaciones toast claras y accesibles', async ({ browser }) => {
+    await mkdir(evidenceDir, { recursive: true });
+
+    for (const viewport of [
+        allViewports[0],
+        allViewports[1],
+        allViewports[4],
+    ]) {
+        const context = await browser.newContext({
+            viewport: { width: viewport.width, height: viewport.height },
+            colorScheme: viewport.theme,
+        });
+        const page = await context.newPage();
+
+        await page.goto('/login');
+        await setTheme(page, viewport.theme);
+        await page.reload({ waitUntil: 'networkidle' });
+        await assertToastDesign(page, viewport);
+        await context.close();
+    }
+});
 
 test('recorrido visual de todas las pantallas', async ({ browser }) => {
     test.setTimeout(180_000);
@@ -702,9 +914,8 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
                     'aria-expanded',
                     'true',
                 );
-                const detailId = await firstToggle.getAttribute(
-                    'aria-controls',
-                );
+                const detailId =
+                    await firstToggle.getAttribute('aria-controls');
                 await expect(page.locator(`#${detailId}`)).toBeVisible();
 
                 const voucherRow = firstToggle.locator('xpath=ancestor::tr');
@@ -831,34 +1042,53 @@ test('recorrido visual de todas las pantallas', async ({ browser }) => {
 
             if (voucherPath) {
                 await page.goto(voucherPath, { waitUntil: 'networkidle' });
-                const cancelButton = page.getByRole('button', {
-                    name: 'Cancelar vale',
-                    exact: true,
+                const moreActions = page.getByRole('button', {
+                    name: 'Más acciones del vale',
                 });
 
                 if (
-                    (await cancelButton.isVisible()) &&
-                    (await cancelButton.isEnabled())
+                    (await moreActions.isVisible()) &&
+                    (await moreActions.isEnabled())
                 ) {
-                    await cancelButton.click();
-                    await expect(
-                        page.getByRole('heading', { name: 'Cancelar vale' }),
-                    ).toBeVisible();
-                    await expect(
-                        page.getByText(
-                            'Opcional. Si escribes un motivo, usa al menos 5 caracteres.',
-                        ),
-                    ).toBeVisible();
-                    await page.waitForTimeout(250);
-                    await page.screenshot({
-                        path: path.join(
-                            evidenceDir,
-                            'desktop-light--dialog-cancel-voucher.png',
-                        ),
+                    await moreActions.click();
+                    const cancelItem = page.getByRole('menuitem', {
+                        name: 'Cancelar vale',
                     });
-                    await page
-                        .getByRole('button', { name: 'Cerrar diálogo' })
-                        .click();
+
+                    if (await cancelItem.isVisible()) {
+                        await cancelItem.click();
+                        await expect(
+                            page.getByRole('heading', {
+                                name: 'Cancelar vale',
+                            }),
+                        ).toBeVisible();
+                        await expect(
+                            page.getByText(
+                                'Opcional. Si escribes un motivo, usa al menos 5 caracteres.',
+                            ),
+                        ).toBeVisible();
+
+                        const voidApplications = page.getByRole('checkbox', {
+                            name: /Anular las aplicaciones vigentes/,
+                        });
+
+                        if (await voidApplications.isVisible()) {
+                            await expect(voidApplications).toBeChecked();
+                        }
+
+                        await page.waitForTimeout(250);
+                        await page.screenshot({
+                            path: path.join(
+                                evidenceDir,
+                                'desktop-light--dialog-cancel-voucher.png',
+                            ),
+                        });
+                        await page
+                            .getByRole('button', { name: 'Cerrar diálogo' })
+                            .click();
+                    } else {
+                        await page.keyboard.press('Escape');
+                    }
                 }
             }
 

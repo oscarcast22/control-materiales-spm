@@ -32,6 +32,8 @@ export function ConfirmActionDialog({
     reasonLabel,
     reasonPlaceholder,
     reasonRequired = true,
+    cancelLabel = 'Volver',
+    children,
 }: {
     trigger?: ReactNode;
     open?: boolean;
@@ -44,6 +46,8 @@ export function ConfirmActionDialog({
     reasonLabel?: string;
     reasonPlaceholder?: string;
     reasonRequired?: boolean;
+    cancelLabel?: string;
+    children?: ReactNode;
 }) {
     const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const [reason, setReason] = useState('');
@@ -116,6 +120,7 @@ export function ConfirmActionDialog({
                         {description}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
+                {children}
                 {reasonLabel && (
                     <Field invalid={Boolean(error)}>
                         <FieldLabel htmlFor={reasonId}>
@@ -145,7 +150,7 @@ export function ConfirmActionDialog({
                 {!reasonLabel && <FieldError>{error}</FieldError>}
                 <AlertDialogFooter>
                     <AlertDialogCancel disabled={processing}>
-                        Volver
+                        {cancelLabel}
                     </AlertDialogCancel>
                     <Button
                         type="button"

@@ -21,7 +21,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('mis-vales', [MyVoucherController::class, 'index'])->name('my-vouchers.index');
     Route::get('mis-vales/{voucher}', [MyVoucherController::class, 'show'])->name('my-vouchers.show');
 
-    Route::resource('vouchers', VoucherController::class)->except('destroy');
+    Route::resource('vouchers', VoucherController::class);
     Route::post('vouchers/cancelled', [VoucherController::class, 'storeCancelled'])->name('vouchers.cancelled.store');
     Route::post('vouchers/loaned', [VoucherController::class, 'storeLoaned'])->name('vouchers.loaned.store');
     Route::post('vouchers/{voucher}/cancel', [VoucherController::class, 'cancel'])->name('vouchers.cancel');

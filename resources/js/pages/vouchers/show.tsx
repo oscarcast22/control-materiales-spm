@@ -37,7 +37,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { VoucherCancelAction } from '@/components/voucher-cancel-action';
+import { VoucherAdminActions } from '@/components/voucher-admin-actions';
 import { VoucherModalLink } from '@/components/voucher-dialogs';
 import { formatBytes, formatDate, formatQuantity } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -54,6 +54,7 @@ export default function VoucherShow({
     embedded = false,
     onEdit,
     onRefresh,
+    onDeleted,
     backUrl = '/vouchers',
 }: {
     voucher: Voucher;
@@ -61,6 +62,7 @@ export default function VoucherShow({
     embedded?: boolean;
     onEdit?: () => void;
     onRefresh?: () => void;
+    onDeleted?: () => void;
     backUrl?: string;
 }) {
     const canApply =
@@ -98,10 +100,11 @@ export default function VoucherShow({
                                     Editar
                                 </Button>
                             )}
-                            <VoucherCancelAction
+                            <VoucherAdminActions
                                 voucher={voucher}
                                 embedded
                                 onCancelled={onRefresh}
+                                onDeleted={onDeleted}
                             />
                         </>
                     }
@@ -174,10 +177,11 @@ export default function VoucherShow({
                                         </VoucherModalLink>
                                     </Button>
                                 ))}
-                            <VoucherCancelAction
+                            <VoucherAdminActions
                                 voucher={voucher}
                                 embedded={embedded}
                                 onCancelled={onRefresh}
+                                onDeleted={onDeleted}
                             />
                         </div>
                     </div>
@@ -378,12 +382,14 @@ export default function VoucherShow({
                                         id="service-orders-title"
                                         className="font-semibold"
                                     >
-                                        Aplicaciones registradas
+                                        {voucher.status === 'cancelled'
+                                            ? 'Aplicaciones conservadas'
+                                            : 'Aplicaciones registradas'}
                                     </h2>
                                     <p className="mt-0.5 text-sm text-muted-foreground">
-                                        Cada registro reúne fecha, tipo y número
-                                        de orden, ubicación o dirección,
-                                        detalles y materiales utilizados.
+                                        {voucher.status === 'cancelled'
+                                            ? 'Se conservan únicamente como antecedente y no generan saldo ni seguimiento.'
+                                            : 'Cada registro reúne fecha, tipo y número de orden, ubicación o dirección, detalles y materiales utilizados.'}
                                     </p>
                                 </div>
                             </div>
@@ -745,7 +751,17 @@ function ApplicationReportCard({
                                     ? `Orden ${report.service_order}`
                                     : 'Aplicación sin orden'}
                             </CardTitle>
-                            <Badge variant="success">Vigente</Badge>
+                            <Badge
+                                variant={
+                                    voucher.status === 'cancelled'
+                                        ? 'outline'
+                                        : 'success'
+                                }
+                            >
+                                {voucher.status === 'cancelled'
+                                    ? 'Antecedente'
+                                    : 'Vigente'}
+                            </Badge>
                             <Badge variant="outline">
                                 {formOptions.service_order_types.find(
                                     (type) =>
@@ -846,6 +862,7 @@ function ApplicationReportCard({
                                 <ApplicationReportRow
                                     key={application.id}
                                     application={application}
+                                    cancelled={voucher.status === 'cancelled'}
                                 />
                             ))}
                         </TableBody>
@@ -941,8 +958,10 @@ function ApplicationEvidenceActions({
 
 function ApplicationReportRow({
     application,
+    cancelled,
 }: {
     application: ApplicationReportLine;
+    cancelled: boolean;
 }) {
     return (
         <TableRow>
@@ -961,7 +980,9 @@ function ApplicationReportRow({
                 {formatQuantity(application.quantity)} {application.unit.symbol}
             </TableCell>
             <TableCell>
-                <Badge variant="success">Vigente</Badge>
+                <Badge variant={cancelled ? 'outline' : 'success'}>
+                    {cancelled ? 'Antecedente' : 'Vigente'}
+                </Badge>
             </TableCell>
         </TableRow>
     );
