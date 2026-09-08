@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class TechnicianAccountController extends Controller
 {
@@ -44,7 +45,12 @@ class TechnicianAccountController extends Controller
             return $user;
         });
 
-        return back()->with('success', "Acceso técnico creado para {$user->username}.");
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => "Acceso técnico creado para {$user->username}.",
+        ]);
+
+        return back();
     }
 
     public function update(Request $request, Person $person): RedirectResponse
@@ -75,7 +81,9 @@ class TechnicianAccountController extends Controller
             AuditEvent::record($locked, 'technician_account_updated', $before, $this->auditData($locked->fresh()));
         });
 
-        return back()->with('success', 'Acceso técnico actualizado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Acceso técnico actualizado.']);
+
+        return back();
     }
 
     public function resetPassword(Request $request, Person $person): RedirectResponse
@@ -91,7 +99,12 @@ class TechnicianAccountController extends Controller
             'reset_at' => now()->toIso8601String(),
         ]);
 
-        return back()->with('success', 'Contraseña restablecida. La contraseña anterior no se puede consultar.');
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Contraseña restablecida. La contraseña anterior no se puede consultar.',
+        ]);
+
+        return back();
     }
 
     private function ensureEligiblePerson(Person $person): void

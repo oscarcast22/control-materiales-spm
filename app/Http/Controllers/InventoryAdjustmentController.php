@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class InventoryAdjustmentController extends Controller
 {
@@ -47,7 +48,9 @@ class InventoryAdjustmentController extends Controller
         ]);
         AuditEvent::record($adjustment, 'created', null, $adjustment->toArray());
 
-        return back()->with('success', 'Ajuste de inventario registrado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Ajuste de inventario registrado.']);
+
+        return back();
     }
 
     public function void(Request $request, InventoryAdjustment $adjustment): RedirectResponse
@@ -68,6 +71,8 @@ class InventoryAdjustmentController extends Controller
             AuditEvent::record($locked, 'voided', $before, $locked->fresh()->toArray());
         });
 
-        return back()->with('success', 'Ajuste anulado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Ajuste anulado.']);
+
+        return back();
     }
 }

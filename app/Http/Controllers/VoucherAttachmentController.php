@@ -7,6 +7,7 @@ use App\Models\VoucherAttachment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VoucherAttachmentController extends Controller
@@ -28,6 +29,8 @@ class VoucherAttachmentController extends Controller
         Storage::disk($attachment->disk)->delete($attachment->path);
         $attachment->delete();
 
-        return back()->with('success', 'Archivo eliminado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Archivo eliminado.']);
+
+        return back();
     }
 }

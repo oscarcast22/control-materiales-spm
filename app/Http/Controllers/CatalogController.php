@@ -52,7 +52,9 @@ class CatalogController extends Controller
         $destination = Destination::create([...$data, 'normalized_name' => $key]);
         AuditEvent::record($destination, 'created', null, $destination->toArray());
 
-        return back()->with('success', 'Ubicación agregada.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Ubicación agregada.']);
+
+        return back();
     }
 
     public function updateDestination(Request $request, Destination $destination): RedirectResponse
@@ -97,7 +99,9 @@ class CatalogController extends Controller
             AuditEvent::record($destination, 'reviewed', $before, $destination->fresh()->toArray());
         });
 
-        return back()->with('success', 'Ubicación revisada y actualizada.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Ubicación revisada y actualizada.']);
+
+        return back();
     }
 
     public function storeMaterial(Request $request): RedirectResponse
@@ -129,7 +133,9 @@ class CatalogController extends Controller
             return $model;
         });
 
-        return back()->with('success', 'Material agregado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Material agregado.']);
+
+        return back();
     }
 
     public function updateMaterial(Request $request, Material $material): RedirectResponse
@@ -207,7 +213,9 @@ class CatalogController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Material revisado y actualizado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Material revisado y actualizado.']);
+
+        return back();
     }
 
     public function storePerson(Request $request): RedirectResponse
@@ -230,7 +238,9 @@ class CatalogController extends Controller
         PersonAlias::create(['person_id' => $model->id, 'alias' => $model->name, 'normalized_alias' => $key]);
         AuditEvent::record($model, 'created', null, $model->toArray());
 
-        return back()->with('success', 'Persona agregada.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Persona agregada.']);
+
+        return back();
     }
 
     public function updatePerson(Request $request, Person $person): RedirectResponse
@@ -289,7 +299,9 @@ class CatalogController extends Controller
             AuditEvent::record($person, 'reviewed', $before, $person->fresh()->toArray());
         });
 
-        return back()->with('success', 'Persona revisada y actualizada.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Persona revisada y actualizada.']);
+
+        return back();
     }
 
     public function storeUnit(Request $request): RedirectResponse
@@ -303,7 +315,9 @@ class CatalogController extends Controller
         $model = Unit::create($data);
         AuditEvent::record($model, 'created', null, $model->toArray());
 
-        return back()->with('success', 'Unidad agregada.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Unidad agregada.']);
+
+        return back();
     }
 
     public function updateUnit(Request $request, Unit $unit): RedirectResponse
@@ -336,7 +350,9 @@ class CatalogController extends Controller
             AuditEvent::record($locked, 'updated', $before, $locked->fresh()->toArray());
         });
 
-        return back()->with('success', 'Unidad actualizada en todos los vales relacionados.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Unidad actualizada en todos los vales relacionados.']);
+
+        return back();
     }
 
     public function updateAction(Request $request, Action $action): RedirectResponse
@@ -356,7 +372,9 @@ class CatalogController extends Controller
         ]);
         AuditEvent::record($action, 'updated', $before, $action->fresh()->toArray());
 
-        return back()->with('success', 'Acción actualizada.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Acción actualizada.']);
+
+        return back();
     }
 
     public function updateIndicator(Request $request, ActionIndicator $indicator): RedirectResponse
@@ -376,7 +394,9 @@ class CatalogController extends Controller
         ]);
         AuditEvent::record($indicator, 'updated', $before, $indicator->fresh()->toArray());
 
-        return back()->with('success', 'Indicador actualizado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Indicador actualizado.']);
+
+        return back();
     }
 
     /**
@@ -418,7 +438,9 @@ class CatalogController extends Controller
         $model->update(['is_active' => ! $model->getAttribute('is_active')]);
         AuditEvent::record($model, 'status_changed', $before, $model->fresh()->toArray());
 
-        return back()->with('success', 'Estado actualizado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Estado actualizado.']);
+
+        return back();
     }
 
     public function destroy(string $type, int $id, CatalogDeletion $catalogDeletion): RedirectResponse
@@ -426,7 +448,9 @@ class CatalogController extends Controller
         Gate::authorize('manage-catalogs');
         $catalogDeletion->delete($type, $id);
 
-        return back()->with('success', 'Registro eliminado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Registro eliminado.']);
+
+        return back();
     }
 
     private function ensureCanDeactivate(Model $model): void
@@ -507,7 +531,9 @@ class CatalogController extends Controller
             abort(404);
         }
 
-        return back()->with('success', 'Registros fusionados y referencias conservadas.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Registros fusionados y referencias conservadas.']);
+
+        return back();
     }
 
     private function mergeMaterials(int $sourceId, int $targetId): void

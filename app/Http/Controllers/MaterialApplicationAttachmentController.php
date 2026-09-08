@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -63,7 +64,12 @@ class MaterialApplicationAttachmentController extends Controller
             Storage::disk($old->disk)->delete($old->path);
         }
 
-        return back()->with('success', $old ? 'Evidencia reemplazada.' : 'Evidencia agregada.');
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $old ? 'Evidencia reemplazada.' : 'Evidencia agregada.',
+        ]);
+
+        return back();
     }
 
     public function destroy(Request $request, MaterialApplicationReport $report): RedirectResponse
@@ -81,6 +87,8 @@ class MaterialApplicationAttachmentController extends Controller
         });
         Storage::disk($attachment->disk)->delete($attachment->path);
 
-        return back()->with('success', 'Evidencia retirada.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Evidencia retirada.']);
+
+        return back();
     }
 }

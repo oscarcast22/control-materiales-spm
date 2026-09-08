@@ -49,10 +49,6 @@ class HandleInertiaRequests extends Middleware
                 'manage_vouchers' => fn (): bool => $request->user()?->can('create', Voucher::class) ?? false,
                 'view_my_vouchers' => fn (): bool => $request->user()?->hasOperationalTechnicianAccess() ?? false,
             ],
-            'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
-            ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

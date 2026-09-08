@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 use Throwable;
 
 class MaterialApplicationController extends Controller
@@ -175,9 +176,14 @@ class MaterialApplicationController extends Controller
             throw $exception;
         }
 
-        return back()->with('success', count($data['items']) === 1
-            ? 'Aplicación registrada correctamente.'
-            : 'Aplicaciones registradas correctamente.');
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => count($data['items']) === 1
+                ? 'Aplicación registrada correctamente.'
+                : 'Aplicaciones registradas correctamente.',
+        ]);
+
+        return back();
     }
 
     public function update(Request $request, MaterialApplicationReport $report): RedirectResponse
@@ -329,7 +335,9 @@ class MaterialApplicationController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Aplicación corregida; el saldo fue recalculado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Aplicación corregida; el saldo fue recalculado.']);
+
+        return back();
     }
 
     /** @return array<string, string> */
@@ -372,6 +380,8 @@ class MaterialApplicationController extends Controller
             AuditEvent::record($locked, 'voided', $before, $locked->fresh()->toArray());
         });
 
-        return back()->with('success', 'Aplicación anulada; el saldo fue recalculado.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Aplicación anulada; el saldo fue recalculado.']);
+
+        return back();
     }
 }

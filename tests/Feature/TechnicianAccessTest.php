@@ -108,12 +108,17 @@ class TechnicianAccessTest extends TestCase
         $administrator = User::factory()->create();
         $person = Person::factory()->create();
 
-        $this->actingAs($administrator)->post(route('catalogs.people.account.store', $person), [
+        $response = $this->actingAs($administrator)->post(route('catalogs.people.account.store', $person), [
             'username' => '  TECNICO.DOS ',
             'email' => '',
             'password' => 'Password1!',
             'password_confirmation' => 'Password1!',
-        ])->assertSessionHasNoErrors();
+        ]);
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertInertiaFlash('toast.type', 'success')
+            ->assertInertiaFlash('toast.message', 'Acceso técnico creado para tecnico.dos.')
+            ->assertSessionMissing('success');
 
         $account = $person->account()->sole();
         $this->assertSame('tecnico.dos', $account->username);

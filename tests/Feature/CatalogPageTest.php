@@ -326,7 +326,10 @@ class CatalogPageTest extends TestCase
         ] as [$type, $model, $class]) {
             $this->actingAs($user)
                 ->delete(route('catalogs.destroy', ['type' => $type, 'id' => $model->id]))
-                ->assertSessionHasNoErrors();
+                ->assertSessionHasNoErrors()
+                ->assertInertiaFlash('toast.type', 'success')
+                ->assertInertiaFlash('toast.message', 'Registro eliminado.')
+                ->assertSessionMissing('success');
 
             $this->assertModelMissing($model);
             $this->assertDatabaseHas('audit_events', [
