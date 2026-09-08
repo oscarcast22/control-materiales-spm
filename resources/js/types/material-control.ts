@@ -19,6 +19,7 @@ export type Material = Named & {
     default_unit?: Unit;
     is_active?: boolean;
     needs_review?: boolean;
+    is_luminaire: boolean;
     aliases_count?: number;
     voucher_types?: Pick<VoucherType, 'id' | 'name' | 'code'>[];
     deletion?: CatalogDeletion;
@@ -138,6 +139,7 @@ export type VoucherItem = {
     unit: Unit;
     description: string;
     quantity: string;
+    luminaire_folios: string | null;
     used_quantity: string;
     pending_quantity: string;
     balance_state: 'pending' | 'settled' | 'anomaly' | 'received';

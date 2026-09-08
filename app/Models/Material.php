@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $default_unit_id
  * @property bool $is_active
  * @property bool $needs_review
+ * @property bool $is_luminaire
  * @property-read Unit $defaultUnit
  * @property-read Collection<int, MaterialAlias> $aliases
  * @property-read Collection<int, StorageLocation> $voucherTypes
@@ -26,11 +27,11 @@ class Material extends Model
     /** @use HasFactory<MaterialFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'normalized_name', 'default_unit_id', 'is_active', 'needs_review'];
+    protected $fillable = ['name', 'normalized_name', 'default_unit_id', 'is_active', 'needs_review', 'is_luminaire'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean', 'needs_review' => 'boolean'];
+        return ['is_active' => 'boolean', 'needs_review' => 'boolean', 'is_luminaire' => 'boolean'];
     }
 
     /** @return BelongsTo<Unit, $this> */

@@ -207,12 +207,19 @@ export function MaterialSection({
                                     {page.data.map((material) => (
                                         <TableRow key={material.id}>
                                             <TableCell className="whitespace-normal">
-                                                <RecordName
-                                                    name={material.name}
-                                                    needsReview={
-                                                        material.needs_review
-                                                    }
-                                                />
+                                                <div className="grid justify-items-start gap-1.5">
+                                                    <RecordName
+                                                        name={material.name}
+                                                        needsReview={
+                                                            material.needs_review
+                                                        }
+                                                    />
+                                                    {material.is_luminaire && (
+                                                        <Badge variant="outline">
+                                                            Luminaria
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 <span className="font-mono text-xs font-semibold">
@@ -259,10 +266,17 @@ export function MaterialSection({
                     <div className="grid gap-3 p-4 md:hidden">
                         {page.data.map((material) => (
                             <MobileRecord key={material.id}>
-                                <RecordName
-                                    name={material.name}
-                                    needsReview={material.needs_review}
-                                />
+                                <div className="grid justify-items-start gap-1.5">
+                                    <RecordName
+                                        name={material.name}
+                                        needsReview={material.needs_review}
+                                    />
+                                    {material.is_luminaire && (
+                                        <Badge variant="outline">
+                                            Luminaria
+                                        </Badge>
+                                    )}
+                                </div>
                                 <div className="mt-4 grid grid-cols-2 gap-4">
                                     <MobileDatum label="Unidad">
                                         {material.default_unit?.symbol ?? '—'}
@@ -344,12 +358,14 @@ function MaterialDialog({
         name: string;
         default_unit_id: string;
         voucher_type_ids: string[];
+        is_luminaire: boolean;
         is_active: boolean;
     }>({
         name: material?.name ?? '',
         default_unit_id: material ? String(material.default_unit_id) : '',
         voucher_type_ids:
             material?.voucher_types?.map((type) => String(type.id)) ?? [],
+        is_luminaire: material?.is_luminaire ?? false,
         is_active: material?.is_active ?? true,
     });
     const submit = (event: FormEvent) => {
@@ -470,6 +486,43 @@ function MaterialDialog({
                                 message={form.errors.voucher_type_ids}
                             />
                         </fieldset>
+                        <div className="grid gap-2">
+                            <Label
+                                htmlFor="material-is-luminaire"
+                                className="flex items-start gap-3 rounded-xl border border-border bg-surface-subtle p-3"
+                            >
+                                <Checkbox
+                                    id="material-is-luminaire"
+                                    checked={form.data.is_luminaire}
+                                    onCheckedChange={(checked) =>
+                                        form.setData(
+                                            'is_luminaire',
+                                            checked === true,
+                                        )
+                                    }
+                                    aria-invalid={
+                                        Boolean(form.errors.is_luminaire) ||
+                                        undefined
+                                    }
+                                    aria-describedby={
+                                        form.errors.is_luminaire
+                                            ? 'material-is-luminaire-error'
+                                            : undefined
+                                    }
+                                />
+                                <span className="grid gap-1">
+                                    <span>Es luminaria</span>
+                                    <span className="text-xs leading-5 font-normal text-muted-foreground">
+                                        Permite capturar rangos o números de
+                                        folio en las partidas de este material.
+                                    </span>
+                                </span>
+                            </Label>
+                            <InputError
+                                id="material-is-luminaire-error"
+                                message={form.errors.is_luminaire}
+                            />
+                        </div>
                         {material && (
                             <CatalogStatusField
                                 value={form.data.is_active}

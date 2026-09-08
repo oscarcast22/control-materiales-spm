@@ -220,6 +220,7 @@ final class VoucherData
             'unit' => $item->unit->only(['id', 'name', 'symbol', 'decimal_places']),
             'description' => $item->description_snapshot,
             'quantity' => $item->quantity,
+            'luminaire_folios' => $item->luminaire_folios,
             'used_quantity' => $used,
             'pending_quantity' => $pending,
             'balance_state' => $isEntry ? 'received' : ((float) $pending < 0 ? 'anomaly' : ((float) $pending === 0.0 ? 'settled' : 'pending')),

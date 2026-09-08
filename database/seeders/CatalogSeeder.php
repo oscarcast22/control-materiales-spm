@@ -102,6 +102,7 @@ class CatalogSeeder extends Seeder
                     'normalized_name' => $key,
                     'default_unit_id' => $unit->id,
                     'needs_review' => $data['needs_review'],
+                    'is_luminaire' => $data['is_luminaire'],
                 ]);
             } elseif ($material->default_unit_id === $unspecified->id && $unit->id !== $unspecified->id) {
                 $before = $material->toArray();

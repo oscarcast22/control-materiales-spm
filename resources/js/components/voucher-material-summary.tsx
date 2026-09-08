@@ -142,7 +142,17 @@ function VoucherMaterialBreakdown({
                         {items.map((item) => (
                             <TableRow key={item.id}>
                                 <TableCell className="max-w-md font-medium whitespace-normal">
-                                    {item.description}
+                                    <div className="grid gap-1">
+                                        <span>{item.description}</span>
+                                        {item.luminaire_folios && (
+                                            <span className="text-xs leading-5 font-normal break-words whitespace-pre-wrap text-muted-foreground">
+                                                <span className="font-medium text-foreground">
+                                                    Folios:
+                                                </span>{' '}
+                                                {item.luminaire_folios}
+                                            </span>
+                                        )}
+                                    </div>
                                 </TableCell>
                                 <TableCell>{item.unit.symbol}</TableCell>
                                 <BreakdownQuantity value={item.quantity} />

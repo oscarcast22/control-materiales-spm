@@ -697,6 +697,7 @@ class VoucherController extends Controller
             })],
             'items.*.unit_id' => ['prohibited'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:'.QuantityPrecision::MAX_VALUE],
+            'items.*.luminaire_folios' => ['nullable', 'string', 'max:5000'],
         ], $this->voucherValidationMessages());
 
         $eligibleMaterials = Material::query()
@@ -708,17 +709,23 @@ class VoucherController extends Controller
                     $query->orWhereIn('id', $currentMaterialIds);
                 }
             })
-            ->get(['id', 'default_unit_id'])
+            ->get(['id', 'default_unit_id', 'is_luminaire'])
             ->keyBy('id');
         $materialErrors = [];
         foreach ($data['items'] ?? [] as $index => $item) {
             $material = $eligibleMaterials->get((int) $item['material_id']);
+            $luminaireFolios = filled($item['luminaire_folios'] ?? null)
+                ? trim((string) $item['luminaire_folios'])
+                : null;
+            $data['items'][$index]['luminaire_folios'] = $luminaireFolios;
             $existing = isset($item['id']) ? $existingItems->get((int) $item['id']) : null;
             $keepsHistoricalQuantity = $existing instanceof VoucherItem
                 && $existing->material_id === (int) $item['material_id']
                 && abs((float) $existing->quantity - (float) $item['quantity']) < 0.0001;
             if ($material === null) {
                 $materialErrors["items.{$index}.material_id"] = 'Este material no está disponible para el tipo de vale seleccionado.';
+            } elseif ($luminaireFolios !== null && ! $material->is_luminaire) {
+                $materialErrors["items.{$index}.luminaire_folios"] = 'Los folios sólo se pueden registrar para materiales marcados como luminaria.';
             } elseif (! $keepsHistoricalQuantity
                 && ! QuantityPrecision::accepts($item['quantity'], $material->defaultUnit->decimal_places)) {
                 $materialErrors["items.{$index}.quantity"] = QuantityPrecision::message($material->defaultUnit);
@@ -795,6 +802,7 @@ class VoucherController extends Controller
             'items.*.material_id' => ['required', Rule::exists('materials', 'id')->where('is_active', true)],
             'items.*.unit_id' => ['prohibited'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:'.QuantityPrecision::MAX_VALUE],
+            'items.*.luminaire_folios' => ['nullable', 'string', 'max:5000'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
         ], $this->voucherValidationMessages());
@@ -802,17 +810,23 @@ class VoucherController extends Controller
         $eligibleMaterials = Material::query()
             ->with('defaultUnit:id,name,symbol,decimal_places')
             ->whereHas('voucherTypes', fn (Builder $query) => $query->whereKey($data['voucher_type_id']))
-            ->get(['id', 'default_unit_id'])
+            ->get(['id', 'default_unit_id', 'is_luminaire'])
             ->keyBy('id');
         $materialErrors = [];
         foreach ($data['items'] as $index => $item) {
             $material = $eligibleMaterials->get((int) $item['material_id']);
+            $luminaireFolios = filled($item['luminaire_folios'] ?? null)
+                ? trim((string) $item['luminaire_folios'])
+                : null;
+            $data['items'][$index]['luminaire_folios'] = $luminaireFolios;
             $existing = isset($item['id']) ? $existingItems->get((int) $item['id']) : null;
             $keepsHistoricalQuantity = $existing instanceof VoucherItem
                 && $existing->material_id === (int) $item['material_id']
                 && abs((float) $existing->quantity - (float) $item['quantity']) < 0.0001;
             if ($material === null) {
                 $materialErrors["items.{$index}.material_id"] = 'Este material no está disponible para el tipo de vale seleccionado.';
+            } elseif ($luminaireFolios !== null && ! $material->is_luminaire) {
+                $materialErrors["items.{$index}.luminaire_folios"] = 'Los folios sólo se pueden registrar para materiales marcados como luminaria.';
             } elseif (! $keepsHistoricalQuantity
                 && ! QuantityPrecision::accepts($item['quantity'], $material->defaultUnit->decimal_places)) {
                 $materialErrors["items.{$index}.quantity"] = QuantityPrecision::message($material->defaultUnit);
@@ -962,6 +976,8 @@ class VoucherController extends Controller
             'items.*.quantity.numeric' => 'La cantidad debe ser un número válido.',
             'items.*.quantity.gt' => 'La cantidad debe ser mayor que cero.',
             'items.*.quantity.max' => 'La cantidad es demasiado grande.',
+            'items.*.luminaire_folios.string' => 'Los folios de luminarias deben ser texto.',
+            'items.*.luminaire_folios.max' => 'Los folios de luminarias no pueden tener más de 5,000 caracteres.',
             'attachments.array' => 'Adjunta archivos válidos.',
             'attachments.max' => 'Puedes adjuntar como máximo cinco archivos.',
             'attachments.*.file' => 'Cada adjunto debe ser un archivo válido.',
@@ -1086,6 +1102,7 @@ class VoucherController extends Controller
                 'unit_id' => $material->default_unit_id,
                 'description_snapshot' => $material->name,
                 'quantity' => $row['quantity'],
+                'luminaire_folios' => $row['luminaire_folios'] ?? null,
                 'created_by' => $item->created_by ?? $request->user()?->id,
                 'updated_by' => $request->user()?->id,
             ]);

@@ -22,7 +22,7 @@ final class CuratedMaterialCatalog
         ];
     }
 
-    /** @return list<array{name: string, unit: string, aliases: list<string>, voucher_types: list<string>, needs_review: bool}> */
+    /** @return list<array{name: string, unit: string, aliases: list<string>, voucher_types: list<string>, needs_review: bool, is_luminaire: bool}> */
     public function materials(): array
     {
         $rows = $this->json('materials.json');
@@ -58,12 +58,23 @@ final class CuratedMaterialCatalog
                 throw new RuntimeException('El catálogo de materiales contiene un indicador de revisión inválido.');
             }
 
+            $normalizedName = Normalizer::key($row['name']);
+            $isLuminaire = $row['is_luminaire'] ?? (
+                str_starts_with($normalizedName, 'luminaria')
+                || str_starts_with($normalizedName, 'luminario')
+                || str_starts_with($normalizedName, 'lnuminaria')
+            );
+            if (! is_bool($isLuminaire)) {
+                throw new RuntimeException('El catálogo de materiales contiene una clasificación de luminaria inválida.');
+            }
+
             $result[] = [
                 'name' => $row['name'],
                 'unit' => $row['unit'],
                 'aliases' => $aliases,
                 'voucher_types' => array_values(array_unique($voucherTypes)),
                 'needs_review' => $needsReview,
+                'is_luminaire' => $isLuminaire,
             ];
         }
 

@@ -26,6 +26,7 @@ class VoucherItemFactory extends Factory
             'unit_id' => Unit::factory(),
             'description_snapshot' => fake()->words(3, true),
             'quantity' => fake()->randomFloat(3, 1, 100),
+            'luminaire_folios' => null,
             'legacy_anomaly' => false,
         ];
     }

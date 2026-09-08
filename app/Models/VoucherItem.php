@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $unit_id
  * @property string $description_snapshot
  * @property string $quantity
+ * @property string|null $luminaire_folios
  * @property bool $legacy_anomaly
  * @property int|null $created_by
  * @property-read Voucher $voucher
@@ -29,7 +30,7 @@ class VoucherItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'voucher_id', 'material_id', 'unit_id', 'description_snapshot', 'quantity',
+        'voucher_id', 'material_id', 'unit_id', 'description_snapshot', 'quantity', 'luminaire_folios',
         'legacy_anomaly', 'created_by', 'updated_by',
     ];
 

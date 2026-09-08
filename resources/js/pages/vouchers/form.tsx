@@ -59,6 +59,7 @@ type Line = {
     id?: number;
     material_id: string;
     quantity: string;
+    luminaire_folios: string;
     has_applications?: boolean;
     confirmed: boolean;
 };
@@ -103,6 +104,7 @@ const blankLine = (): Line => ({
     client_id: `new-${++nextLineId}`,
     material_id: '',
     quantity: '',
+    luminaire_folios: '',
     confirmed: false,
 });
 
@@ -198,6 +200,7 @@ export default function VoucherForm({
                       id: item.id,
                       material_id: String(item.material.id),
                       quantity: quantityForInput(item.quantity),
+                      luminaire_folios: item.luminaire_folios ?? '',
                       has_applications: Number(item.used_quantity) > 0,
                       confirmed: true,
                   })),
@@ -341,7 +344,11 @@ export default function VoucherForm({
     const selectMaterial = (index: number, materialId: string) => {
         changeLine(index, {
             material_id: materialId,
+            luminaire_folios: '',
         });
+        form.clearErrors(
+            `items.${index}.luminaire_folios` as keyof typeof form.errors,
+        );
         window.setTimeout(
             () => document.getElementById(`item-${index}-quantity`)?.focus(),
             0,
@@ -367,6 +374,7 @@ export default function VoucherForm({
                     ...line,
                     material_id: '',
                     quantity: '',
+                    luminaire_folios: '',
                     confirmed: false,
                 };
             }
@@ -504,6 +512,7 @@ export default function VoucherForm({
                     ...(line.id === undefined ? {} : { id: line.id }),
                     material_id: line.material_id,
                     quantity: line.quantity,
+                    luminaire_folios: line.luminaire_folios,
                 })),
         }));
         const options = {
@@ -1114,8 +1123,15 @@ export default function VoucherForm({
                                         ];
                                     const itemError = Object.entries(
                                         form.errors,
-                                    ).find(([field]) =>
-                                        field.startsWith(`items.${index}.`),
+                                    ).find(
+                                        ([field]) =>
+                                            field.startsWith(
+                                                `items.${index}.`,
+                                            ) &&
+                                            !field.endsWith('.quantity') &&
+                                            !field.endsWith(
+                                                '.luminaire_folios',
+                                            ),
                                     )?.[1];
                                     const materialError =
                                         materialFieldError ?? itemError;
@@ -1123,13 +1139,19 @@ export default function VoucherForm({
                                         form.errors[
                                             `items.${index}.quantity` as keyof typeof form.errors
                                         ];
-                                    const unit = materials.find(
+                                    const luminaireFoliosError =
+                                        form.errors[
+                                            `items.${index}.luminaire_folios` as keyof typeof form.errors
+                                        ];
+                                    const selectedMaterial = materials.find(
                                         (material) =>
                                             String(material.id) ===
                                             line.material_id,
-                                    )?.default_unit;
+                                    );
+                                    const unit = selectedMaterial?.default_unit;
                                     const materialId = `item-${index}-material`;
                                     const quantityId = `item-${index}-quantity`;
+                                    const luminaireFoliosId = `item-${index}-luminaire-folios`;
                                     const quantityConfig = quantityInput(unit);
 
                                     return (
@@ -1239,6 +1261,42 @@ export default function VoucherForm({
                                                     )}
                                                 />
                                             </VoucherField>
+                                            {selectedMaterial?.is_luminaire && (
+                                                <VoucherField
+                                                    id={luminaireFoliosId}
+                                                    label="Folios de luminarias"
+                                                    error={luminaireFoliosError}
+                                                    description="Opcional. Escribe rangos o folios separados como aparecen en el documento."
+                                                    className="min-[900px]:!col-span-2 sm:col-span-2"
+                                                >
+                                                    <Textarea
+                                                        id={luminaireFoliosId}
+                                                        rows={2}
+                                                        maxLength={5000}
+                                                        value={
+                                                            line.luminaire_folios
+                                                        }
+                                                        onChange={(event) =>
+                                                            changeLine(index, {
+                                                                luminaire_folios:
+                                                                    event.target
+                                                                        .value,
+                                                            })
+                                                        }
+                                                        placeholder="Ej. 100-130, 145, 152, 180-185"
+                                                        aria-invalid={
+                                                            Boolean(
+                                                                luminaireFoliosError,
+                                                            ) || undefined
+                                                        }
+                                                        aria-describedby={fieldDescriptionIds(
+                                                            luminaireFoliosId,
+                                                            luminaireFoliosError,
+                                                            true,
+                                                        )}
+                                                    />
+                                                </VoucherField>
+                                            )}
                                             {isConfirmed ? (
                                                 <MaterialLineAction>
                                                     <Button
@@ -1533,7 +1591,11 @@ function errorDescriptionId(id: string, error?: string) {
 }
 
 function hasMaterialValues(line: Line) {
-    return Boolean(line.material_id || line.quantity.trim());
+    return Boolean(
+        line.material_id ||
+        line.quantity.trim() ||
+        line.luminaire_folios.trim(),
+    );
 }
 
 function isCompleteMaterial(line: Line, materials: Material[]) {

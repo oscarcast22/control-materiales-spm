@@ -112,6 +112,7 @@ class CatalogController extends Controller
             'default_unit_id' => ['required', 'exists:units,id'],
             'voucher_type_ids' => ['required', 'array', 'min:1'],
             'voucher_type_ids.*' => ['required', 'integer', 'distinct', Rule::exists('storage_locations', 'id')->where('is_active', true)],
+            'is_luminaire' => ['required', 'boolean'],
         ]);
         $key = Normalizer::key($data['name']);
         if (Material::query()->where('normalized_name', $key)->exists() || MaterialAlias::query()->where('normalized_alias', $key)->exists()) {
@@ -122,6 +123,7 @@ class CatalogController extends Controller
                 'name' => $data['name'],
                 'default_unit_id' => $data['default_unit_id'],
                 'normalized_name' => $key,
+                'is_luminaire' => $data['is_luminaire'],
             ]);
             $model->voucherTypes()->sync($data['voucher_type_ids']);
             MaterialAlias::create(['material_id' => $model->id, 'alias' => $model->name, 'normalized_alias' => $key]);
@@ -146,6 +148,7 @@ class CatalogController extends Controller
             'default_unit_id' => ['required', 'exists:units,id'],
             'voucher_type_ids' => ['required', 'array', 'min:1'],
             'voucher_type_ids.*' => ['required', 'integer', 'distinct', Rule::exists('storage_locations', 'id')->where('is_active', true)],
+            'is_luminaire' => ['required', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
         $key = Normalizer::key($data['name']);
@@ -161,6 +164,12 @@ class CatalogController extends Controller
         DB::transaction(function () use ($material, $data, $key, $request): void {
             $locked = Material::query()->lockForUpdate()->findOrFail($material->id);
             $targetUnit = Unit::query()->findOrFail((int) $data['default_unit_id']);
+            if ($locked->is_luminaire && ! $data['is_luminaire']
+                && $locked->voucherItems()->whereNotNull('luminaire_folios')->exists()) {
+                throw ValidationException::withMessages([
+                    'is_luminaire' => 'No puedes quitar la marca de luminaria porque ya existen folios registrados para este material.',
+                ]);
+            }
             if ($locked->default_unit_id !== $targetUnit->id
                 && QuantityPrecision::materialHasIncompatibleHistory($locked, $targetUnit->decimal_places)) {
                 throw ValidationException::withMessages([
@@ -180,6 +189,7 @@ class CatalogController extends Controller
                 'default_unit_id' => $data['default_unit_id'],
                 'normalized_name' => $key,
                 'needs_review' => false,
+                'is_luminaire' => $data['is_luminaire'],
                 ...$this->statusAttributes($locked, $data),
             ]);
             $locked->voucherTypes()->sync($data['voucher_type_ids']);

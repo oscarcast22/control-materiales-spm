@@ -73,6 +73,10 @@ class CatalogSeederTest extends TestCase
         $this->assertDatabaseCount('vouchers', 0);
         $this->assertSame(18, Person::query()->where('needs_review', true)->count());
         $this->assertSame(176, Material::query()->where('needs_review', true)->count());
+        $this->assertTrue(Material::query()->where('normalized_name', 'luminaria 20 w')->sole()->is_luminaire);
+        $this->assertTrue(Material::query()->where('normalized_name', 'lnuminaria led lhd 150 w licitacion 2023')->sole()->is_luminaire);
+        $this->assertFalse(Material::query()->where('normalized_name', 'reactor para luminaria')->sole()->is_luminaire);
+        $this->assertFalse(Material::query()->where('normalized_name', 'lampara flourecente 34 w')->sole()->is_luminaire);
         $this->assertSame(760, StorageLocation::query()->where('code', 'warehouse')->sole()->materials()->count());
         $this->assertSame(100, StorageLocation::query()->where('code', 'yard')->sole()->materials()->count());
         $this->assertSame(2, Person::query()->where('can_deliver_material', true)->count());

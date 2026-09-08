@@ -176,6 +176,83 @@ class MaterialControlTest extends TestCase
         ]);
     }
 
+    public function test_luminaire_folios_are_stored_for_operational_and_loaned_vouchers_only_on_luminaires(): void
+    {
+        $user = User::factory()->create();
+        [$technician, $issuer, , $luminaire, $otherMaterial] = $this->catalogs();
+        $luminaire->update(['is_luminaire' => true]);
+        $location = StorageLocation::factory()->create(['code' => 'warehouse']);
+        $luminaire->voucherTypes()->sync([$location->id]);
+        $otherMaterial->voucherTypes()->sync([$location->id]);
+        $destination = Destination::factory()->create();
+        $action = Action::query()->where('code', 'SPM-06-01')->sole();
+        $payload = [
+            'voucher_type_id' => $location->id,
+            'issued_on' => '2026-09-08',
+            'received_by_id' => $technician->id,
+            'delivered_by_id' => $issuer->id,
+            'authorized_by_id' => $issuer->id,
+            'destination_ids' => [$destination->id],
+            'usage_description' => 'Instalación de luminarias',
+        ];
+
+        foreach ([VoucherDirection::Exit, VoucherDirection::Entry] as $index => $direction) {
+            $this->actingAs($user)->post(route('vouchers.store'), [
+                ...$payload,
+                'folio' => 'LUM-'.($index + 1),
+                'direction' => $direction->value,
+                'action_id' => $action->id,
+                'items' => [[
+                    'material_id' => $luminaire->id,
+                    'quantity' => 3,
+                    'luminaire_folios' => "  100-130, 145\n152  ",
+                ]],
+            ])->assertSessionHasNoErrors();
+        }
+
+        $operational = Voucher::query()->where('folio', 'LUM-1')->sole();
+        $this->assertSame("100-130, 145\n152", $operational->items()->sole()->luminaire_folios);
+        $this->assertSame("100-130, 145\n152", VoucherData::make($operational)['items'][0]['luminaire_folios']);
+        $this->assertSame(
+            "100-130, 145\n152",
+            MaterialTracking::make(collect([$operational]))['rows'][0]['luminaire_folios'],
+        );
+        $this->actingAs($user)->get(route('vouchers.print', $operational))
+            ->assertOk()
+            ->assertSee('Folios:')
+            ->assertSee('100-130, 145');
+
+        $this->actingAs($user)->post(route('vouchers.store'), [
+            ...$payload,
+            'folio' => 'LUM-INVALID',
+            'direction' => VoucherDirection::Exit->value,
+            'action_id' => $action->id,
+            'items' => [[
+                'material_id' => $otherMaterial->id,
+                'quantity' => 1,
+                'luminaire_folios' => '200-205',
+            ]],
+        ])->assertSessionHasErrors([
+            'items.0.luminaire_folios' => 'Los folios sólo se pueden registrar para materiales marcados como luminaria.',
+        ]);
+
+        $this->actingAs($user)->post(route('vouchers.loaned.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => 'LUM-PRESTADO',
+            'issued_on' => '2026-09-08',
+            'items' => [[
+                'material_id' => $luminaire->id,
+                'quantity' => 2,
+                'luminaire_folios' => '300, 304',
+            ]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            '300, 304',
+            Voucher::query()->where('folio', 'LUM-PRESTADO')->sole()->items()->sole()->luminaire_folios,
+        );
+    }
+
     public function test_decimal_quantities_follow_the_material_unit_in_vouchers_loans_and_applications(): void
     {
         $user = User::factory()->create();
@@ -1994,6 +2071,7 @@ class MaterialControlTest extends TestCase
             'name' => 'Cable POT calibre 14',
             'default_unit_id' => $metre->id,
             'voucher_type_ids' => [$location->id],
+            'is_luminaire' => false,
         ])->assertSessionHasNoErrors();
         $this->actingAs($user)->put(route('catalogs.people.update', $person), [
             'name' => 'Miguel Rodríguez',
@@ -2049,6 +2127,7 @@ class MaterialControlTest extends TestCase
             'name' => 'Cable canónico',
             'default_unit_id' => $metre->id,
             'voucher_type_ids' => [$location->id],
+            'is_luminaire' => false,
         ])->assertSessionHasNoErrors();
 
         $item->refresh();

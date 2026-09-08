@@ -11,6 +11,7 @@
         .muted { color: #5f6b7a; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 24px; margin-top: 16px; }
         table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #c9d2dc; padding: 7px; text-align: left; }
         th { background: #eef5f9; } .number { text-align: right; white-space: nowrap; }
+        .folios { margin-top: 4px; color: #5f6b7a; font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; }
         .pending { font-weight: bold; color: #9a3412; } .settled { color: #166534; }
         .no-print { margin-bottom: 15px; } @media print { .no-print { display: none; } }
     </style>
@@ -44,7 +45,7 @@
         <thead><tr><th>Material</th><th>Unidad</th><th class="number">Cantidad prestada</th></tr></thead>
         <tbody>
         @foreach ($voucher['items'] as $item)
-            <tr><td>{{ $item['description'] }}</td><td>{{ $item['unit']['symbol'] ?? '' }}</td><td class="number">{{ \App\Support\QuantityPrecision::format($item['quantity']) }}</td></tr>
+            <tr><td>{{ $item['description'] }}@if ($item['luminaire_folios'] !== null)<div class="folios"><strong>Folios:</strong> {{ $item['luminaire_folios'] }}</div>@endif</td><td>{{ $item['unit']['symbol'] ?? '' }}</td><td class="number">{{ \App\Support\QuantityPrecision::format($item['quantity']) }}</td></tr>
         @endforeach
         </tbody>
     </table>
@@ -56,7 +57,7 @@
         <tbody>
         @foreach ($voucher['items'] as $item)
             <tr>
-                <td>{{ $item['description'] }}</td><td>{{ $item['unit']['symbol'] ?? '' }}</td>
+                <td>{{ $item['description'] }}@if ($item['luminaire_folios'] !== null)<div class="folios"><strong>Folios:</strong> {{ $item['luminaire_folios'] }}</div>@endif</td><td>{{ $item['unit']['symbol'] ?? '' }}</td>
                 <td class="number">{{ \App\Support\QuantityPrecision::format($item['quantity']) }}</td>
                 @if ($voucher['direction'] === 'exit')
                     <td class="number">{{ \App\Support\QuantityPrecision::format($item['used_quantity']) }}</td>

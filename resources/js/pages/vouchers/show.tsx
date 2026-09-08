@@ -46,6 +46,7 @@ import type {
     MaterialApplicationFormOptions,
     MaterialApplicationReport,
     Voucher,
+    VoucherItem,
 } from '@/types';
 
 export default function VoucherShow({
@@ -547,7 +548,7 @@ function MaterialBalanceCard({ voucher }: { voucher: Voucher }) {
                                 {voucher.items.map((item) => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">
-                                            {item.description}
+                                            <MaterialDescription item={item} />
                                         </TableCell>
                                         <TableCell>
                                             {item.unit.name} ({item.unit.symbol}
@@ -607,7 +608,7 @@ function MaterialBalanceCard({ voucher }: { voucher: Voucher }) {
                                 {voucher.items.map((item) => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">
-                                            {item.description}
+                                            <MaterialDescription item={item} />
                                         </TableCell>
                                         <TableCell>
                                             {`${item.unit.name} (${item.unit.symbol})`}
@@ -672,7 +673,7 @@ function MaterialBalanceCard({ voucher }: { voucher: Voucher }) {
                             {voucher.items.map((item) => (
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">
-                                        {item.description}
+                                        <MaterialDescription item={item} />
                                     </TableCell>
                                     <TableCell>
                                         {item.unit.name} ({item.unit.symbol})
@@ -720,6 +721,24 @@ function MaterialBalanceCard({ voucher }: { voucher: Voucher }) {
                 </DataTableSurface>
             </CardContent>
         </Card>
+    );
+}
+
+function MaterialDescription({
+    item,
+}: {
+    item: Pick<VoucherItem, 'description' | 'luminaire_folios'>;
+}) {
+    return (
+        <div className="grid gap-1">
+            <span>{item.description}</span>
+            {item.luminaire_folios && (
+                <span className="text-xs leading-5 font-normal break-words whitespace-pre-wrap text-muted-foreground">
+                    <span className="font-medium text-foreground">Folios:</span>{' '}
+                    {item.luminaire_folios}
+                </span>
+            )}
+        </div>
     );
 }
 

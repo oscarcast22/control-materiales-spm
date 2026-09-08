@@ -276,6 +276,7 @@ class CatalogPageTest extends TestCase
             'name' => $material->name,
             'default_unit_id' => $integerUnit->id,
             'voucher_type_ids' => [$voucherType->id],
+            'is_luminaire' => false,
         ])->assertSessionHasErrors('default_unit_id');
         $this->assertSame($decimalUnit->id, $material->fresh()->default_unit_id);
         $this->assertSame($decimalUnit->id, $item->fresh()->unit_id);
@@ -289,6 +290,34 @@ class CatalogPageTest extends TestCase
             'symbol' => 'Lt',
             'decimal_places' => 1,
         ]);
+    }
+
+    public function test_a_luminaire_mark_cannot_be_removed_after_folios_are_registered(): void
+    {
+        $user = User::factory()->create();
+        $unit = Unit::factory()->create();
+        $voucherType = StorageLocation::factory()->create();
+        $material = Material::factory()->create([
+            'default_unit_id' => $unit->id,
+            'is_luminaire' => true,
+        ]);
+        $material->voucherTypes()->sync([$voucherType->id]);
+        VoucherItem::factory()->create([
+            'material_id' => $material->id,
+            'unit_id' => $unit->id,
+            'luminaire_folios' => '100-110',
+        ]);
+
+        $this->actingAs($user)->put(route('catalogs.materials.update', $material), [
+            'name' => $material->name,
+            'default_unit_id' => $unit->id,
+            'voucher_type_ids' => [$voucherType->id],
+            'is_luminaire' => false,
+        ])->assertSessionHasErrors([
+            'is_luminaire' => 'No puedes quitar la marca de luminaria porque ya existen folios registrados para este material.',
+        ]);
+
+        $this->assertTrue($material->fresh()->is_luminaire);
     }
 
     public function test_program_catalog_only_exposes_spm_06_and_keeps_it_visible_while_filtering_children(): void

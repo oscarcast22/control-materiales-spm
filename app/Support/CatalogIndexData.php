@@ -102,7 +102,7 @@ final class CatalogIndexData
     private function materials(array $filters): mixed
     {
         $query = Material::query()
-            ->select(['id', 'name', 'default_unit_id', 'is_active', 'needs_review'])
+            ->select(['id', 'name', 'default_unit_id', 'is_active', 'needs_review', 'is_luminaire'])
             ->with([
                 'defaultUnit:id,name,symbol,decimal_places,is_active',
                 'voucherTypes:id,name,code',

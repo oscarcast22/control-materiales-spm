@@ -25,6 +25,7 @@ import {
     FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
     isPositiveQuantity,
     quantityForInput,
@@ -43,6 +44,7 @@ type Line = {
     id?: number;
     material_id: string;
     quantity: string;
+    luminaire_folios: string;
     confirmed: boolean;
     locked?: boolean;
 };
@@ -75,6 +77,7 @@ const blankLine = (): Line => ({
     client_id: `loaned-${++nextLineId}`,
     material_id: '',
     quantity: '',
+    luminaire_folios: '',
     confirmed: false,
 });
 
@@ -107,6 +110,7 @@ export default function LoanedVoucherForm({
                       id: item.id,
                       material_id: String(item.material.id),
                       quantity: quantityForInput(item.quantity),
+                      luminaire_folios: item.luminaire_folios ?? '',
                       confirmed: true,
                       locked: item.applications.length > 0,
                   })),
@@ -199,6 +203,7 @@ export default function LoanedVoucherForm({
                     ...line,
                     material_id: '',
                     quantity: '',
+                    luminaire_folios: '',
                     confirmed: false,
                 };
             }
@@ -225,13 +230,28 @@ export default function LoanedVoucherForm({
             'items',
             form.data.items.map((line, candidateIndex) =>
                 candidateIndex === index
-                    ? { ...line, ...values, confirmed: false }
+                    ? {
+                          ...line,
+                          ...values,
+                          confirmed:
+                              line.locked ||
+                              (!('material_id' in values) &&
+                                  !('quantity' in values))
+                                  ? line.confirmed
+                                  : false,
+                      }
                     : line,
             ),
         );
     };
     const selectMaterial = (index: number, materialId: string) => {
-        changeLine(index, { material_id: materialId });
+        changeLine(index, {
+            material_id: materialId,
+            luminaire_folios: '',
+        });
+        form.clearErrors(
+            `items.${index}.luminaire_folios` as keyof typeof form.errors,
+        );
         window.setTimeout(
             () =>
                 document
@@ -300,6 +320,7 @@ export default function LoanedVoucherForm({
                     ...(line.id === undefined ? {} : { id: line.id }),
                     material_id: line.material_id,
                     quantity: line.quantity,
+                    luminaire_folios: line.luminaire_folios,
                 })),
         }));
         const options = { preserveScroll: true, onSuccess };
@@ -459,10 +480,15 @@ export default function LoanedVoucherForm({
                                 form.errors[
                                     `items.${index}.quantity` as keyof typeof form.errors
                                 ];
-                            const unit = materials.find(
+                            const luminaireFoliosError =
+                                form.errors[
+                                    `items.${index}.luminaire_folios` as keyof typeof form.errors
+                                ];
+                            const selectedMaterial = materials.find(
                                 (material) =>
                                     String(material.id) === line.material_id,
-                            )?.default_unit;
+                            );
+                            const unit = selectedMaterial?.default_unit;
                             const quantityConfig = quantityInput(unit);
 
                             return (
@@ -560,6 +586,44 @@ export default function LoanedVoucherForm({
                                             }
                                         />
                                     </FormField>
+                                    {selectedMaterial?.is_luminaire && (
+                                        <FormField
+                                            id={`loaned-item-${index}-luminaire-folios`}
+                                            label="Folios de luminarias"
+                                            error={luminaireFoliosError}
+                                            description="Opcional. Escribe rangos o folios separados como aparecen en el documento."
+                                            className="min-[900px]:!col-span-2 sm:col-span-2"
+                                        >
+                                            <Textarea
+                                                id={`loaned-item-${index}-luminaire-folios`}
+                                                rows={2}
+                                                maxLength={5000}
+                                                value={line.luminaire_folios}
+                                                onChange={(event) =>
+                                                    changeLine(index, {
+                                                        luminaire_folios:
+                                                            event.target.value,
+                                                    })
+                                                }
+                                                placeholder="Ej. 100-130, 145, 152, 180-185"
+                                                aria-invalid={
+                                                    Boolean(
+                                                        luminaireFoliosError,
+                                                    ) || undefined
+                                                }
+                                                aria-describedby={
+                                                    [
+                                                        `loaned-item-${index}-luminaire-folios-description`,
+                                                        luminaireFoliosError
+                                                            ? `loaned-item-${index}-luminaire-folios-error`
+                                                            : undefined,
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(' ') || undefined
+                                                }
+                                            />
+                                        </FormField>
+                                    )}
                                     <MaterialLineAction>
                                         {line.locked ? (
                                             <div className="flex min-h-10 w-full items-center rounded-lg border border-border-strong bg-muted/45 px-3 text-xs leading-5 font-medium text-muted-foreground">
@@ -770,7 +834,11 @@ function MaterialLineAction({ children }: { children: ReactNode }) {
 }
 
 function hasValues(line: Line) {
-    return Boolean(line.material_id || line.quantity.trim());
+    return Boolean(
+        line.material_id ||
+        line.quantity.trim() ||
+        line.luminaire_folios.trim(),
+    );
 }
 
 function isComplete(line: Line, materials: Material[]) {

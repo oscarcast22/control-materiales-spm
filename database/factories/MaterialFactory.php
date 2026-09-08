@@ -35,6 +35,7 @@ class MaterialFactory extends Factory
             'default_unit_id' => Unit::factory(),
             'is_active' => true,
             'needs_review' => false,
+            'is_luminaire' => false,
         ];
     }
 }
