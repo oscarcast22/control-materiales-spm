@@ -42,6 +42,8 @@ php artisan legacy:import-control "/ruta/Captura de vales 2025 (1).xlsx"
 
 No ejecutar el importador desde un seeder. La escritura real es transaccional y la huella del archivo evita cargar dos veces el mismo contenido.
 
+La eliminación administrativa definitiva de un vale importado también elimina su traza. Por ello, una ejecución posterior del mismo archivo puede volver a crear ese vale; antes de reimportar debe confirmarse que esa recreación sea intencional.
+
 ## Sincronización de una base ya importada
 
 Si una base recibió el histórico antes que el catálogo curado, no volver a importar el libro. Para revisar cuántos materiales y partidas históricas vinculadas mediante `legacy_import_rows` siguen usando la unidad `s/e`, ejecutar:

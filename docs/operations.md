@@ -20,6 +20,8 @@ Los controles ya presentes incluyen:
 
 Estos controles se complementan en producción con la red, los servicios y los respaldos descritos en la guía de infraestructura. Cualquier cambio de exposición, usuarios o alcance requiere una nueva revisión de riesgos.
 
+La eliminación definitiva de un vale es una excepción administrativa deliberada para corregir capturas equivocadas. Elimina de la base activa el vale, sus relaciones, auditorías y traza de importación, además de sus archivos privados; no afecta las copias que ya formen parte de un respaldo. Cancelar debe preferirse cuando se necesite conservar el antecedente documental.
+
 ## Instalación local
 
 ```bash
