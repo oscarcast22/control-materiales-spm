@@ -394,6 +394,9 @@ async function assertVoucherDetailModalHeader(
     }
 
     await moreActions.click();
+    const loanItem = page.getByRole('menuitem', {
+        name: 'Marcar como prestado',
+    });
     const cancelItem = page.getByRole('menuitem', { name: 'Cancelar vale' });
     const deleteItem = page.getByRole('menuitem', { name: 'Eliminar vale' });
 
@@ -405,6 +408,38 @@ async function assertVoucherDetailModalHeader(
         await cancelItem.hover();
         await expect(cancelItem).toHaveAttribute('data-highlighted');
         await assertUsesColorTokens(cancelItem, '--primary', '--hover');
+    }
+
+    if (await loanItem.isVisible()) {
+        await assertUsesColorTokens(loanItem, '--foreground');
+        await loanItem.hover();
+        await expect(loanItem).toHaveAttribute('data-highlighted');
+        await assertUsesColorTokens(loanItem, '--primary', '--hover');
+        await loanItem.click();
+        await expect(
+            page.getByRole('heading', {
+                name: 'Marcar vale como prestado',
+            }),
+        ).toBeVisible();
+        await expect(
+            page.getByLabel('Persona responsable (opcional)'),
+        ).toBeVisible();
+
+        const voidApplications = page.getByRole('checkbox', {
+            name: /Anular las aplicaciones vigentes/,
+        });
+
+        if (await voidApplications.isVisible()) {
+            await expect(voidApplications).toBeChecked();
+        }
+
+        await page.getByRole('button', { name: 'Volver' }).click();
+        await expect(
+            page.getByRole('heading', {
+                name: 'Marcar vale como prestado',
+            }),
+        ).toBeHidden();
+        await moreActions.click();
     }
 
     await deleteItem.hover();

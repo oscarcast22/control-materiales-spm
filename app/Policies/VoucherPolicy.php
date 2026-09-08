@@ -40,6 +40,11 @@ class VoucherPolicy
         return $user->isAdministrator();
     }
 
+    public function markLoaned(User $user, Voucher $voucher): bool
+    {
+        return $user->isAdministrator() && $voucher->status === VoucherStatus::Active;
+    }
+
     public function review(User $user, Voucher $voucher): bool
     {
         return $user->isAdministrator();

@@ -109,6 +109,7 @@ final class VoucherData
             'permissions' => [
                 'update' => $user?->can('update', $voucher) ?? false,
                 'cancel' => $user?->can('cancel', $voucher) ?? false,
+                'mark_loaned' => $user?->can('markLoaned', $voucher) ?? false,
                 'delete' => $user?->can('delete', $voucher) ?? false,
                 'review' => $user?->can('review', $voucher) ?? false,
                 'print' => $user?->can('print', $voucher) ?? false,

@@ -1185,6 +1185,180 @@ class MaterialControlTest extends TestCase
         }
     }
 
+    public function test_an_administrator_can_mark_an_active_voucher_as_loaned_and_keep_its_original_data(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create();
+        $item = $this->voucherItem(10);
+        $voucher = $item->voucher;
+        $item->material->voucherTypes()->sync([$voucher->storage_location_id]);
+        $destination = Destination::factory()->create();
+        $action = Action::query()->where('code', 'SPM-06-01')->sole();
+        $indicator = $action->indicators()->firstOrFail();
+        $voucher->update([
+            'authorized_by_id' => $voucher->delivered_by_id,
+            'program_id' => $action->program_id,
+            'action_id' => $action->id,
+            'action_indicator_id' => $indicator->id,
+            'usage_description' => 'Trabajo originalmente registrado',
+            'notes' => 'Conservar como referencia',
+            'needs_review' => true,
+            'review_reasons' => ['Dato original por confirmar'],
+        ]);
+        $voucher->destinations()->sync([$destination->id]);
+        $application = MaterialApplication::factory()->create([
+            'voucher_item_id' => $item->id,
+            'quantity' => 3,
+        ]);
+        $attachment = VoucherAttachment::create([
+            'voucher_id' => $voucher->id,
+            'disk' => 'local',
+            'path' => 'voucher-attachments/converted-loan.pdf',
+            'original_name' => 'vale.pdf',
+            'mime_type' => 'application/pdf',
+            'size' => 10,
+            'uploaded_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('vouchers.loan', $voucher), [
+            'loaned_to_name' => '  Responsable externo  ',
+            'void_applications' => true,
+        ]);
+
+        $voucher->refresh();
+        $response
+            ->assertRedirect(route('vouchers.show', $voucher))
+            ->assertInertiaFlash('toast.type', 'success')
+            ->assertInertiaFlash('toast.message', "Vale {$voucher->folio} marcado como prestado.");
+        $this->assertSame(VoucherStatus::Loaned, $voucher->status);
+        $this->assertSame('Responsable externo', $voucher->loaned_to_name);
+        $this->assertSame($voucher->issued_on->toDateString(), $voucher->loaned_on?->toDateString());
+        $this->assertSame(VoucherDirection::Exit, $voucher->direction);
+        $this->assertSame($action->program_id, $voucher->program_id);
+        $this->assertSame($action->id, $voucher->action_id);
+        $this->assertSame($indicator->id, $voucher->action_indicator_id);
+        $this->assertSame('Trabajo originalmente registrado', $voucher->usage_description);
+        $this->assertSame('Conservar como referencia', $voucher->notes);
+        $this->assertTrue($voucher->needs_review);
+        $this->assertSame([$destination->id], $voucher->destinations()->pluck('destinations.id')->all());
+        $this->assertDatabaseHas('voucher_items', [
+            'id' => $item->id,
+            'voucher_id' => $voucher->id,
+            'quantity' => '10.000',
+        ]);
+        $this->assertDatabaseHas('voucher_attachments', ['id' => $attachment->id]);
+
+        $application->refresh();
+        $this->assertNotNull($application->voided_at);
+        $this->assertSame($user->id, $application->voided_by);
+        $this->assertSame("Anulada al marcar el vale {$voucher->folio} como prestado.", $application->void_reason);
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'voided_on_voucher_loan',
+            'auditable_type' => MaterialApplication::class,
+            'auditable_id' => $application->id,
+        ]);
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'marked_loaned',
+            'auditable_type' => Voucher::class,
+            'auditable_id' => $voucher->id,
+            'user_id' => $user->id,
+        ]);
+
+        $data = VoucherData::make($voucher, true);
+        $this->assertSame('loaned', $data['balance_state']);
+        $this->assertNull($data['material_totals']['applied_quantity']);
+        $this->assertNull($data['material_totals']['pending_quantity']);
+        $this->assertFalse($data['permissions']['mark_loaned']);
+
+        $this->actingAs($user)->put(route('vouchers.update', $voucher), [
+            'voucher_type_id' => $voucher->storage_location_id,
+            'folio' => $voucher->folio,
+            'issued_on' => $voucher->issued_on->toDateString(),
+            'received_by_id' => $voucher->received_by_id,
+            'loaned_to_name' => $voucher->loaned_to_name,
+            'items' => [[
+                'id' => $item->id,
+                'material_id' => $item->material_id,
+                'quantity' => 9,
+            ]],
+        ])->assertSessionHasErrors('items');
+        $this->assertSame('10.000', $item->fresh()->quantity);
+        $this->assertDatabaseHas('material_applications', ['id' => $application->id]);
+
+        $this->actingAs($user)->get(route('reports.material-tracking', [
+            'voucher_type_id' => 'all',
+        ]))->assertInertia(fn (Assert $page) => $page
+            ->where('metrics.delivered_vouchers', 0)
+            ->has('rows', 0));
+
+        $this->actingAs($user)->post(route('applications.store'), [
+            'voucher_id' => $voucher->id,
+            'occurred_on' => '2026-08-29',
+            'reference' => 'OS-LOAN-CONVERTED',
+            'service_order_type' => ServiceOrderType::Normal->value,
+            'items' => [['voucher_item_id' => $item->id, 'quantity' => 1]],
+        ])->assertForbidden();
+    }
+
+    public function test_marking_a_voucher_as_loaned_can_keep_applications_as_read_only_history(): void
+    {
+        $user = User::factory()->create();
+        $item = $this->voucherItem(10);
+        $application = MaterialApplication::factory()->create([
+            'voucher_item_id' => $item->id,
+            'quantity' => 2,
+        ]);
+        $item->material->voucherTypes()->sync([$item->voucher->storage_location_id]);
+
+        $this->actingAs($user)->post(route('vouchers.loan', $item->voucher), [
+            'loaned_to_name' => '',
+            'void_applications' => false,
+        ])->assertSessionHasNoErrors();
+
+        $voucher = $item->voucher->fresh();
+        $this->assertSame(VoucherStatus::Loaned, $voucher->status);
+        $this->assertNull($voucher->loaned_to_name);
+        $this->assertNull($application->fresh()->voided_at);
+        $this->assertFalse(VoucherData::make($voucher, true)['application_reports'][0]['permissions']['update']);
+
+        $this->actingAs($user)->post(route('applications.void', $application), [
+            'reason' => 'Intento posterior a la conversión',
+        ])->assertForbidden();
+
+        $this->actingAs($user)->put(route('vouchers.update', $voucher), [
+            'voucher_type_id' => $voucher->storage_location_id,
+            'folio' => $voucher->folio,
+            'issued_on' => $voucher->issued_on->toDateString(),
+            'received_by_id' => $voucher->received_by_id,
+            'loaned_to_name' => '',
+            'items' => [[
+                'id' => $item->id,
+                'material_id' => $item->material_id,
+                'quantity' => 9,
+            ]],
+        ])->assertSessionHasErrors('items');
+
+        $this->assertSame('10.000', $item->fresh()->quantity);
+        $this->assertDatabaseHas('material_applications', ['id' => $application->id]);
+    }
+
+    public function test_only_an_administrator_can_mark_an_active_voucher_as_loaned(): void
+    {
+        $item = $this->voucherItem(10);
+        $technician = User::factory()->technician($item->voucher->receivedBy)->create();
+
+        $this->actingAs($technician)
+            ->post(route('vouchers.loan', $item->voucher))
+            ->assertForbidden();
+        $this->assertSame(VoucherStatus::Active, $item->voucher->fresh()->status);
+
+        $administrator = User::factory()->create();
+        $item->voucher->update(['status' => VoucherStatus::Cancelled]);
+        $this->actingAs($administrator)
+            ->post(route('vouchers.loan', $item->voucher))
+            ->assertForbidden();
+    }
+
     public function test_an_administrator_can_permanently_delete_a_voucher_and_its_complete_footprint(): void
     {
         Storage::fake('local');
@@ -1443,8 +1617,8 @@ class MaterialControlTest extends TestCase
         $this->actingAs($user)->post(route('vouchers.cancel', $voucher), [
             'reason' => 'No corresponde',
         ])->assertStatus(422);
-        $this->actingAs($user)->post('/vouchers/'.$voucher->id.'/loan', [])
-            ->assertNotFound();
+        $this->actingAs($user)->post(route('vouchers.loan', $voucher), [])
+            ->assertForbidden();
         $this->actingAs($user)->post('/vouchers/'.$voucher->id.'/return', [])
             ->assertNotFound();
         $this->actingAs($user)->getJson(route('applications.vouchers.search', ['search' => '16583']))

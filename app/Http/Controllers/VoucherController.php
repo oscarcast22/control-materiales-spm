@@ -356,6 +356,62 @@ class VoucherController extends Controller
         return $this->mutationResponse($request, $voucher, 'Vale cancelado.');
     }
 
+    public function loan(Request $request, Voucher $voucher): RedirectResponse
+    {
+        Gate::authorize('markLoaned', $voucher);
+        if (is_string($request->input('loaned_to_name'))) {
+            $name = trim((string) $request->input('loaned_to_name'));
+            $request->merge(['loaned_to_name' => $name !== '' ? $name : null]);
+        }
+        $validated = $request->validate([
+            'loaned_to_name' => ['nullable', 'string', 'max:255'],
+            'void_applications' => ['sometimes', 'boolean'],
+        ], [
+            'loaned_to_name.string' => 'El nombre de la persona responsable debe ser texto.',
+            'loaned_to_name.max' => 'El nombre de la persona responsable no puede tener más de 255 caracteres.',
+        ]);
+        $voidApplications = $request->boolean('void_applications');
+
+        DB::transaction(function () use ($voucher, $validated, $voidApplications, $request): void {
+            $locked = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
+            if ($locked->status !== VoucherStatus::Active) {
+                throw ValidationException::withMessages([
+                    'loaned_to_name' => 'Este vale ya no está activo y no se puede marcar como prestado.',
+                ]);
+            }
+
+            $activeApplications = MaterialApplication::query()
+                ->whereHas('item', fn (Builder $query) => $query->where('voucher_id', $locked->id))
+                ->whereNull('voided_at')
+                ->lockForUpdate()
+                ->get();
+
+            if ($voidApplications) {
+                foreach ($activeApplications as $application) {
+                    $beforeApplication = $application->toArray();
+                    $application->update([
+                        'voided_at' => now(),
+                        'voided_by' => $request->user()?->id,
+                        'void_reason' => "Anulada al marcar el vale {$locked->folio} como prestado.",
+                        'updated_by' => $request->user()?->id,
+                    ]);
+                    AuditEvent::record($application, 'voided_on_voucher_loan', $beforeApplication, $application->fresh()->toArray());
+                }
+            }
+
+            $before = $this->voucherAuditData($locked);
+            $locked->update([
+                'status' => VoucherStatus::Loaned,
+                'loaned_to_name' => $validated['loaned_to_name'] ?? null,
+                'loaned_on' => $locked->issued_on,
+                'updated_by' => $request->user()?->id,
+            ]);
+            AuditEvent::record($locked, 'marked_loaned', $before, $this->voucherAuditData($locked));
+        });
+
+        return $this->mutationResponse($request, $voucher, "Vale {$voucher->folio} marcado como prestado.");
+    }
+
     public function destroy(Request $request, Voucher $voucher, DeleteVoucher $deleteVoucher): RedirectResponse
     {
         Gate::authorize('delete', $voucher);
@@ -446,7 +502,7 @@ class VoucherController extends Controller
                 'loaned_on' => $data['issued_on'],
                 'updated_by' => $request->user()?->id,
             ]);
-            $this->syncItems($locked, $data['items'], $request);
+            $this->syncItems($locked, $data['items'], $request, true);
             AuditEvent::record($locked, 'updated_loaned', $before, $this->voucherAuditData($locked));
         });
 
@@ -997,7 +1053,7 @@ class VoucherController extends Controller
     }
 
     /** @param array<int, array<string, mixed>> $items */
-    private function syncItems(Voucher $voucher, array $items, Request $request): void
+    private function syncItems(Voucher $voucher, array $items, Request $request, bool $protectApplicationHistory = false): void
     {
         $kept = [];
         foreach ($items as $row) {
@@ -1006,14 +1062,19 @@ class VoucherController extends Controller
                 ? VoucherItem::query()->where('voucher_id', $voucher->id)->lockForUpdate()->findOrFail((int) $row['id'])
                 : new VoucherItem;
             $accounted = $item->exists ? (float) $item->applications()->whereNull('voided_at')->sum('quantity') : 0.0;
-            if ($accounted > 0.0 && $item->material_id !== $material->id) {
+            $hasApplicationHistory = $item->exists && $protectApplicationHistory && $item->applications()->exists();
+            if (($accounted > 0.0 || $hasApplicationHistory) && $item->material_id !== $material->id) {
                 throw ValidationException::withMessages([
-                    'items' => "No se puede cambiar {$item->description_snapshot} porque ya tiene material aplicado. Anula primero las aplicaciones para corregirlo.",
+                    'items' => $hasApplicationHistory
+                        ? "No se puede cambiar {$item->description_snapshot} porque conserva aplicaciones históricas."
+                        : "No se puede cambiar {$item->description_snapshot} porque ya tiene material aplicado. Anula primero las aplicaciones para corregirlo.",
                 ]);
             }
-            if ($accounted > 0.0 && abs((float) $row['quantity'] - (float) $item->quantity) > 0.0001) {
+            if (($accounted > 0.0 || $hasApplicationHistory) && abs((float) $row['quantity'] - (float) $item->quantity) > 0.0001) {
                 throw ValidationException::withMessages([
-                    'items' => "No se puede cambiar la cantidad de {$material->name} porque ya tiene material aplicado. Anula primero las aplicaciones para corregirla.",
+                    'items' => $hasApplicationHistory
+                        ? "No se puede cambiar la cantidad de {$material->name} porque conserva aplicaciones históricas."
+                        : "No se puede cambiar la cantidad de {$material->name} porque ya tiene material aplicado. Anula primero las aplicaciones para corregirla.",
                 ]);
             }
             if ((float) $row['quantity'] + 0.0001 < $accounted) {
@@ -1034,8 +1095,12 @@ class VoucherController extends Controller
         }
 
         foreach ($voucher->items()->whereNotIn('id', $kept)->with('applications')->get() as $item) {
-            if ($item->applications->whereNull('voided_at')->isNotEmpty()) {
-                throw ValidationException::withMessages(['items' => 'No se puede quitar un material que ya tiene aplicaciones.']);
+            if ($item->applications->whereNull('voided_at')->isNotEmpty() || ($protectApplicationHistory && $item->applications->isNotEmpty())) {
+                throw ValidationException::withMessages([
+                    'items' => $protectApplicationHistory
+                        ? 'No se puede quitar un material que conserva aplicaciones históricas.'
+                        : 'No se puede quitar un material que ya tiene aplicaciones.',
+                ]);
             }
             AuditEvent::record($item, 'removed', $item->toArray(), null);
             $item->delete();

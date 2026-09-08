@@ -70,6 +70,8 @@ export default function VoucherShow({
         voucher.direction === 'exit' &&
         voucher.status === 'active' &&
         voucher.items.some((item) => Number(item.pending_quantity) > 0);
+    const hasOperationalReference =
+        voucher.status === 'loaned' && voucher.direction !== null;
     const visibleApplicationReports = voucher.application_reports.filter(
         (report) =>
             report.applications.some((application) => !application.voided_at),
@@ -91,7 +93,7 @@ export default function VoucherShow({
                             )}
                         </span>
                     }
-                    description={`${voucher.voucher_type.name} · ${voucher.status === 'loaned' ? 'Prestado' : voucher.direction === 'entry' ? 'Entrada' : voucher.direction === 'exit' ? 'Salida' : 'Sin movimiento'} del ${formatDate(voucher.issued_on)}`}
+                    description={`${voucher.voucher_type.name} · ${voucherKindLabel(voucher)} del ${formatDate(voucher.issued_on)}`}
                     actions={
                         <>
                             {voucher.permissions.update && (
@@ -104,6 +106,7 @@ export default function VoucherShow({
                                 voucher={voucher}
                                 embedded
                                 onCancelled={onRefresh}
+                                onLoaned={onRefresh}
                                 onDeleted={onDeleted}
                             />
                         </>
@@ -148,14 +151,8 @@ export default function VoucherShow({
                                 </div>
                                 <p className="mt-1 text-muted-foreground">
                                     {voucher.voucher_type.name} ·{' '}
-                                    {voucher.status === 'loaned'
-                                        ? 'Prestado'
-                                        : voucher.direction === 'entry'
-                                          ? 'Entrada'
-                                          : voucher.direction === 'exit'
-                                            ? 'Salida'
-                                            : 'Sin movimiento'}{' '}
-                                    del {formatDate(voucher.issued_on)}
+                                    {voucherKindLabel(voucher)} del{' '}
+                                    {formatDate(voucher.issued_on)}
                                 </p>
                             </div>
                         </div>
@@ -181,6 +178,7 @@ export default function VoucherShow({
                                 voucher={voucher}
                                 embedded={embedded}
                                 onCancelled={onRefresh}
+                                onLoaned={onRefresh}
                                 onDeleted={onDeleted}
                             />
                         </div>
@@ -222,9 +220,12 @@ export default function VoucherShow({
                                 {voucher.loaned_on
                                     ? formatDate(voucher.loaned_on)
                                     : '—'}
-                                . Conserva responsables y materiales como
-                                referencia, sin generar saldos pendientes ni
-                                permitir aplicaciones.
+                                . Conserva responsables y materiales
+                                {hasOperationalReference
+                                    ? ', además de los datos originales del vale,'
+                                    : ''}{' '}
+                                como referencia, sin generar saldos pendientes
+                                ni permitir nuevas aplicaciones.
                             </p>
                         </AlertDescription>
                     </Alert>
@@ -296,7 +297,8 @@ export default function VoucherShow({
                                 value={voucher.loaned_to_name ?? '—'}
                             />
                         )}
-                        {voucher.status !== 'loaned' && (
+                        {(voucher.status !== 'loaned' ||
+                            hasOperationalReference) && (
                             <>
                                 <Info
                                     label="Entregó"
@@ -328,7 +330,8 @@ export default function VoucherShow({
                                     )}
                             </>
                         )}
-                        {voucher.status !== 'loaned' && (
+                        {(voucher.status !== 'loaned' ||
+                            hasOperationalReference) && (
                             <div className="sm:col-span-2 lg:col-span-4">
                                 <Info
                                     label="Ubicación"
@@ -364,83 +367,97 @@ export default function VoucherShow({
                 {voucher.items.length > 0 && (
                     <MaterialBalanceCard voucher={voucher} />
                 )}
-                {voucher.direction === 'exit' && (
-                    <section
-                        className="flex flex-col gap-4"
-                        aria-labelledby="service-orders-title"
-                    >
-                        <div className="flex flex-col gap-3 border-y border-border-strong bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                            <div className="flex items-start gap-3">
-                                <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary-subtle text-primary">
-                                    <ClipboardCheck
-                                        className="size-5"
-                                        aria-hidden="true"
-                                    />
-                                </span>
-                                <div>
-                                    <h2
-                                        id="service-orders-title"
-                                        className="font-semibold"
-                                    >
-                                        {voucher.status === 'cancelled'
-                                            ? 'Aplicaciones conservadas'
-                                            : 'Aplicaciones registradas'}
-                                    </h2>
-                                    <p className="mt-0.5 text-sm text-muted-foreground">
-                                        {voucher.status === 'cancelled'
-                                            ? 'Se conservan únicamente como antecedente y no generan saldo ni seguimiento.'
-                                            : 'Cada registro reúne fecha, tipo y número de orden, ubicación o dirección, detalles y materiales utilizados.'}
-                                    </p>
+                {voucher.direction === 'exit' &&
+                    (voucher.status !== 'loaned' ||
+                        voucher.application_reports.length > 0) && (
+                        <section
+                            className="flex flex-col gap-4"
+                            aria-labelledby="service-orders-title"
+                        >
+                            <div className="flex flex-col gap-3 border-y border-border-strong bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                                <div className="flex items-start gap-3">
+                                    <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary-subtle text-primary">
+                                        <ClipboardCheck
+                                            className="size-5"
+                                            aria-hidden="true"
+                                        />
+                                    </span>
+                                    <div>
+                                        <h2
+                                            id="service-orders-title"
+                                            className="font-semibold"
+                                        >
+                                            {voucher.status !== 'active'
+                                                ? 'Aplicaciones conservadas'
+                                                : 'Aplicaciones registradas'}
+                                        </h2>
+                                        <p className="mt-0.5 text-sm text-muted-foreground">
+                                            {voucher.status !== 'active'
+                                                ? 'Se conservan únicamente como antecedente y no generan saldo ni seguimiento.'
+                                                : 'Cada registro reúne fecha, tipo y número de orden, ubicación o dirección, detalles y materiales utilizados.'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                    {voucher.status === 'active' && (
+                                        <p className="rounded-md border bg-surface px-3 py-2 text-xs font-medium text-text-secondary">
+                                            Pendiente = entregado − aplicado
+                                        </p>
+                                    )}
+                                    {canApply && (
+                                        <QuickApplicationDialog
+                                            voucher={voucher}
+                                            formOptions={applicationFormOptions}
+                                            onSuccess={onRefresh}
+                                            trigger={
+                                                <Button>
+                                                    <Wrench data-icon="inline-start" />
+                                                    Registrar aplicación
+                                                </Button>
+                                            }
+                                        />
+                                    )}
                                 </div>
                             </div>
-                            <div className="flex shrink-0 flex-wrap items-center gap-2">
-                                <p className="rounded-md border bg-surface px-3 py-2 text-xs font-medium text-text-secondary">
-                                    Pendiente = entregado − aplicado
-                                </p>
-                                {canApply && (
-                                    <QuickApplicationDialog
+                            {visibleApplicationReports.length === 0 ? (
+                                <Card>
+                                    <CardContent>
+                                        <DataTableSurface label="Aplicaciones registradas">
+                                            <Table>
+                                                <TableBody>
+                                                    <TableEmpty
+                                                        colSpan={1}
+                                                        title={
+                                                            voucher.status ===
+                                                            'active'
+                                                                ? 'Aún no hay aplicaciones'
+                                                                : 'No hay aplicaciones vigentes conservadas'
+                                                        }
+                                                        description={
+                                                            voucher.status ===
+                                                            'active'
+                                                                ? 'Registra una aplicación cuando el técnico documente los materiales utilizados en un trabajo.'
+                                                                : 'Las aplicaciones anuladas permanecen únicamente en la auditoría del sistema.'
+                                                        }
+                                                    />
+                                                </TableBody>
+                                            </Table>
+                                        </DataTableSurface>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                visibleApplicationReports.map((report) => (
+                                    <ApplicationReportCard
+                                        key={report.key}
+                                        report={report}
                                         voucher={voucher}
                                         formOptions={applicationFormOptions}
-                                        onSuccess={onRefresh}
-                                        trigger={
-                                            <Button>
-                                                <Wrench data-icon="inline-start" />
-                                                Registrar aplicación
-                                            </Button>
-                                        }
+                                        onRefresh={onRefresh}
                                     />
-                                )}
-                            </div>
-                        </div>
-                        {visibleApplicationReports.length === 0 ? (
-                            <Card>
-                                <CardContent>
-                                    <DataTableSurface label="Aplicaciones registradas">
-                                        <Table>
-                                            <TableBody>
-                                                <TableEmpty
-                                                    colSpan={1}
-                                                    title="Aún no hay aplicaciones"
-                                                    description="Registra una aplicación cuando el técnico documente los materiales utilizados en un trabajo."
-                                                />
-                                            </TableBody>
-                                        </Table>
-                                    </DataTableSurface>
-                                </CardContent>
-                            </Card>
-                        ) : (
-                            visibleApplicationReports.map((report) => (
-                                <ApplicationReportCard
-                                    key={report.key}
-                                    report={report}
-                                    voucher={voucher}
-                                    formOptions={applicationFormOptions}
-                                    onRefresh={onRefresh}
-                                />
-                            ))
-                        )}
-                    </section>
-                )}
+                                ))
+                            )}
+                        </section>
+                    )}
                 {voucher.attachments.length > 0 && (
                     <Card>
                         <CardHeader>
@@ -862,7 +879,7 @@ function ApplicationReportCard({
                                 <ApplicationReportRow
                                     key={application.id}
                                     application={application}
-                                    cancelled={voucher.status === 'cancelled'}
+                                    cancelled={voucher.status !== 'active'}
                                 />
                             ))}
                         </TableBody>
@@ -996,4 +1013,28 @@ function Info({ label, value }: { label: string; value: string }) {
             <p className="mt-1 font-medium">{value}</p>
         </div>
     );
+}
+
+function voucherKindLabel(voucher: Voucher) {
+    if (voucher.status === 'loaned') {
+        if (voucher.direction === 'entry') {
+            return 'Prestado · originalmente entrada';
+        }
+
+        if (voucher.direction === 'exit') {
+            return 'Prestado · originalmente salida';
+        }
+
+        return 'Prestado';
+    }
+
+    if (voucher.direction === 'entry') {
+        return 'Entrada';
+    }
+
+    if (voucher.direction === 'exit') {
+        return 'Salida';
+    }
+
+    return 'Sin movimiento';
 }

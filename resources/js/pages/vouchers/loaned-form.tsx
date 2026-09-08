@@ -44,6 +44,7 @@ type Line = {
     material_id: string;
     quantity: string;
     confirmed: boolean;
+    locked?: boolean;
 };
 
 type FormData = {
@@ -107,6 +108,7 @@ export default function LoanedVoucherForm({
                       material_id: String(item.material.id),
                       quantity: quantityForInput(item.quantity),
                       confirmed: true,
+                      locked: item.applications.length > 0,
                   })),
                   blankLine(),
               ]
@@ -152,6 +154,7 @@ export default function LoanedVoucherForm({
     const confirmedCount = form.data.items.filter(
         (line) => line.confirmed,
     ).length;
+    const hasLockedItems = form.data.items.some((line) => line.locked);
     const errorSignature = Object.entries(form.errors)
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([field, message]) => `${field}:${message}`)
@@ -331,6 +334,11 @@ export default function LoanedVoucherForm({
                             id="loaned-voucher-type"
                             label="Tipo de vale"
                             error={form.errors.voucher_type_id}
+                            description={
+                                hasLockedItems
+                                    ? 'No se puede cambiar porque el vale conserva aplicaciones históricas.'
+                                    : undefined
+                            }
                         >
                             <SimpleSelect
                                 id="loaned-voucher-type"
@@ -338,6 +346,7 @@ export default function LoanedVoucherForm({
                                 onValueChange={changeVoucherType}
                                 options={voucherTypeOptions}
                                 placeholder="Seleccionar tipo"
+                                disabled={hasLockedItems}
                                 invalid={Boolean(form.errors.voucher_type_id)}
                             />
                         </FormField>
@@ -474,10 +483,16 @@ export default function LoanedVoucherForm({
                                                 </span>
                                                 {line.confirmed && (
                                                     <Badge
-                                                        variant="success"
+                                                        variant={
+                                                            line.locked
+                                                                ? 'outline'
+                                                                : 'success'
+                                                        }
                                                         className="min-h-5 px-2 text-[11px]"
                                                     >
-                                                        Agregado
+                                                        {line.locked
+                                                            ? 'Con historial'
+                                                            : 'Agregado'}
                                                     </Badge>
                                                 )}
                                             </span>
@@ -495,6 +510,7 @@ export default function LoanedVoucherForm({
                                             placeholder="Seleccionar material"
                                             searchPlaceholder="Buscar material…"
                                             emptyMessage="No encontramos ese material."
+                                            disabled={line.locked}
                                             invalid={Boolean(materialError)}
                                         />
                                     </FormField>
@@ -532,6 +548,7 @@ export default function LoanedVoucherForm({
                                             placeholder={
                                                 quantityConfig.placeholder
                                             }
+                                            disabled={line.locked}
                                             aria-invalid={
                                                 Boolean(quantityError) ||
                                                 undefined
@@ -544,7 +561,11 @@ export default function LoanedVoucherForm({
                                         />
                                     </FormField>
                                     <MaterialLineAction>
-                                        {line.confirmed ? (
+                                        {line.locked ? (
+                                            <div className="flex min-h-10 w-full items-center rounded-lg border border-border-strong bg-muted/45 px-3 text-xs leading-5 font-medium text-muted-foreground">
+                                                Conservado como referencia
+                                            </div>
+                                        ) : line.confirmed ? (
                                             <Button
                                                 type="button"
                                                 variant="outline"

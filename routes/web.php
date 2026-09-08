@@ -24,6 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('vouchers', VoucherController::class);
     Route::post('vouchers/cancelled', [VoucherController::class, 'storeCancelled'])->name('vouchers.cancelled.store');
     Route::post('vouchers/loaned', [VoucherController::class, 'storeLoaned'])->name('vouchers.loaned.store');
+    Route::post('vouchers/{voucher}/loan', [VoucherController::class, 'loan'])->name('vouchers.loan');
     Route::post('vouchers/{voucher}/cancel', [VoucherController::class, 'cancel'])->name('vouchers.cancel');
     Route::post('vouchers/{voucher}/review', [VoucherController::class, 'review'])->name('vouchers.review');
     Route::get('vouchers/{voucher}/print', [VoucherController::class, 'print'])->name('vouchers.print');
