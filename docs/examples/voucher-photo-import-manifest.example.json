@@ -1,0 +1,42 @@
+{
+    "schema_version": 1,
+    "batch": "august-2026-example",
+    "catalog_additions": {
+        "materials": [],
+        "destinations": []
+    },
+    "vouchers": [
+        {
+            "decision": "create",
+            "voucher_type": "warehouse",
+            "folio": "17000",
+            "issued_on": "2026-08-15",
+            "status": "active",
+            "direction": "exit",
+            "received_by": "Nombre canónico o alias",
+            "delivered_by": "Nombre canónico o alias",
+            "authorized_by": null,
+            "action": "SPM-06-16",
+            "action_indicator": null,
+            "destinations": ["Ubicación canónica o alias"],
+            "usage_description": null,
+            "notes": null,
+            "items": [
+                {
+                    "material": "Material canónico o alias",
+                    "quantity": 1,
+                    "luminaire_folios": null
+                }
+            ],
+            "review_reasons": [],
+            "comparison_notes": [],
+            "blocking_reasons": [],
+            "images": [
+                {
+                    "file": "17000.jpeg",
+                    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+                }
+            ]
+        }
+    ]
+}

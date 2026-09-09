@@ -1,12 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    Check,
-    FileText,
-    PackageSearch,
-    Save,
-    Trash2,
-} from 'lucide-react';
+import { ArrowLeft, Check, PackageSearch, Save, Trash2 } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -37,6 +30,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { VoucherDestinationPicker } from '@/components/voucher-destination-picker';
+import { VoucherEvidencePanel } from '@/components/voucher-evidence-panel';
 import {
     isPositiveQuantity,
     quantityForInput,
@@ -1457,22 +1451,9 @@ export default function VoucherForm({
                                 </VoucherField>
                                 {voucher && voucher.attachments.length > 0 && (
                                     <div className="md:col-span-2">
-                                        <p className="mb-2 text-sm font-medium">
-                                            Archivos existentes
-                                        </p>
-                                        {voucher.attachments.map((file) => (
-                                            <a
-                                                key={file.id}
-                                                className="mr-3 inline-flex items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
-                                                href={`/attachments/${file.id}`}
-                                            >
-                                                <FileText
-                                                    className="mr-1 size-4"
-                                                    aria-hidden="true"
-                                                />
-                                                {file.original_name}
-                                            </a>
-                                        ))}
+                                        <VoucherEvidencePanel
+                                            attachments={voucher.attachments}
+                                        />
                                     </div>
                                 )}
                             </FieldGroup>

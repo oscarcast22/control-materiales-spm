@@ -1730,6 +1730,9 @@ class MaterialControlTest extends TestCase
         auth()->logout();
         $this->get(route('attachments.show', $attachment))->assertRedirect(route('login'));
         $this->actingAs($user)->get(route('attachments.show', $attachment))->assertDownload('vale.pdf');
+        $this->actingAs($user)->get(route('attachments.preview', $attachment))
+            ->assertOk()
+            ->assertHeader('content-disposition', 'inline; filename=vale.pdf');
     }
 
     public function test_application_evidence_is_private_and_linked_to_the_batch_report(): void

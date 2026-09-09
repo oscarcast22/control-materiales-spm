@@ -21,6 +21,20 @@ class VoucherAttachmentController extends Controller
         return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name);
     }
 
+    public function preview(VoucherAttachment $attachment): StreamedResponse
+    {
+        $attachment->load('voucher');
+        Gate::authorize('view', $attachment->voucher);
+        abort_unless(Storage::disk($attachment->disk)->exists($attachment->path), 404);
+
+        return Storage::disk($attachment->disk)->response(
+            $attachment->path,
+            $attachment->original_name,
+            ['X-Content-Type-Options' => 'nosniff'],
+            'inline',
+        );
+    }
+
     public function destroy(VoucherAttachment $attachment): RedirectResponse
     {
         $attachment->load('voucher');

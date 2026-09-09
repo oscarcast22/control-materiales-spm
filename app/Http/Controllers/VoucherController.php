@@ -1127,6 +1127,10 @@ class VoucherController extends Controller
     private function storeAttachments(Voucher $voucher, Request $request): void
     {
         foreach ($request->file('attachments', []) as $file) {
+            $sha256 = hash_file('sha256', $file->getRealPath());
+            if ($sha256 !== false && $voucher->attachments()->where('sha256', $sha256)->exists()) {
+                continue;
+            }
             $path = $file->store("vouchers/{$voucher->id}", 'local');
             $attachment = VoucherAttachment::create([
                 'voucher_id' => $voucher->id,
@@ -1135,6 +1139,7 @@ class VoucherController extends Controller
                 'original_name' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
                 'size' => $file->getSize(),
+                'sha256' => $sha256 ?: null,
                 'uploaded_by' => $request->user()?->id,
             ]);
             AuditEvent::record($attachment, 'uploaded', null, $attachment->toArray());

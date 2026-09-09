@@ -23,7 +23,7 @@ La usuaria principal captura y revisa información administrativa. No controla e
 8. El resumen avisa los huecos en las series numéricas de Almacén y Patio para facilitar la conciliación de documentos.
 9. Si un formato físico fue prestado, se registra su tipo, folio y fecha. Opcionalmente conserva el técnico relacionado, el nombre libre de la persona responsable y una o más partidas con las cantidades prestadas. La administradora también puede marcar como prestado un vale activo ya capturado: se conservan todos sus datos como referencia y, cuando existen aplicaciones vigentes, la interfaz propone anularlas pero permite conservarlas como antecedente de sólo lectura. Un prestado no genera saldo pendiente, no admite nuevas aplicaciones ni devolución.
 
-Los adjuntos son evidencia privada del vale físico o del reporte de aplicación. Las incidencias del importador se conservan hasta que una persona marque su revisión como atendida.
+Los adjuntos son evidencia privada del vale físico o del reporte de aplicación. La fotografía del vale puede consultarse y ampliarse dentro de su formulario de edición para comparar la captura sin descargarla. Las incidencias del importador se conservan hasta que una persona marque su revisión como atendida.
 
 ## Conceptos
 

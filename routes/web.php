@@ -36,6 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('material-application-reports/{report}/attachment', [MaterialApplicationAttachmentController::class, 'store'])->name('application-attachments.store');
     Route::delete('material-application-reports/{report}/attachment', [MaterialApplicationAttachmentController::class, 'destroy'])->name('application-attachments.destroy');
     Route::get('attachments/{attachment}', [VoucherAttachmentController::class, 'show'])->name('attachments.show');
+    Route::get('attachments/{attachment}/preview', [VoucherAttachmentController::class, 'preview'])->name('attachments.preview');
     Route::delete('attachments/{attachment}', [VoucherAttachmentController::class, 'destroy'])->name('attachments.destroy');
 
     Route::get('catalogs', [CatalogController::class, 'index'])->name('catalogs.index');

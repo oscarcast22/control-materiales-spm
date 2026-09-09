@@ -13,11 +13,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $original_name
  * @property string $mime_type
  * @property int $size
+ * @property string|null $sha256
  * @property-read Voucher $voucher
  */
 class VoucherAttachment extends Model
 {
-    protected $fillable = ['voucher_id', 'disk', 'path', 'original_name', 'mime_type', 'size', 'uploaded_by'];
+    protected $fillable = ['voucher_id', 'disk', 'path', 'original_name', 'mime_type', 'size', 'sha256', 'uploaded_by'];
 
     /** @return BelongsTo<Voucher, $this> */
     public function voucher(): BelongsTo

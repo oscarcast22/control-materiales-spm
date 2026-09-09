@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/card';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { VoucherEvidencePanel } from '@/components/voucher-evidence-panel';
 import type { Voucher, VoucherType } from '@/types';
 
 export type VoucherReferenceFormProps = {
@@ -69,6 +70,7 @@ export default function VoucherReferenceForm({
                     la auditoría.
                 </AlertDescription>
             </Alert>
+            <VoucherEvidencePanel attachments={voucher.attachments} />
             <Card>
                 <CardHeader>
                     <CardTitle>Datos del folio</CardTitle>

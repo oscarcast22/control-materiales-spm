@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { VoucherEvidencePanel } from '@/components/voucher-evidence-panel';
 import {
     isPositiveQuantity,
     quantityForInput,
@@ -341,6 +342,9 @@ export default function LoanedVoucherForm({
                     aplicaciones.
                 </AlertDescription>
             </Alert>
+            {voucher && (
+                <VoucherEvidencePanel attachments={voucher.attachments} />
+            )}
             <Card>
                 <CardHeader>
                     <CardTitle>Datos del vale prestado</CardTitle>

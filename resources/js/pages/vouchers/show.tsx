@@ -243,10 +243,7 @@ export default function VoucherShow({
                                         {voucher.review_reasons.map(
                                             (reason) => (
                                                 <li key={reason}>
-                                                    {reason ===
-                                                    'classification_requires_review'
-                                                        ? 'Confirma la acción y el indicador con el documento físico.'
-                                                        : reason}
+                                                    {reviewReasonLabel(reason)}
                                                 </li>
                                             ),
                                         )}
@@ -515,6 +512,25 @@ export default function VoucherShow({
             </Page>
         </>
     );
+}
+
+function reviewReasonLabel(reason: string): string {
+    const labels: Record<string, string> = {
+        classification_requires_review:
+            'Confirma la acción y el indicador con el documento físico.',
+        material_created_from_photo:
+            'Confirma el material nuevo que se identificó en la fotografía.',
+        destination_created_from_photo:
+            'Confirma la ubicación nueva que se identificó en la fotografía.',
+        photo_field_uncertain:
+            'Confirma los datos manuscritos que no pudieron leerse con total certeza.',
+        luminaire_folios_uncertain:
+            'Confirma los folios individuales de las luminarias con el documento físico.',
+        destination_split_uncertain:
+            'Confirma cómo debe separarse la ubicación escrita en el vale físico.',
+    };
+
+    return labels[reason] ?? reason;
 }
 
 function MaterialBalanceCard({ voucher }: { voucher: Voucher }) {

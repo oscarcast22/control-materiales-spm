@@ -1,5 +1,31 @@
 # Catálogos e importación de agosto de 2026
 
+## Rezago de vales fotografiados
+
+Las fotografías acumuladas de agosto de 2026 se procesan mediante un manifiesto privado, revisado previamente contra los catálogos vigentes. No se usa OCR en la aplicación ni se guardan las fotografías en el repositorio.
+
+El manifiesto clasifica cada folio en una de estas decisiones:
+
+- `create`: crea el vale completo únicamente cuando todos los datos obligatorios se resolvieron;
+- `attach_only`: el vale ya existe y sólo recibe la fotografía, sin cambiar datos, estado ni marcas de revisión;
+- `blocked`: no escribe nada hasta que una persona resuelva las dudas documentadas.
+
+Los materiales existentes se resuelven por nombre, alias o por las mismas palabras en distinto orden, siempre que el resultado sea único. Una abreviatura ambigua nunca crea un material. Un material inequívocamente nuevo puede declararse en `catalog_additions`; se crea activo, marcado para revisión, y el vale relacionado también queda por revisar. El importador no crea personas, acciones o unidades.
+
+La simulación es el comportamiento predeterminado:
+
+```bash
+php artisan vouchers:import-photo-backlog "/ruta/manifest.json" "/ruta/vales agosto organizados"
+```
+
+Después de revisar el reporte privado y disponer de un respaldo, la carga se aplica indicando una cuenta administradora activa:
+
+```bash
+php artisan vouchers:import-photo-backlog "/ruta/manifest.json" "/ruta/vales agosto organizados" --apply --actor=1
+```
+
+La huella SHA-256 de cada imagen se valida antes de consultar o escribir datos. Repetir la importación no duplica vales ni adjuntos. Los archivos se guardan en el disco privado `local`, se consultan mediante autorización y aparecen como evidencia en los formularios de edición. Véase el formato en [`docs/examples/voucher-photo-import-manifest.example.json`](examples/voucher-photo-import-manifest.example.json).
+
 ## Fuente autorizada
 
 La única fuente transaccional es `Captura de vales 2025 (1).xlsx`, conservada fuera del repositorio. Aunque el nombre menciona 2025, el importador sólo considera fechas de agosto de 2026 en las hojas `Vale de Almacen` y `Vale de Patio`. Ignora `Vale papeleria)` y cualquier otro mes o año.

@@ -26,10 +26,10 @@ class AuditEvent extends Model
      * @param  array<string, mixed>|null  $before
      * @param  array<string, mixed>|null  $after
      */
-    public static function record(Model $model, string $event, ?array $before = null, ?array $after = null): self
+    public static function record(Model $model, string $event, ?array $before = null, ?array $after = null, ?int $userId = null): self
     {
         return self::create([
-            'user_id' => auth()->id(),
+            'user_id' => $userId ?? auth()->id(),
             'event' => $event,
             'auditable_type' => $model::class,
             'auditable_id' => $model->getKey(),

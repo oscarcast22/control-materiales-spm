@@ -44,6 +44,14 @@ Nelson Treto y Fco. Fierro quedan habilitados inicialmente sólo para entregar m
 
 Configure previamente PostgreSQL en `.env`. El comando de usuarios crea una cuenta activa y verificada. No pase la contraseña mediante `--password` en una terminal compartida porque puede quedar en el historial o lista de procesos; utilice el prompt oculto.
 
+## Prueba local del rezago fotográfico
+
+Las fotografías y el manifiesto contienen información administrativa y deben permanecer fuera del repositorio o dentro de `storage/app/private`. Ejecutar primero el comando sin `--apply` y revisar que cada folio figure como nuevo listo, adjunto listo o bloqueado por una causa explícita.
+
+La prueba de duplicados debe usar un vale controlado de desarrollo: la primera ejecución añade la fotografía y la segunda conserva un solo adjunto por su huella SHA-256. En un vale existente la prueba debe comparar antes y después folio, fecha, estado, personas, clasificación, destinos, partidas y aplicaciones; ninguno de esos datos puede cambiar.
+
+La prueba local no autoriza una carga productiva. Antes de producción se requiere un respaldo conjunto de PostgreSQL y `storage/app/private`, una nueva simulación contra los catálogos productivos y confirmación explícita de la persona responsable.
+
 ## Cuentas técnicas
 
 Una administradora crea el acceso desde **Catálogos → Personas → Crear acceso**. La persona debe estar activa y conservar la función **Recibe / técnico**. El nombre de usuario se guarda en minúsculas y acepta únicamente letras, números, punto, guion y guion bajo; el correo es opcional.
