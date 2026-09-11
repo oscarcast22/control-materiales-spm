@@ -113,6 +113,7 @@ final class VoucherData
                 'delete' => $user?->can('delete', $voucher) ?? false,
                 'review' => $user?->can('review', $voucher) ?? false,
                 'print' => $user?->can('print', $voucher) ?? false,
+                'share' => $user?->can('share', $voucher) ?? false,
                 'create_application' => $user?->can('createApplication', $voucher) ?? false,
             ],
         ];

@@ -6,9 +6,11 @@ use App\Http\Controllers\MaterialApplicationAttachmentController;
 use App\Http\Controllers\MaterialApplicationController;
 use App\Http\Controllers\MyVoucherController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SharedVoucherController;
 use App\Http\Controllers\TechnicianAccountController;
 use App\Http\Controllers\VoucherAttachmentController;
 use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\VoucherShareLinkController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('mis-vales', [MyVoucherController::class, 'index'])->name('my-vouchers.index');
     Route::get('mis-vales/{voucher}', [MyVoucherController::class, 'show'])->name('my-vouchers.show');
 
+    Route::get('vouchers/{voucher}/share-link', VoucherShareLinkController::class)->name('vouchers.share-link');
     Route::resource('vouchers', VoucherController::class);
     Route::post('vouchers/cancelled', [VoucherController::class, 'storeCancelled'])->name('vouchers.cancelled.store');
     Route::post('vouchers/loaned', [VoucherController::class, 'storeLoaned'])->name('vouchers.loaned.store');
@@ -65,6 +68,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('reports/balances', fn (Request $request) => redirect()->route('reports.material-tracking', $request->query()))->name('reports.balances');
     Route::get('reports/inventory', fn (Request $request) => redirect()->route('reports.material-tracking', $request->query()))->name('reports.inventory');
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
+});
+
+Route::middleware(['signed', 'throttle:60,1'])->prefix('vales-compartidos')->scopeBindings()->group(function () {
+    Route::get('{voucher}', [SharedVoucherController::class, 'show'])->name('shared-vouchers.show');
+    Route::get('{voucher}/adjuntos/{attachment}/vista', [SharedVoucherController::class, 'previewAttachment'])
+        ->name('shared-vouchers.attachments.preview');
+    Route::get('{voucher}/adjuntos/{attachment}/descarga', [SharedVoucherController::class, 'downloadAttachment'])
+        ->name('shared-vouchers.attachments.download');
 });
 
 require __DIR__.'/settings.php';

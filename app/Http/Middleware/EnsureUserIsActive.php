@@ -16,6 +16,10 @@ class EnsureUserIsActive
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->routeIs('shared-vouchers.*')) {
+            return $next($request);
+        }
+
         if ($request->user() && ! $request->user()->canAccessApplication()) {
             Auth::logout();
             $request->session()->invalidate();

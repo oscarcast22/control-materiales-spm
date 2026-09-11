@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { EllipsisVertical, Send, Trash2, XCircle } from 'lucide-react';
+import { EllipsisVertical, Link2, Send, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmActionDialog } from '@/components/confirm-action-dialog';
 import {
@@ -12,6 +12,8 @@ import {
 import { IconButton } from '@/components/ui/icon-button';
 import { VoucherCancelAction } from '@/components/voucher-cancel-action';
 import { VoucherLoanAction } from '@/components/voucher-loan-action';
+import { VoucherShareLinkDialog } from '@/components/voucher-share-link-dialog';
+import type { VoucherShareLink } from '@/components/voucher-share-link-dialog';
 import type { Voucher } from '@/types';
 
 export function VoucherAdminActions({
@@ -30,13 +32,58 @@ export function VoucherAdminActions({
     const [cancelOpen, setCancelOpen] = useState(false);
     const [loanOpen, setLoanOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [shareOpen, setShareOpen] = useState(false);
+    const [shareLink, setShareLink] = useState<VoucherShareLink | null>(null);
+    const [shareLoading, setShareLoading] = useState(false);
+    const [shareError, setShareError] = useState<string | null>(null);
     const canCancel = voucher.status === 'active' && voucher.permissions.cancel;
     const canMarkLoaned =
         voucher.status === 'active' && voucher.permissions.mark_loaned;
+    const canShare = voucher.permissions.share;
 
-    if (!canCancel && !canMarkLoaned && !voucher.permissions.delete) {
+    if (
+        !canCancel &&
+        !canMarkLoaned &&
+        !voucher.permissions.delete &&
+        !canShare
+    ) {
         return null;
     }
+
+    const loadShareLink = async () => {
+        setShareLoading(true);
+        setShareError(null);
+        setShareLink(null);
+
+        try {
+            const response = await fetch(`/vouchers/${voucher.id}/share-link`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+
+            if (!response.ok) {
+                throw new Error('No fue posible generar el enlace.');
+            }
+
+            setShareLink((await response.json()) as VoucherShareLink);
+        } catch (error) {
+            setShareError(
+                error instanceof Error
+                    ? error.message
+                    : 'No fue posible generar el enlace.',
+            );
+        } finally {
+            setShareLoading(false);
+        }
+    };
+
+    const handleShareOpenChange = (open: boolean) => {
+        setShareOpen(open);
+
+        if (open) {
+            void loadShareLink();
+        }
+    };
 
     return (
         <>
@@ -47,6 +94,24 @@ export function VoucherAdminActions({
                     </IconButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-52 p-1.5">
+                    {canShare && (
+                        <DropdownMenuItem
+                            className="min-h-10 rounded-lg px-3 font-medium text-foreground focus:bg-hover focus:text-primary data-[highlighted]:bg-hover data-[highlighted]:text-primary"
+                            onSelect={() => handleShareOpenChange(true)}
+                        >
+                            <Link2
+                                className="text-primary"
+                                aria-hidden="true"
+                            />
+                            Compartir enlace por 24 horas
+                        </DropdownMenuItem>
+                    )}
+                    {canShare &&
+                        (canMarkLoaned ||
+                            canCancel ||
+                            voucher.permissions.delete) && (
+                            <DropdownMenuSeparator />
+                        )}
                     {canMarkLoaned && (
                         <DropdownMenuItem
                             className="min-h-10 rounded-lg px-3 font-medium text-foreground focus:bg-hover focus:text-primary data-[highlighted]:bg-hover data-[highlighted]:text-primary"
@@ -131,6 +196,18 @@ export function VoucherAdminActions({
                             });
                         })
                     }
+                />
+            )}
+
+            {canShare && (
+                <VoucherShareLinkDialog
+                    voucher={voucher}
+                    open={shareOpen}
+                    onOpenChange={handleShareOpenChange}
+                    shareLink={shareLink}
+                    loading={shareLoading}
+                    error={shareError}
+                    onRetry={() => void loadShareLink()}
                 />
             )}
         </>

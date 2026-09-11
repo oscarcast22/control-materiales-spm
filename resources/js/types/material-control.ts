@@ -202,8 +202,62 @@ export type Voucher = {
         delete: boolean;
         review: boolean;
         print: boolean;
+        share: boolean;
         create_application: boolean;
     };
+};
+
+export type SharedVoucherAttachment = {
+    original_name: string;
+    mime_type: string;
+    size: number;
+    preview_url: string;
+    download_url: string;
+};
+
+export type SharedVoucher = {
+    voucher_type: Pick<VoucherType, 'name'>;
+    folio: string;
+    direction: 'entry' | 'exit' | null;
+    issued_on: string;
+    received_by: string | null;
+    delivered_by: string | null;
+    authorized_by: string | null;
+    program: { code: string; name: string | null } | null;
+    action: { code: string; name: string | null } | null;
+    indicator: { code: string; name: string } | null;
+    destinations: string[];
+    usage_description: string | null;
+    notes: string | null;
+    status: Voucher['status'];
+    loaned_to_name: string | null;
+    loaned_on: string | null;
+    cancellation_reason: string | null;
+    balance_state: Voucher['balance_state'];
+    items: Array<{
+        material: string;
+        unit: Pick<Unit, 'name' | 'symbol' | 'decimal_places'>;
+        description: string;
+        quantity: string;
+        used_quantity: string;
+        pending_quantity: string;
+        luminaire_folios: string | null;
+        balance_state: VoucherItem['balance_state'];
+    }>;
+    application_reports: Array<{
+        key: string;
+        occurred_on: string;
+        service_order: string | null;
+        service_order_type: string | null;
+        location: string | null;
+        notes: string | null;
+        applications: Array<{
+            material: string;
+            unit: Pick<Unit, 'name' | 'symbol' | 'decimal_places'>;
+            quantity: string;
+        }>;
+    }>;
+    attachments: SharedVoucherAttachment[];
 };
 
 export type InventoryRow = {

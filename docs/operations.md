@@ -14,11 +14,18 @@ Los controles ya presentes incluyen:
 - dos factores y passkeys opcionales;
 - gates/policies en operaciones y descargas;
 - adjuntos privados con tipo y tamaño validados;
+- enlaces temporales firmados de 24 horas para consultas externas, con límites de solicitudes y sin acceso directo al disco privado;
 - transacciones, bloqueos y auditoría para cambios sensibles;
 - prohibición de comandos destructivos de base en el entorno de producción;
 - pruebas, análisis estático y auditorías de dependencias automatizables.
 
 Estos controles se complementan en producción con la red, los servicios y los respaldos descritos en la guía de infraestructura. Cualquier cambio de exposición, usuarios o alcance requiere una nueva revisión de riesgos.
+
+## Enlaces temporales de vales
+
+Una administradora puede generar desde un vale un enlace de consulta para una persona sin cuenta. El enlace es reutilizable durante 24 horas y muestra los datos actuales, aplicaciones vigentes y comprobantes propios del vale; no incluye evidencia de aplicaciones, auditoría ni incidencias internas. No se guarda ni se puede revocar antes de vencer, por lo que debe compartirse únicamente con la persona que necesita verificar el documento.
+
+La firma depende de `APP_KEY` y la URL absoluta de `APP_URL`; en producción ambas configuraciones deben mantenerse correctas bajo HTTPS. Las respuestas de consulta y los archivos servidos por ella no se almacenan en caché ni se indexan. El disco `local` sigue siendo privado: la consulta sólo llega a los archivos mediante controladores que validan el enlace y que el adjunto pertenezca al vale.
 
 La eliminación definitiva de un vale es una excepción administrativa deliberada para corregir capturas equivocadas. Elimina de la base activa el vale, sus relaciones, auditorías y traza de importación, además de sus archivos privados; no afecta las copias que ya formen parte de un respaldo. Cancelar debe preferirse cuando se necesite conservar el antecedente documental.
 
@@ -180,7 +187,7 @@ composer audit --locked --no-interaction
 npm audit --omit=dev --audit-level=moderate
 ```
 
-Registrar la versión del commit, fecha, resultado de migraciones, respaldo previo y responsable del despliegue. La aplicación expone `/up` para una comprobación básica de disponibilidad; no sustituye una prueba funcional de login, consulta y descarga privada.
+Registrar la versión del commit, fecha, resultado de migraciones, respaldo previo y responsable del despliegue. La aplicación expone `/up` para una comprobación básica de disponibilidad; no sustituye una prueba funcional de login, consulta, descarga privada y enlace temporal de vale.
 
 ## Recuperación y rollback
 

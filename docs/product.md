@@ -23,7 +23,7 @@ La usuaria principal captura y revisa información administrativa. No controla e
 8. El resumen avisa los huecos en las series numéricas de Almacén y Patio para facilitar la conciliación de documentos.
 9. Si un formato físico fue prestado, se registra su tipo, folio y fecha. Opcionalmente conserva el técnico relacionado, el nombre libre de la persona responsable y una o más partidas con las cantidades prestadas. La administradora también puede marcar como prestado un vale activo ya capturado: se conservan todos sus datos como referencia y, cuando existen aplicaciones vigentes, la interfaz propone anularlas pero permite conservarlas como antecedente de sólo lectura. Un prestado no genera saldo pendiente, no admite nuevas aplicaciones ni devolución.
 
-Los adjuntos son evidencia privada del vale físico o del reporte de aplicación. La fotografía del vale puede consultarse y ampliarse dentro de su formulario de edición para comparar la captura sin descargarla. Las incidencias del importador se conservan hasta que una persona marque su revisión como atendida.
+Los adjuntos son evidencia privada del vale físico o del reporte de aplicación. La fotografía del vale puede consultarse y ampliarse dentro de su formulario de edición para comparar la captura sin descargarla. Una administradora puede generar un enlace temporal de 24 horas para que una persona sin cuenta consulte el detalle operativo vigente de cualquier vale y sus comprobantes propios; no incluye evidencia de aplicaciones, auditoría ni incidencias internas. Las incidencias del importador se conservan hasta que una persona marque su revisión como atendida.
 
 ## Conceptos
 
@@ -47,6 +47,7 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 - Materiales filtrados estrictamente según el tipo de vale elegido.
 - Registro, conversión y corrección auditada de folios prestados, con técnico, persona responsable y materiales opcionales. La conversión conserva los datos previos del vale como referencia.
 - Varias partidas por vale y adjuntos privados JPG, PNG, WebP o PDF.
+- Enlace temporal firmado, reutilizable durante 24 horas y generado sólo por una administradora para consulta externa de un vale. Muestra detalle, aplicaciones vigentes y comprobantes del vale, sin crear cuentas ni exponer evidencia de aplicaciones, auditoría o marcas internas. El enlace no tiene revocación anticipada ni registro persistente.
 - Folios descriptivos opcionales por partida para materiales marcados como luminaria, disponibles también en entradas y vales prestados y visibles en el detalle imprimible.
 - Captura rápida de aplicaciones agrupadas por fecha, tipo y número de orden de servicio obligatorios, con ubicación o dirección libre, detalles comunes, desglose por material, evidencia opcional reemplazable y corrección o anulación auditada. Los tipos iniciales son Normal y 072, y el catálogo de opciones es extensible.
 - Vista “Mis vales” para cada técnico, con sus saldos pendientes e inconsistencias y un historial que reúne vales liquidados y prestados asignados. Sólo permite operar vales de salida activos asignados a su persona desde el `2026-01-01`; los prestados son únicamente de consulta.

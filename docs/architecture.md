@@ -9,6 +9,8 @@ Navegador React/TypeScript
         │ Inertia + formularios HTTP
         ▼
 Rutas web protegidas por sesión, CSRF y correo verificado
+        │
+        └── enlace firmado temporal para consulta externa de un vale
         ▼
 Controladores Laravel ── políticas, validación y transacciones
         ▼
@@ -17,7 +19,7 @@ Servicios de dominio y modelos Eloquent
 PostgreSQL + almacenamiento privado de adjuntos
 ```
 
-- Laravel controla autenticación, autorización, validación, transacciones y descarga privada.
+- Laravel controla autenticación, autorización, validación, transacciones y descarga privada. La única excepción es la consulta externa de un vale mediante URL firmada con expiración.
 - React renderiza formularios, catálogos, detalle de vales, dashboard y seguimiento.
 - PostgreSQL conserva documentos, movimientos, catálogos, auditoría y trazabilidad de importación.
 - OpenSpout se utiliza para leer y generar XLSX sin cargar libros completos en memoria.
@@ -27,6 +29,7 @@ PostgreSQL + almacenamiento privado de adjuntos
 - `Normalizer`: genera claves comparables para folios, materiales, ubicaciones y personas.
 - `VoucherSequence`: detecta huecos numéricos por tipo a partir de los inicios configurados. Las trazas inválidas pueden extender el último folio observado, pero nunca cuentan como folios presentes.
 - `VoucherData`: construye el contrato de presentación de un vale y calcula los estados de sus partidas.
+- `SharedVoucherData`: deriva una proyección pública limitada de `VoucherData` y genera URLs firmadas para los comprobantes del vale.
 - `Voucher::visibleTo(User)`: conserva todos los vales para administradores y limita al técnico a salidas activas propias desde el corte de 2026.
 - `MaterialTracking`: aplica el corte de 2026 y agrega partidas por material/unidad o por técnico.
 - `CatalogIndexData`: valida la sección y los filtros de Catálogos, limita las consultas a los datos visibles y construye su navegación y paginación.
@@ -121,7 +124,7 @@ erDiagram
 - Sólo las salidas activas desde `2026-01-01` alimentan el seguimiento. Entradas, prestados y cancelados quedan fuera.
 - Las agregaciones cuantitativas se separan por `material_id` y `unit_id`.
 - El total abstracto de “materiales” mostrado en las filas resumidas de Vales y Seguimiento es una ayuda visual acompañada siempre por el desglose de partidas. `VoucherData` expone los totales de cada vale para la tabla general; Seguimiento los calcula en el frontend sobre las partidas filtradas. Ninguno forma parte de agregaciones contables por material/unidad ni del XLSX.
-- Los adjuntos residen en el disco privado y sólo se descargan después de autorizar el vale.
+- Los adjuntos residen en el disco privado y sólo se descargan después de autorizar el vale. Una ruta pública firmada puede servir exclusivamente los comprobantes del vale indicado, durante la misma vigencia de su enlace temporal.
 - Una cuenta técnica requiere `person_id` único, persona activa, función `can_receive_material` y número de cobro. El usuario se calcula con el nombre normalizado sin espacios; una colisión se detiene para revisión. Su contraseña se deriva del número de cobro y se actualiza al cambiarlo. Esa función y el estado de la persona no pueden retirarse mientras exista el vínculo.
 
 ## Estados derivados
@@ -141,6 +144,8 @@ Las entradas usan el estado informativo `received`. Los vales cancelados usan `c
 ## Seguridad y permisos
 
 Todas las rutas operativas requieren sesión; cuando corresponde, Fortify conserva la verificación de correo. El acceso se limita a cuentas activas y acepta correo o username normalizado. Una cuenta técnica no usa correo ni recuperación automática: la administradora puede restablecerla al número de cobro. El técnico no puede cambiar esa contraseña desde Seguridad.
+
+La única lectura sin sesión es un vale compartido por una administradora. El enlace es una capacidad firmada con `APP_KEY`, válida por 24 horas y reutilizable hasta vencer; no se persiste, no se audita, no permite revocación anticipada y regenerarlo no invalida enlaces previos. Las rutas públicas validan la firma y la relación vale-adjunto, no exponen rutas de disco ni evidencia de aplicaciones, y entregan datos vigentes del vale sin permisos, auditoría, usuarios de sesión ni marcas de revisión. Las respuestas públicas usan `no-store`, `no-referrer`, `nosniff` y `noindex`.
 
 Los roles fijos son `administrator` y `technician`. Los gates globales reservan Catálogos, Seguimiento y administración de cuentas al administrador. Las policies separan consulta, edición, cancelación, revisión, impresión y captura de aplicaciones. No existe un `Gate::before`: cada operación debe estar declarada. El scope limita consultas y las policies vuelven a validar accesos directos.
 

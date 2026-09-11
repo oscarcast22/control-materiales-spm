@@ -55,6 +55,11 @@ class VoucherPolicy
         return $user->isAdministrator();
     }
 
+    public function share(User $user, Voucher $voucher): bool
+    {
+        return $user->isAdministrator();
+    }
+
     public function createApplication(User $user, Voucher $voucher): bool
     {
         if ($voucher->direction !== VoucherDirection::Exit || $voucher->status !== VoucherStatus::Active) {

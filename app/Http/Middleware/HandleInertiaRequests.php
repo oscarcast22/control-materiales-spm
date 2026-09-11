@@ -36,18 +36,20 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $isSharedVoucher = $request->routeIs('shared-vouchers.*');
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $isSharedVoucher ? null : $request->user(),
             ],
             'capabilities' => [
-                'manage_catalogs' => fn (): bool => $request->user()?->can('manage-catalogs') ?? false,
-                'view_reports' => fn (): bool => $request->user()?->can('view-reports') ?? false,
-                'manage_accounts' => fn (): bool => $request->user()?->can('manage-accounts') ?? false,
-                'manage_vouchers' => fn (): bool => $request->user()?->can('create', Voucher::class) ?? false,
-                'view_my_vouchers' => fn (): bool => $request->user()?->hasOperationalTechnicianAccess() ?? false,
+                'manage_catalogs' => fn (): bool => ! $isSharedVoucher && ($request->user()?->can('manage-catalogs') ?? false),
+                'view_reports' => fn (): bool => ! $isSharedVoucher && ($request->user()?->can('view-reports') ?? false),
+                'manage_accounts' => fn (): bool => ! $isSharedVoucher && ($request->user()?->can('manage-accounts') ?? false),
+                'manage_vouchers' => fn (): bool => ! $isSharedVoucher && ($request->user()?->can('create', Voucher::class) ?? false),
+                'view_my_vouchers' => fn (): bool => ! $isSharedVoucher && ($request->user()?->hasOperationalTechnicianAccess() ?? false),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
