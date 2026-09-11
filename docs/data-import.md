@@ -8,7 +8,10 @@ El manifiesto clasifica cada folio en una de estas decisiones:
 
 - `create`: crea el vale completo únicamente cuando todos los datos obligatorios se resolvieron;
 - `attach_only`: el vale ya existe y sólo recibe la fotografía, sin cambiar datos, estado ni marcas de revisión;
+- `reconcile_existing`: adjunta la fotografía a un vale existente y aplica únicamente las correcciones explícitas del manifiesto; exige la fecha de actualización y el conteo de adjuntos esperados para bloquear escrituras sobre un registro que cambió;
 - `blocked`: no escribe nada hasta que una persona resuelva las dudas documentadas.
+
+Una conciliación puede corregir fecha, descripción de uso, agregar ubicaciones existentes, sustituir el material de una partida sin aplicaciones y registrar folios descriptivos. Nunca cambia folio, movimiento, estado, personas, cantidades ni aplicaciones. Los motivos indicados se agregan a `review_reasons`, activan `needs_review` y todas las modificaciones quedan auditadas. Los folios deben conservar exactamente los ceros iniciales impresos y almacenados.
 
 Los materiales existentes se resuelven por nombre, alias o por las mismas palabras en distinto orden, siempre que el resultado sea único. Una abreviatura ambigua nunca crea un material. Un material inequívocamente nuevo puede declararse en `catalog_additions`; se crea activo, marcado para revisión, y el vale relacionado también queda por revisar. El importador no crea personas, acciones o unidades.
 

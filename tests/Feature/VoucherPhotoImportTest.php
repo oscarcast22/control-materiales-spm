@@ -174,6 +174,122 @@ class VoucherPhotoImportTest extends TestCase
         $this->assertDatabaseMissing('vouchers', ['folio_key' => '17003']);
     }
 
+    public function test_existing_voucher_can_be_reconciled_and_repeated_without_duplicate_changes(): void
+    {
+        $catalog = $this->catalog();
+        $actor = User::factory()->create();
+        $sourceMaterial = Material::factory()->create([
+            'name' => 'Luminaria genérica 150 W',
+            'normalized_name' => Normalizer::key('Luminaria genérica 150 W'),
+            'default_unit_id' => $catalog['unit']->id,
+            'is_luminaire' => true,
+        ]);
+        $targetMaterial = Material::factory()->create([
+            'name' => 'Luminaria City Plus 150 W',
+            'normalized_name' => Normalizer::key('Luminaria City Plus 150 W'),
+            'default_unit_id' => $catalog['unit']->id,
+            'is_luminaire' => true,
+        ]);
+        $voucher = Voucher::factory()->create([
+            'storage_location_id' => $catalog['location']->id,
+            'folio' => '03605',
+            'folio_key' => '03605',
+            'issued_on' => '0026-07-01',
+            'usage_description' => null,
+        ]);
+        $item = $voucher->items()->create([
+            'material_id' => $sourceMaterial->id,
+            'unit_id' => $sourceMaterial->default_unit_id,
+            'description_snapshot' => $sourceMaterial->name,
+            'quantity' => 2,
+        ]);
+        $image = $this->image('03605.jpeg');
+        $manifest = $this->manifest([[
+            'decision' => 'reconcile_existing',
+            'voucher_type' => 'warehouse',
+            'folio' => '03605',
+            'expected_updated_at' => $voucher->updated_at->format('Y-m-d H:i:s'),
+            'expected_attachment_count' => 0,
+            'updates' => [
+                'issued_on' => '2026-07-01',
+                'usage_description' => 'Mantenimiento de poblados',
+                'add_destinations' => [$catalog['destination']->name],
+                'items' => [[
+                    'current_material' => $sourceMaterial->name,
+                    'quantity' => 2,
+                    'material' => $targetMaterial->name,
+                    'luminaire_folios' => '1001, S/F',
+                ]],
+            ],
+            'review_reasons' => ['La persona que entregó no aparece escrita en la fotografía.'],
+            'images' => [$image],
+        ]]);
+
+        $this->artisan('vouchers:import-photo-backlog', ['manifest' => $manifest, 'images' => $this->temporaryDirectory])
+            ->expectsOutputToContain('Simulación completa')
+            ->assertSuccessful();
+        $this->assertSame('0026-07-01', $voucher->fresh()->issued_on->toDateString());
+        $this->assertDatabaseCount('voucher_attachments', 0);
+
+        $arguments = ['manifest' => $manifest, 'images' => $this->temporaryDirectory, '--apply' => true, '--actor' => $actor->id];
+        $this->artisan('vouchers:import-photo-backlog', $arguments)->assertSuccessful();
+        $this->artisan('vouchers:import-photo-backlog', $arguments)->assertSuccessful();
+
+        $voucher->refresh();
+        $item->refresh();
+        $this->assertSame('2026-07-01', $voucher->issued_on->toDateString());
+        $this->assertSame('Mantenimiento de poblados', $voucher->usage_description);
+        $this->assertTrue($voucher->needs_review);
+        $this->assertContains('La persona que entregó no aparece escrita en la fotografía.', $voucher->review_reasons);
+        $this->assertTrue($voucher->destinations()->whereKey($catalog['destination']->id)->exists());
+        $this->assertSame($targetMaterial->id, $item->material_id);
+        $this->assertSame('1001, S/F', $item->luminaire_folios);
+        $this->assertDatabaseCount('voucher_attachments', 1);
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'reconciled_from_photo_import',
+            'auditable_type' => Voucher::class,
+            'auditable_id' => $voucher->id,
+            'user_id' => $actor->id,
+        ]);
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'reconciled_from_photo_import',
+            'auditable_type' => $item::class,
+            'auditable_id' => $item->id,
+            'user_id' => $actor->id,
+        ]);
+    }
+
+    public function test_reconciliation_is_blocked_when_the_expected_state_or_exact_folio_changed(): void
+    {
+        $catalog = $this->catalog();
+        $actor = User::factory()->create();
+        $voucher = Voucher::factory()->create([
+            'storage_location_id' => $catalog['location']->id,
+            'folio' => '03758',
+            'folio_key' => '03758',
+        ]);
+        $image = $this->image('03758.jpeg');
+        $manifest = $this->manifest([[
+            'decision' => 'reconcile_existing',
+            'voucher_type' => 'warehouse',
+            'folio' => '3758',
+            'expected_updated_at' => $voucher->updated_at->format('Y-m-d H:i:s'),
+            'expected_attachment_count' => 0,
+            'updates' => [],
+            'images' => [$image],
+        ]]);
+
+        $this->artisan('vouchers:import-photo-backlog', [
+            'manifest' => $manifest,
+            'images' => $this->temporaryDirectory,
+            '--apply' => true,
+            '--actor' => $actor->id,
+        ])->assertSuccessful();
+
+        $this->assertDatabaseCount('voucher_attachments', 0);
+        $this->assertSame('03758', $voucher->fresh()->folio_key);
+    }
+
     public function test_private_image_preview_requires_authorization_and_is_inline(): void
     {
         $catalog = $this->catalog();

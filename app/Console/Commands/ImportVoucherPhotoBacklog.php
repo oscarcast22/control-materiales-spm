@@ -60,8 +60,8 @@ final class ImportVoucherPhotoBacklog extends Command
     private function printPlan(array $plan): void
     {
         $summary = $plan['summary'];
-        $this->table(['Fotografías', 'Folios', 'Nuevos listos', 'Adjuntos listos', 'Por revisar', 'Bloqueados'], [[
-            $summary['images'], $summary['folios'], $summary['ready_to_create'], $summary['ready_to_attach'], $summary['marked_for_review'], $summary['blocked'],
+        $this->table(['Fotografías', 'Folios', 'Nuevos listos', 'Adjuntos listos', 'Conciliaciones', 'Por revisar', 'Bloqueados'], [[
+            $summary['images'], $summary['folios'], $summary['ready_to_create'], $summary['ready_to_attach'], $summary['ready_to_reconcile'], $summary['marked_for_review'], $summary['blocked'],
         ]]);
         $attention = [];
         foreach ($this->rows($plan['rows'] ?? []) as $row) {

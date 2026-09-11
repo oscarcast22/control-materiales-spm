@@ -18,6 +18,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Models\Voucher;
 use App\Models\VoucherAttachment;
+use App\Models\VoucherItem;
 use App\Support\Normalizer;
 use App\Support\QuantityPrecision;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +58,8 @@ final class PhotoImportService
                 }
             } elseif ($decision === 'attach_only') {
                 $resolved = $this->resolveExisting($source, $issues);
+            } elseif ($decision === 'reconcile_existing') {
+                $resolved = $this->resolveReconciliation($source, $issues);
             } else {
                 $resolved = $this->resolveNew($source, $issues, $newMaterials->all(), $newDestinations->all());
                 if (($resolved['already_imported'] ?? false) === true) {
@@ -81,7 +84,7 @@ final class PhotoImportService
         foreach ($sources as $source) {
             $imageCount += count($this->rows($source['images'] ?? []));
         }
-        $readyToCreate = $readyToAttach = $markedForReview = $blocked = 0;
+        $readyToCreate = $readyToAttach = $readyToReconcile = $markedForReview = $blocked = 0;
         foreach ($rows as $row) {
             if (! $row['ready']) {
                 $blocked++;
@@ -89,6 +92,8 @@ final class PhotoImportService
                 $readyToCreate++;
             } elseif ($row['decision'] === 'attach_only') {
                 $readyToAttach++;
+            } elseif ($row['decision'] === 'reconcile_existing') {
+                $readyToReconcile++;
             }
             if ($row['ready'] && $this->strings($row['source']['review_reasons'] ?? []) !== []) {
                 $markedForReview++;
@@ -105,6 +110,7 @@ final class PhotoImportService
                 'folios' => count($rows),
                 'ready_to_create' => $readyToCreate,
                 'ready_to_attach' => $readyToAttach,
+                'ready_to_reconcile' => $readyToReconcile,
                 'marked_for_review' => $markedForReview,
                 'blocked' => $blocked,
             ],
@@ -138,9 +144,11 @@ final class PhotoImportService
                         continue;
                     }
                     $resolved = $this->associativeArray($row['resolved'] ?? []);
-                    $voucher = $row['decision'] === 'attach_only'
-                        ? Voucher::query()->lockForUpdate()->whereKey($resolved['voucher_id'])->firstOrFail()
-                        : $this->createVoucher($row, $actor);
+                    $voucher = match ($row['decision']) {
+                        'attach_only' => Voucher::query()->lockForUpdate()->whereKey($resolved['voucher_id'])->firstOrFail(),
+                        'reconcile_existing' => $this->reconcileVoucher($row, $actor),
+                        default => $this->createVoucher($row, $actor),
+                    };
                     $source = $this->associativeArray($row['source'] ?? []);
                     foreach ($this->rows($source['images'] ?? []) as $image) {
                         $this->attachImage($voucher, $image, $actor, $writtenPaths);
@@ -183,6 +191,108 @@ final class PhotoImportService
         $voucher = $matches->firstOrFail();
 
         return ['voucher_id' => $voucher->id];
+    }
+
+    /** @param array<string, mixed> $source
+     * @param  list<string>  $issues
+     * @return array<string, mixed>|null
+     */
+    private function resolveReconciliation(array $source, array &$issues): ?array
+    {
+        $location = StorageLocation::query()->where('code', $source['voucher_type'])->where('is_active', true)->first();
+        if (! $location) {
+            $issues[] = 'El tipo de vale no está activo en producción.';
+
+            return null;
+        }
+
+        $matches = Voucher::query()
+            ->where('storage_location_id', $location->id)
+            ->where('folio_key', Normalizer::folio($source['folio']))
+            ->get();
+        if ($matches->count() !== 1) {
+            $issues[] = $matches->isEmpty()
+                ? 'No existe un único vale productivo para conciliar.'
+                : 'Existe más de un vale del mismo tipo y folio; no se eligió automáticamente.';
+
+            return null;
+        }
+        $voucher = $matches->firstOrFail();
+        if ($this->reconciliationAlreadyApplied($voucher, $source)) {
+            return ['voucher_id' => $voucher->id, 'already_reconciled' => true];
+        }
+
+        if ($voucher->updated_at?->format('Y-m-d H:i:s') !== $source['expected_updated_at']) {
+            $issues[] = 'El vale cambió desde que se preparó la conciliación.';
+        }
+        if ($voucher->attachments()->count() !== (int) $source['expected_attachment_count']) {
+            $issues[] = 'La cantidad de adjuntos cambió desde que se preparó la conciliación.';
+        }
+
+        $updates = $this->associativeArray($source['updates'] ?? []);
+        $destinationIds = [];
+        foreach ($this->strings($updates['add_destinations'] ?? []) as $name) {
+            $destination = $this->destination($name);
+            if (! $destination?->is_active) {
+                $issues[] = "No se resolvió una ubicación activa para agregar: {$name}.";
+
+                continue;
+            }
+            $destinationIds[] = $destination->id;
+        }
+
+        $itemUpdates = [];
+        foreach ($this->rows($updates['items'] ?? []) as $itemUpdate) {
+            $currentMaterial = $this->material($this->string($itemUpdate['current_material'] ?? null));
+            if (! $currentMaterial) {
+                $issues[] = "No se resolvió el material actual: {$itemUpdate['current_material']}.";
+
+                continue;
+            }
+            $items = $voucher->items()
+                ->where('material_id', $currentMaterial->id)
+                ->where('quantity', $itemUpdate['quantity'])
+                ->get();
+            if ($items->count() !== 1) {
+                $issues[] = "No se encontró una única partida de {$currentMaterial->name} con la cantidad indicada.";
+
+                continue;
+            }
+            $item = $items->firstOrFail();
+            $targetMaterialName = isset($itemUpdate['material'])
+                ? $this->string($itemUpdate['material'])
+                : $currentMaterial->name;
+            $targetMaterial = $this->material($targetMaterialName);
+            if (! $targetMaterial) {
+                $issues[] = "No se resolvió el material corregido: {$targetMaterialName}.";
+
+                continue;
+            }
+            if (! $targetMaterial->voucherTypes()->whereKey($location->id)->exists()) {
+                $issues[] = "El material {$targetMaterial->name} no está disponible para este tipo de vale.";
+            }
+            if (! QuantityPrecision::accepts($item->quantity, $targetMaterial->defaultUnit->decimal_places)) {
+                $issues[] = "La cantidad de {$targetMaterial->name} no es compatible con su unidad.";
+            }
+            if ($targetMaterial->id !== $currentMaterial->id && $item->applications()->exists()) {
+                $issues[] = "No se puede cambiar {$currentMaterial->name} porque conserva aplicaciones.";
+            }
+            if (array_key_exists('luminaire_folios', $itemUpdate)
+                && filled($itemUpdate['luminaire_folios'])
+                && ! $targetMaterial->is_luminaire) {
+                $issues[] = "{$targetMaterial->name} no admite folios de luminaria.";
+            }
+            $itemUpdates[] = [
+                'item_id' => $item->id,
+                'current_material_id' => $currentMaterial->id,
+                'quantity' => $item->quantity,
+                'material' => $targetMaterial,
+                'has_luminaire_folios' => array_key_exists('luminaire_folios', $itemUpdate),
+                'luminaire_folios' => $itemUpdate['luminaire_folios'] ?? null,
+            ];
+        }
+
+        return compact('voucher', 'destinationIds', 'itemUpdates');
     }
 
     /** @param array<string, mixed> $source
@@ -353,6 +463,152 @@ final class PhotoImportService
         }
     }
 
+    /** @param array<string, mixed> $source */
+    private function reconciliationAlreadyApplied(Voucher $voucher, array $source): bool
+    {
+        $hashes = array_column($this->rows($source['images'] ?? []), 'sha256');
+        if ($voucher->attachments()->whereIn('sha256', $hashes)->count() !== count($hashes)) {
+            return false;
+        }
+
+        $updates = $this->associativeArray($source['updates'] ?? []);
+        if (isset($updates['issued_on']) && $voucher->issued_on->toDateString() !== $updates['issued_on']) {
+            return false;
+        }
+        if (array_key_exists('usage_description', $updates)) {
+            $usage = filled($updates['usage_description']) ? trim((string) $updates['usage_description']) : null;
+            if ($voucher->usage_description !== $usage) {
+                return false;
+            }
+        }
+
+        foreach ($this->strings($updates['add_destinations'] ?? []) as $name) {
+            $destination = $this->destination($name);
+            if (! $destination || ! $voucher->destinations()->whereKey($destination->id)->exists()) {
+                return false;
+            }
+        }
+
+        foreach ($this->rows($updates['items'] ?? []) as $itemUpdate) {
+            $materialName = isset($itemUpdate['material'])
+                ? $this->string($itemUpdate['material'])
+                : $this->string($itemUpdate['current_material'] ?? null);
+            $material = $this->material($materialName);
+            if (! $material) {
+                return false;
+            }
+            $items = $voucher->items()
+                ->where('material_id', $material->id)
+                ->where('quantity', $itemUpdate['quantity'])
+                ->get();
+            if ($items->count() !== 1) {
+                return false;
+            }
+            if (array_key_exists('luminaire_folios', $itemUpdate)) {
+                $folios = filled($itemUpdate['luminaire_folios']) ? trim((string) $itemUpdate['luminaire_folios']) : null;
+                if ($items->firstOrFail()->luminaire_folios !== $folios) {
+                    return false;
+                }
+            }
+        }
+
+        $reviewReasons = $this->strings($source['review_reasons'] ?? []);
+        if ($reviewReasons !== []) {
+            $existingReasons = $voucher->review_reasons ?? [];
+            if (! $voucher->needs_review || array_diff($reviewReasons, $existingReasons) !== []) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function reconcileVoucher(array $row, User $actor): Voucher
+    {
+        $resolved = $this->associativeArray($row['resolved'] ?? []);
+        $voucher = Voucher::query()->lockForUpdate()->whereKey($resolved['voucher_id'] ?? $resolved['voucher']?->id)->firstOrFail();
+        if (($resolved['already_reconciled'] ?? false) === true) {
+            return $voucher;
+        }
+
+        $source = $this->associativeArray($row['source'] ?? []);
+        if ($voucher->updated_at?->format('Y-m-d H:i:s') !== $source['expected_updated_at']
+            || $voucher->attachments()->count() !== (int) $source['expected_attachment_count']) {
+            throw new RuntimeException('El vale cambió mientras se preparaba la conciliación; no se aplicó ningún cambio.');
+        }
+
+        $updates = $this->associativeArray($source['updates'] ?? []);
+        $beforeVoucher = $this->voucherAuditData($voucher);
+        $voucherValues = [];
+
+        if (isset($updates['issued_on']) && $voucher->issued_on->toDateString() !== $updates['issued_on']) {
+            $voucherValues['issued_on'] = $updates['issued_on'];
+        }
+        if (array_key_exists('usage_description', $updates)) {
+            $usage = filled($updates['usage_description']) ? trim((string) $updates['usage_description']) : null;
+            if ($voucher->usage_description !== $usage) {
+                $voucherValues['usage_description'] = $usage;
+            }
+        }
+
+        $reviewReasons = array_values(array_unique([
+            ...($voucher->review_reasons ?? []),
+            ...$this->strings($source['review_reasons'] ?? []),
+        ]));
+        if ($this->strings($source['review_reasons'] ?? []) !== []) {
+            $voucherValues['needs_review'] = true;
+            $voucherValues['review_reasons'] = $reviewReasons;
+        }
+
+        $destinationIds = array_values(array_unique(array_map('intval', $resolved['destinationIds'] ?? [])));
+        $missingDestinationIds = array_values(array_diff(
+            $destinationIds,
+            $voucher->destinations()->pluck('destinations.id')->map(fn (mixed $id): int => (int) $id)->all(),
+        ));
+        if ($voucherValues !== [] || $missingDestinationIds !== []) {
+            $voucher->update([...$voucherValues, 'updated_by' => $actor->id]);
+            if ($missingDestinationIds !== []) {
+                $voucher->destinations()->syncWithoutDetaching($missingDestinationIds);
+            }
+            AuditEvent::record($voucher, 'reconciled_from_photo_import', $beforeVoucher, $this->voucherAuditData($voucher), $actor->id);
+        }
+
+        foreach ($this->rows($resolved['itemUpdates'] ?? []) as $itemUpdate) {
+            $item = VoucherItem::query()
+                ->where('voucher_id', $voucher->id)
+                ->lockForUpdate()
+                ->findOrFail((int) $itemUpdate['item_id']);
+            if ($item->material_id !== (int) $itemUpdate['current_material_id']
+                || $item->quantity !== $itemUpdate['quantity']) {
+                throw new RuntimeException('Una partida cambió mientras se preparaba la conciliación; no se aplicó ningún cambio.');
+            }
+            $material = $itemUpdate['material'];
+            if (! $material instanceof Material) {
+                throw new RuntimeException('La conciliación contiene un material resuelto inválido.');
+            }
+            $values = [
+                'material_id' => $material->id,
+                'unit_id' => $material->default_unit_id,
+                'description_snapshot' => $material->name,
+                'updated_by' => $actor->id,
+            ];
+            if (($itemUpdate['has_luminaire_folios'] ?? false) === true) {
+                $values['luminaire_folios'] = filled($itemUpdate['luminaire_folios'] ?? null)
+                    ? trim((string) $itemUpdate['luminaire_folios'])
+                    : null;
+            }
+            $beforeItem = $item->toArray();
+            $item->fill($values);
+            if ($item->isDirty()) {
+                $item->save();
+                AuditEvent::record($item, 'reconciled_from_photo_import', $beforeItem, $item->fresh()->toArray(), $actor->id);
+            }
+        }
+
+        return $voucher->fresh();
+    }
+
     /** @param array<string, mixed> $row */
     private function createVoucher(array $row, User $actor): Voucher
     {
@@ -429,6 +685,17 @@ final class PhotoImportService
         AuditEvent::record($voucher, 'created_from_photo_import', null, $voucher->fresh()->toArray(), $actor->id);
 
         return $voucher;
+    }
+
+    /** @return array<string, mixed> */
+    private function voucherAuditData(Voucher $voucher): array
+    {
+        $voucher->load('destinations:id');
+
+        return [
+            ...$voucher->toArray(),
+            'destination_ids' => $voucher->destinations->pluck('id')->all(),
+        ];
     }
 
     /** @param array<string, mixed> $image

@@ -37,6 +37,30 @@
                     "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
                 }
             ]
+        },
+        {
+            "decision": "reconcile_existing",
+            "voucher_type": "yard",
+            "folio": "03758",
+            "expected_updated_at": "2026-09-03 14:24:58",
+            "expected_attachment_count": 0,
+            "updates": {
+                "add_destinations": ["Ubicación canónica o alias"],
+                "items": [
+                    {
+                        "current_material": "Material canónico o alias",
+                        "quantity": 20,
+                        "luminaire_folios": "1001, 1002"
+                    }
+                ]
+            },
+            "review_reasons": ["Dato visible que requiere confirmación administrativa."],
+            "images": [
+                {
+                    "file": "03758.jpeg",
+                    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+                }
+            ]
         }
     ]
 }
