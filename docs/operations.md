@@ -54,9 +54,9 @@ La prueba local no autoriza una carga productiva. Antes de producción se requie
 
 ## Cuentas técnicas
 
-Una administradora crea el acceso desde **Catálogos → Personas → Crear acceso**. La persona debe estar activa, conservar la función **Recibe / técnico** y tener número de cobro. El sistema genera el usuario uniendo nombre y apellidos en minúsculas; si ya pertenece a otra cuenta, se detiene para revisión. Las cuentas técnicas nunca reciben correo electrónico.
+Una administradora crea el acceso desde **Catálogos → Personas → Acciones → Crear acceso**. La persona debe estar activa, conservar la función **Recibe / técnico** y tener número de cobro. Antes de confirmar, el sistema muestra el usuario generado uniendo nombre y apellidos en minúsculas y el número de cobro literal que será la contraseña. Al administrar una cuenta existente se consultan también su usuario y número de cobro. Si el usuario ya pertenece a otra cuenta, se marca el error junto a la vista previa para revisión. Las cuentas técnicas nunca reciben correo electrónico.
 
-Desde el mismo control se puede pausar o reactivar el acceso y restablecer la contraseña al número de cobro. Al cambiar ese número, la contraseña se restablece automáticamente. La contraseña anterior, el número de cobro y sus hashes no se muestran ni se guardan en auditorías. Una persona vinculada no puede perder su función técnica, desactivarse ni eliminarse. Al fusionar personas, la cuenta sólo se transfiere si el destino no tiene otra cuenta y ya tiene número de cobro.
+Desde el mismo control se puede pausar o reactivar el acceso y restablecer la contraseña al número de cobro. Al cambiar ese número, la contraseña se restablece automáticamente. Las contraseñas anteriores y sus hashes no se muestran; el número de cobro no se guarda en auditorías. Una persona vinculada no puede perder su función técnica, desactivarse ni eliminarse. Al fusionar personas, la cuenta sólo se transfiere si el destino no tiene otra cuenta y ya tiene número de cobro.
 
 Las cuentas técnicas no usan enlace de recuperación y deben solicitar el restablecimiento a una administradora. El técnico no puede modificar su contraseña, username, correo, rol, vínculo o estado.
 

@@ -25,7 +25,11 @@ class TechnicianAccountController extends Controller
         $user = DB::transaction(function () use ($person): User {
             $lockedPerson = Person::query()->lockForUpdate()->findOrFail($person->id);
             $this->ensureEligiblePerson($lockedPerson);
-            abort_if($lockedPerson->account()->exists(), 409, 'Esta persona ya tiene una cuenta técnica.');
+            if ($lockedPerson->account()->exists()) {
+                throw ValidationException::withMessages([
+                    'username' => 'Esta persona ya tiene una cuenta técnica.',
+                ]);
+            }
             $user = User::create([
                 'name' => $lockedPerson->name,
                 'username' => $this->credentials->username($lockedPerson),

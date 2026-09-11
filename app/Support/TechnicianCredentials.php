@@ -8,19 +8,24 @@ use Illuminate\Validation\ValidationException;
 
 final class TechnicianCredentials
 {
+    public function previewUsername(Person $person): string
+    {
+        return str_replace(' ', '', Normalizer::key($person->name));
+    }
+
     public function username(Person $person): string
     {
-        $username = str_replace(' ', '', Normalizer::key($person->name));
+        $username = $this->previewUsername($person);
 
         if (mb_strlen($username) < 3 || mb_strlen($username) > 60) {
             throw ValidationException::withMessages([
-                'account' => 'El nombre de la persona no permite generar un usuario válido. Corrígelo antes de crear el acceso.',
+                'username' => 'El nombre de la persona no permite generar un usuario válido. Corrígelo antes de crear el acceso.',
             ]);
         }
 
         if (User::query()->where('username', $username)->exists()) {
             throw ValidationException::withMessages([
-                'account' => 'El usuario automático ya pertenece a otra cuenta. Revisa el nombre de la persona antes de crear el acceso.',
+                'username' => 'El usuario automático ya pertenece a otra cuenta. Revisa el nombre de la persona antes de crear el acceso.',
             ]);
         }
 
@@ -33,7 +38,7 @@ final class TechnicianCredentials
 
         if ($chargeNumber === null || $chargeNumber === '') {
             throw ValidationException::withMessages([
-                'account' => 'Registra un número de cobro válido antes de crear o restablecer el acceso.',
+                'charge_number' => 'Registra un número de cobro válido antes de crear o restablecer el acceso.',
             ]);
         }
 

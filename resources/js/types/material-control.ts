@@ -26,6 +26,9 @@ export type Material = Named & {
 };
 export type Person = Named & {
     charge_number: string | null;
+    account_preview: {
+        username: string;
+    };
     can_receive_material: boolean;
     can_deliver_material: boolean;
     can_authorize_material: boolean;

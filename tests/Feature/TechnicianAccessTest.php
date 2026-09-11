@@ -129,7 +129,11 @@ class TechnicianAccessTest extends TestCase
             'charge_number' => '67890',
         ]);
         $this->actingAs($administrator)->post(route('catalogs.people.account.store', $otherPerson))
-            ->assertSessionHasErrors('account');
+            ->assertSessionHasErrors('username');
+
+        $withoutChargeNumber = Person::factory()->create(['charge_number' => null]);
+        $this->actingAs($administrator)->post(route('catalogs.people.account.store', $withoutChargeNumber))
+            ->assertSessionHasErrors('charge_number');
 
         $this->actingAs($administrator)->put(route('catalogs.people.account.update', $person), [
             'is_active' => false,

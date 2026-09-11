@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import {
     Boxes,
+    Ellipsis,
     KeyRound,
     MapPin,
     Pencil,
@@ -25,6 +26,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -1103,41 +1111,14 @@ export function PeopleSection({
                                                     </Badge>
                                                 )}
                                             </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap justify-end gap-1">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                            setAccountPerson(
-                                                                person,
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            !person.can_receive_material ||
-                                                            !person.is_active ||
-                                                            (!person.account &&
-                                                                !person.charge_number)
-                                                        }
-                                                    >
-                                                        <KeyRound aria-hidden="true" />
-                                                        {person.account
-                                                            ? 'Acceso'
-                                                            : 'Crear acceso'}
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                            setEditing(person)
-                                                        }
-                                                    >
-                                                        <Pencil aria-hidden="true" />
-                                                        {person.needs_review
-                                                            ? 'Revisar'
-                                                            : 'Editar'}
-                                                    </Button>
-                                                </div>
+                                            <TableCell className="text-right">
+                                                <PersonActions
+                                                    person={person}
+                                                    onEdit={setEditing}
+                                                    onManageAccount={
+                                                        setAccountPerson
+                                                    }
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -1171,33 +1152,12 @@ export function PeopleSection({
                                             : 'Sin cuenta'}
                                     </MobileDatum>
                                 </div>
-                                <div className="mt-4 flex justify-end gap-1 border-t border-border pt-3">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setAccountPerson(person)}
-                                        disabled={
-                                            !person.can_receive_material ||
-                                            !person.is_active ||
-                                            (!person.account &&
-                                                !person.charge_number)
-                                        }
-                                    >
-                                        <KeyRound aria-hidden="true" />
-                                        {person.account
-                                            ? 'Acceso'
-                                            : 'Crear acceso'}
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setEditing(person)}
-                                    >
-                                        <Pencil aria-hidden="true" />
-                                        {person.needs_review
-                                            ? 'Revisar'
-                                            : 'Editar'}
-                                    </Button>
+                                <div className="mt-4 flex justify-end border-t border-border pt-3">
+                                    <PersonActions
+                                        person={person}
+                                        onEdit={setEditing}
+                                        onManageAccount={setAccountPerson}
+                                    />
                                 </div>
                             </MobileRecord>
                         ))}
@@ -1223,6 +1183,47 @@ export function PeopleSection({
                 />
             )}
         </SectionShell>
+    );
+}
+
+function PersonActions({
+    person,
+    onEdit,
+    onManageAccount,
+}: {
+    person: Person;
+    onEdit: (person: Person) => void;
+    onManageAccount: (person: Person) => void;
+}) {
+    const canManageAccount =
+        Boolean(person.account) ||
+        (person.can_receive_material &&
+            person.is_active &&
+            person.charge_number);
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <IconButton
+                    variant="outline"
+                    label={`Acciones para ${person.name}`}
+                >
+                    <Ellipsis aria-hidden="true" />
+                </IconButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => onEdit(person)}>
+                    <Pencil aria-hidden="true" />
+                    {person.needs_review ? 'Revisar' : 'Editar'}
+                </DropdownMenuItem>
+                {canManageAccount && (
+                    <DropdownMenuItem onSelect={() => onManageAccount(person)}>
+                        <KeyRound aria-hidden="true" />
+                        {person.account ? 'Administrar acceso' : 'Crear acceso'}
+                    </DropdownMenuItem>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
@@ -1402,6 +1403,7 @@ function TechnicianAccountDialog({
     const account = person.account;
     const details = useForm({ is_active: account?.is_active ?? true });
     const reset = useForm({});
+    const creationErrors = details.errors as Record<string, string | undefined>;
     const submitDetails = (event: FormEvent) => {
         event.preventDefault();
         const options = {
@@ -1436,28 +1438,36 @@ function TechnicianAccountDialog({
                     description={
                         account
                             ? `Cuenta vinculada a ${person.name}.`
-                            : 'El usuario se genera con el nombre y apellidos juntos en minúsculas. La contraseña será el número de cobro registrado.'
+                            : undefined
                     }
                 />
                 <ModalBody className="grid content-start gap-5">
                     <form onSubmit={submitDetails} className="grid gap-4">
                         {!account && (
-                            <div className="rounded-xl border bg-muted/25 p-4 text-sm text-muted-foreground">
-                                No se asigna correo electrónico. Si el usuario
-                                automático ya existe o falta el número de cobro,
-                                el sistema solicitará revisar la persona antes
-                                de crear el acceso.
+                            <div className="grid gap-4 rounded-xl border bg-surface-subtle p-4">
+                                <CredentialPreview
+                                    label="Usuario"
+                                    value={person.account_preview.username}
+                                    error={creationErrors.username}
+                                />
+                                <CredentialPreview
+                                    label="Contraseña"
+                                    value={person.charge_number ?? '—'}
+                                    error={creationErrors.charge_number}
+                                />
                             </div>
                         )}
                         {account && (
                             <>
-                                <div className="rounded-xl border bg-muted/25 p-4">
-                                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                                        Usuario
-                                    </p>
-                                    <p className="mt-1 font-mono text-sm font-semibold">
-                                        {account.username}
-                                    </p>
+                                <div className="grid gap-4 rounded-xl border bg-surface-subtle p-4">
+                                    <CredentialPreview
+                                        label="Usuario"
+                                        value={account.username}
+                                    />
+                                    <CredentialPreview
+                                        label="Número de cobro"
+                                        value={person.charge_number ?? '—'}
+                                    />
                                 </div>
                                 <Label className="flex items-center gap-3 rounded-xl border p-3">
                                     <Checkbox
@@ -1481,12 +1491,6 @@ function TechnicianAccountDialog({
                                 </Label>
                             </>
                         )}
-                        <InputError
-                            message={
-                                (details.errors as Record<string, string>)
-                                    .account
-                            }
-                        />
                         <div className="flex justify-end gap-2">
                             <Button
                                 type="button"
@@ -1528,6 +1532,26 @@ function TechnicianAccountDialog({
                 </ModalBody>
             </ModalContent>
         </Dialog>
+    );
+}
+
+function CredentialPreview({
+    label,
+    value,
+    error,
+}: {
+    label: string;
+    value: string;
+    error?: string;
+}) {
+    return (
+        <div className="grid gap-1.5">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                {label}
+            </p>
+            <p className="font-mono text-sm font-semibold break-all">{value}</p>
+            <InputError message={error} />
+        </div>
     );
 }
 

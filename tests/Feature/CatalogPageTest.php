@@ -49,6 +49,21 @@ class CatalogPageTest extends TestCase
             );
     }
 
+    public function test_people_include_the_server_generated_technical_username_preview(): void
+    {
+        $user = User::factory()->create();
+        $person = Person::factory()->create([
+            'name' => 'Técnico Ágil',
+            'normalized_name' => 'tecnico agil',
+        ]);
+
+        $this->actingAs($user)->get(route('catalogs.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('catalog.data.0.id', $person->id)
+                ->where('catalog.data.0.account_preview.username', 'tecnicoagil'));
+    }
+
     public function test_catalog_filters_search_aliases_and_only_return_the_requested_section(): void
     {
         $user = User::factory()->create();

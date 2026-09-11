@@ -22,7 +22,10 @@ final class CatalogIndexData
     /** @var list<string> */
     private const SECTIONS = ['people', 'materials', 'destinations', 'programs'];
 
-    public function __construct(private CatalogDeletion $catalogDeletion) {}
+    public function __construct(
+        private CatalogDeletion $catalogDeletion,
+        private TechnicianCredentials $technicianCredentials,
+    ) {}
 
     /** @return array<string, mixed> */
     public function make(Request $request): array
@@ -167,7 +170,14 @@ final class CatalogIndexData
         $activeRoleCounts = $this->activeRoleCounts();
 
         return $query->orderBy('name')->paginate(25)->withQueryString()
-            ->through(fn (Person $person) => $this->decorateDeletion($person, $activeRoleCounts));
+            ->through(function (Person $person) use ($activeRoleCounts): Person {
+                $person->setAttribute('account_preview', [
+                    'username' => $this->technicianCredentials->previewUsername($person),
+                ]);
+                $this->decorateDeletion($person, $activeRoleCounts);
+
+                return $person;
+            });
     }
 
     /** @param array<string, string> $filters
