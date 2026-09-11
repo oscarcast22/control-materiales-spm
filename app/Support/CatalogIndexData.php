@@ -145,10 +145,10 @@ final class CatalogIndexData
         $query = Person::query()
             ->select([
                 'id', 'name', 'can_receive_material', 'can_deliver_material',
-                'can_authorize_material', 'is_active', 'needs_review',
+                'can_authorize_material', 'charge_number', 'is_active', 'needs_review',
             ])
             ->withCount('aliases')
-            ->with('account:id,person_id,username,email,is_active')
+            ->with('account:id,person_id,username,is_active')
             ->withExists(['receivedVouchers', 'deliveredVouchers', 'authorizedVouchers', 'account']);
 
         $this->applyCommonFilters($query, $filters);

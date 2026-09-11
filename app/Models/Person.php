@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $id
  * @property string $name
  * @property string $normalized_name
+ * @property string|null $charge_number
  * @property bool $can_receive_material
  * @property bool $can_deliver_material
  * @property bool $can_authorize_material
@@ -27,7 +28,7 @@ class Person extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'normalized_name', 'can_receive_material', 'can_deliver_material', 'can_authorize_material', 'is_active', 'needs_review',
+        'name', 'normalized_name', 'charge_number', 'can_receive_material', 'can_deliver_material', 'can_authorize_material', 'is_active', 'needs_review',
     ];
 
     protected function casts(): array

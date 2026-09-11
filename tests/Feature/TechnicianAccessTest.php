@@ -103,58 +103,70 @@ class TechnicianAccessTest extends TestCase
         }
     }
 
-    public function test_administrator_can_create_update_and_reset_a_technical_account_without_auditing_passwords(): void
+    public function test_administrator_can_create_pause_and_reset_an_automatic_technical_account_without_auditing_the_charge_number(): void
     {
         $administrator = User::factory()->create();
-        $person = Person::factory()->create();
-
-        $response = $this->actingAs($administrator)->post(route('catalogs.people.account.store', $person), [
-            'username' => '  TECNICO.DOS ',
-            'email' => '',
-            'password' => 'Password1!',
-            'password_confirmation' => 'Password1!',
+        $person = Person::factory()->create([
+            'name' => 'Técnico Dos',
+            'charge_number' => '12345',
         ]);
+
+        $response = $this->actingAs($administrator)->post(route('catalogs.people.account.store', $person));
         $response
             ->assertSessionHasNoErrors()
             ->assertInertiaFlash('toast.type', 'success')
-            ->assertInertiaFlash('toast.message', 'Acceso técnico creado para tecnico.dos.')
+            ->assertInertiaFlash('toast.message', 'Acceso técnico creado para tecnicodos.')
             ->assertSessionMissing('success');
 
         $account = $person->account()->sole();
-        $this->assertSame('tecnico.dos', $account->username);
+        $this->assertSame('tecnicodos', $account->username);
         $this->assertNull($account->email);
         $this->assertSame(UserRole::Technician, $account->role);
-        $this->assertTrue(Hash::check('Password1!', $account->password));
+        $this->assertTrue(Hash::check('12345', $account->password));
 
-        $otherPerson = Person::factory()->create();
-        $this->actingAs($administrator)->post(route('catalogs.people.account.store', $otherPerson), [
-            'username' => 'TECNICO.DOS',
-            'email' => '',
-            'password' => 'Password1!',
-            'password_confirmation' => 'Password1!',
-        ])->assertSessionHasErrors('username');
+        $otherPerson = Person::factory()->create([
+            'name' => 'Tecnico Dos',
+            'charge_number' => '67890',
+        ]);
+        $this->actingAs($administrator)->post(route('catalogs.people.account.store', $otherPerson))
+            ->assertSessionHasErrors('account');
 
         $this->actingAs($administrator)->put(route('catalogs.people.account.update', $person), [
-            'username' => 'tecnico.actualizado',
-            'email' => 'TECNICO@EJEMPLO.COM',
             'is_active' => false,
         ])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('users', [
             'id' => $account->id,
-            'username' => 'tecnico.actualizado',
-            'email' => 'tecnico@ejemplo.com',
+            'username' => 'tecnicodos',
+            'email' => null,
             'is_active' => false,
         ]);
 
-        $this->actingAs($administrator)->put(route('catalogs.people.account.password', $person), [
-            'password' => 'Replacement1!',
-            'password_confirmation' => 'Replacement1!',
-        ])->assertSessionHasNoErrors();
-        $this->assertTrue(Hash::check('Replacement1!', $account->fresh()->password));
+        $this->actingAs($administrator)->put(route('catalogs.people.account.password', $person))
+            ->assertSessionHasNoErrors();
+        $this->assertTrue(Hash::check('12345', $account->fresh()->password));
         $this->assertStringNotContainsString(
-            'Replacement1!',
+            '12345',
             (string) AuditEvent::query()->where('auditable_type', User::class)->get()->toJson(),
         );
+    }
+
+    public function test_changing_a_technicians_charge_number_resets_its_password(): void
+    {
+        $administrator = User::factory()->create();
+        $person = Person::factory()->create(['charge_number' => '12345']);
+        $account = User::factory()->technician($person)->create(['password' => '12345']);
+
+        $this->actingAs($administrator)->put(route('catalogs.people.update', $person), [
+            'name' => $person->name,
+            'charge_number' => '67890',
+            'can_receive_material' => true,
+            'can_deliver_material' => $person->can_deliver_material,
+            'can_authorize_material' => $person->can_authorize_material,
+            'is_active' => true,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertTrue(Hash::check('67890', $account->fresh()->password));
+        $this->assertStringNotContainsString('67890', AuditEvent::query()->get()->toJson());
     }
 
     public function test_an_account_without_email_requires_administrative_password_reset(): void

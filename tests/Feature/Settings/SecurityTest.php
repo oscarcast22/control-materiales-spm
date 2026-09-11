@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Settings;
 
+use App\Models\Person;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -33,6 +34,7 @@ class SecurityTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('settings/security')
                 ->where('canManagePasskeys', true)
+                ->where('canUpdatePassword', true)
                 ->where('passkeys', [])
                 ->where('canManageTwoFactor', true)
                 ->where('twoFactorEnabled', false),
@@ -114,5 +116,18 @@ class SecurityTest extends TestCase
         $response
             ->assertSessionHasErrors('current_password')
             ->assertRedirect(route('security.edit'));
+    }
+
+    public function test_technician_cannot_change_their_charge_number_password(): void
+    {
+        $technician = User::factory()->technician(Person::factory()->create())->create();
+
+        $this->actingAs($technician)
+            ->put(route('user-password.update'), [
+                'current_password' => 'password',
+                'password' => 'new-password',
+                'password_confirmation' => 'new-password',
+            ])
+            ->assertForbidden();
     }
 }

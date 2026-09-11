@@ -41,7 +41,7 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 
 ## Alcance del MVP
 
-- Acceso privado mediante cuentas administradoras y cuentas técnicas vinculadas de forma única a una persona activa que recibe material. El acceso acepta correo o nombre de usuario.
+- Acceso privado mediante cuentas administradoras y cuentas técnicas vinculadas de forma única a una persona activa que recibe material. El acceso técnico se crea sin correo: su usuario se genera uniendo nombre y apellidos en minúsculas y su contraseña es el número de cobro registrado.
 - Captura, consulta, edición, impresión, cancelación controlada y eliminación definitiva de vales por la administradora. El borrado se reserva para errores de captura y elimina toda la huella operativa, archivos, auditoría y traza de importación del vale. Las salidas canceladas conservan sus partidas como material sin usar; las entradas canceladas conservan las cantidades únicamente como referencia.
 - Registro rápido de folios cancelados y revisión de continuidad por tipo de vale.
 - Materiales filtrados estrictamente según el tipo de vale elegido.
@@ -50,7 +50,7 @@ Los adjuntos son evidencia privada del vale físico o del reporte de aplicación
 - Folios descriptivos opcionales por partida para materiales marcados como luminaria, disponibles también en entradas y vales prestados y visibles en el detalle imprimible.
 - Captura rápida de aplicaciones agrupadas por fecha, tipo y número de orden de servicio obligatorios, con ubicación o dirección libre, detalles comunes, desglose por material, evidencia opcional reemplazable y corrección o anulación auditada. Los tipos iniciales son Normal y 072, y el catálogo de opciones es extensible.
 - Vista “Mis vales” para cada técnico, con sus saldos pendientes e inconsistencias y un historial que reúne vales liquidados y prestados asignados. Sólo permite operar vales de salida activos asignados a su persona desde el `2026-01-01`; los prestados son únicamente de consulta.
-- Administración del acceso técnico desde Personas: alta, cambio de identificadores, pausa y restablecimiento de contraseña sin mostrar la anterior.
+- Administración del acceso técnico desde Personas: alta automática, pausa/reactivación y restablecimiento al número de cobro, sin mostrar la contraseña ni permitir que el técnico la cambie.
 - Catálogos editables y alias, organizados en Personas, Materiales, Ubicaciones y una sección conjunta de Programa, acciones e indicadores. SPM-06, los códigos y sus relaciones son estructurales; en acciones e indicadores sólo se corrigen nombres y estados con auditoría. Las unidades se administran dentro de Materiales; Almacén y Patio son tipos estructurales fijos y no se administran desde la interfaz. Un registro sólo se elimina de forma permanente si no está asignado a un vale ni tiene dependencias de catálogo que perderían información; los registros con historia se desactivan o corrigen. Los nombres canónicos se reflejan en todos los vales relacionados, y materiales y unidades también normalizan las partidas existentes sin convertir cantidades. La fusión auditada de duplicados permanece como contingencia técnica y no se expone en la interfaz.
 - Catálogo buscable de ubicaciones con alta desde el vale; una actividad no geográfica se conserva por separado como texto libre.
 - Seguimiento desde 2026 por material, técnico y detalle.

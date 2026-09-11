@@ -3,12 +3,18 @@
 namespace App\Http\Requests\Settings;
 
 use App\Concerns\PasswordValidationRules;
+use App\Enums\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PasswordUpdateRequest extends FormRequest
 {
     use PasswordValidationRules;
+
+    public function authorize(): bool
+    {
+        return $this->user()?->role === UserRole::Administrator;
+    }
 
     /**
      * Get the validation rules that apply to the request.

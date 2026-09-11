@@ -18,6 +18,7 @@ use App\Support\CatalogDeletion;
 use App\Support\CatalogIndexData;
 use App\Support\Normalizer;
 use App\Support\QuantityPrecision;
+use App\Support\TechnicianCredentials;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,6 +31,8 @@ use Inertia\Response;
 
 class CatalogController extends Controller
 {
+    public function __construct(private readonly TechnicianCredentials $technicianCredentials) {}
+
     public function index(Request $request, CatalogIndexData $catalogIndexData): Response
     {
         Gate::authorize('manage-catalogs');
@@ -233,6 +236,7 @@ class CatalogController extends Controller
         Gate::authorize('manage-catalogs');
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'charge_number' => ['nullable', 'string', 'max:20', 'regex:/^\\d+$/', Rule::unique('people', 'charge_number')],
             'can_receive_material' => ['required', 'boolean'],
             'can_deliver_material' => ['required', 'boolean'],
             'can_authorize_material' => ['required', 'boolean'],
@@ -246,7 +250,7 @@ class CatalogController extends Controller
         }
         $model = Person::create([...$data, 'normalized_name' => $key]);
         PersonAlias::create(['person_id' => $model->id, 'alias' => $model->name, 'normalized_alias' => $key]);
-        AuditEvent::record($model, 'created', null, $model->toArray());
+        AuditEvent::record($model, 'created', null, $this->personAuditData($model));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Persona agregada.']);
 
@@ -258,6 +262,7 @@ class CatalogController extends Controller
         Gate::authorize('manage-catalogs');
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'charge_number' => ['nullable', 'string', 'max:20', 'regex:/^\\d+$/', Rule::unique('people', 'charge_number')->ignore($person)],
             'can_receive_material' => ['required', 'boolean'],
             'can_deliver_material' => ['required', 'boolean'],
             'can_authorize_material' => ['required', 'boolean'],
@@ -267,9 +272,9 @@ class CatalogController extends Controller
             throw ValidationException::withMessages(['name' => 'Selecciona al menos una función para la persona.']);
         }
         if ($person->account()->exists()
-            && (! $data['can_receive_material'] || (array_key_exists('is_active', $data) && ! $data['is_active']))) {
+            && (! $data['can_receive_material'] || (array_key_exists('is_active', $data) && ! $data['is_active']) || blank($data['charge_number']))) {
             throw ValidationException::withMessages([
-                'can_receive_material' => 'Conserva activa la función “Recibe / técnico” mientras exista una cuenta vinculada.',
+                'can_receive_material' => 'Mientras exista una cuenta vinculada, conserva activa la función “Recibe / técnico” y el número de cobro.',
             ]);
         }
         $key = Normalizer::key($data['name']);
@@ -283,7 +288,8 @@ class CatalogController extends Controller
         }
 
         DB::transaction(function () use ($person, $data, $key): void {
-            $before = $person->toArray();
+            $before = $this->personAuditData($person);
+            $chargeNumberChanged = $person->charge_number !== ($data['charge_number'] ?? null);
             $this->statusAttributes($person, $data);
             PersonAlias::firstOrCreate(
                 ['normalized_alias' => $person->normalized_name],
@@ -302,16 +308,32 @@ class CatalogController extends Controller
                     'id', 'name', 'username', 'email', 'role', 'person_id', 'is_active',
                 ]));
             }
+            if ($account !== null && $chargeNumberChanged) {
+                $account->update(['password' => $this->technicianCredentials->password($person)]);
+                AuditEvent::record($account, 'technician_password_reset', null, [
+                    'reset_at' => now()->toIso8601String(),
+                    'source' => 'charge_number_changed',
+                ]);
+            }
             PersonAlias::firstOrCreate(
                 ['normalized_alias' => $key],
                 ['person_id' => $person->id, 'alias' => $data['name']],
             );
-            AuditEvent::record($person, 'reviewed', $before, $person->fresh()->toArray());
+            AuditEvent::record($person, 'reviewed', $before, $this->personAuditData($person->fresh()));
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Persona revisada y actualizada.']);
 
         return back();
+    }
+
+    /** @return array<string, mixed> */
+    private function personAuditData(Person $person): array
+    {
+        return $person->only([
+            'id', 'name', 'normalized_name', 'can_receive_material', 'can_deliver_material',
+            'can_authorize_material', 'is_active', 'needs_review',
+        ]) + ['charge_number_configured' => filled($person->charge_number)];
     }
 
     public function storeUnit(Request $request): RedirectResponse
@@ -444,9 +466,10 @@ class CatalogController extends Controller
         if ((bool) $model->getAttribute('is_active')) {
             $this->ensureCanDeactivate($model);
         }
-        $before = $model->toArray();
+        $before = $model instanceof Person ? $this->personAuditData($model) : $model->toArray();
         $model->update(['is_active' => ! $model->getAttribute('is_active')]);
-        AuditEvent::record($model, 'status_changed', $before, $model->fresh()->toArray());
+        $after = $model->fresh();
+        AuditEvent::record($model, 'status_changed', $before, $after instanceof Person ? $this->personAuditData($after) : $after->toArray());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Estado actualizado.']);
 
@@ -580,6 +603,11 @@ class CatalogController extends Controller
                     'target_id' => 'Activa primero a la persona destino para transferirle la cuenta técnica.',
                 ]);
             }
+            if ($source->account !== null && blank($target->charge_number)) {
+                throw ValidationException::withMessages([
+                    'target_id' => 'Registra primero el número de cobro de la persona destino para transferirle la cuenta técnica.',
+                ]);
+            }
             Voucher::query()->where('received_by_id', $source->id)->update(['received_by_id' => $target->id]);
             Voucher::query()->where('delivered_by_id', $source->id)->update(['delivered_by_id' => $target->id]);
             Voucher::query()->where('authorized_by_id', $source->id)->update(['authorized_by_id' => $target->id]);
@@ -599,12 +627,16 @@ class CatalogController extends Controller
             if ($source->account !== null) {
                 $account = $source->account;
                 $beforeAccount = $account->only(['id', 'name', 'username', 'email', 'role', 'person_id', 'is_active']);
-                $account->update(['person_id' => $target->id, 'name' => $target->name]);
+                $account->update([
+                    'person_id' => $target->id,
+                    'name' => $target->name,
+                    'password' => $this->technicianCredentials->password($target),
+                ]);
                 AuditEvent::record($account, 'technician_account_transferred', $beforeAccount, $account->fresh()->only([
                     'id', 'name', 'username', 'email', 'role', 'person_id', 'is_active',
                 ]));
             }
-            AuditEvent::record($target, 'merged_person', $source->toArray(), $target->toArray());
+            AuditEvent::record($target, 'merged_person', $this->personAuditData($source), $this->personAuditData($target));
             $source->delete();
         });
     }

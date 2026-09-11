@@ -25,6 +25,7 @@ export type Material = Named & {
     deletion?: CatalogDeletion;
 };
 export type Person = Named & {
+    charge_number: string | null;
     can_receive_material: boolean;
     can_deliver_material: boolean;
     can_authorize_material: boolean;
@@ -35,7 +36,6 @@ export type Person = Named & {
     account?: {
         id: number;
         username: string;
-        email: string | null;
         is_active: boolean;
     } | null;
 };

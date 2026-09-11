@@ -19,7 +19,6 @@ import {
     ModalFooter,
     ModalHeader,
 } from '@/components/modal-shell';
-import PasswordInput from '@/components/password-input';
 import { SimpleSelect } from '@/components/simple-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -1116,7 +1115,9 @@ export function PeopleSection({
                                                         }
                                                         disabled={
                                                             !person.can_receive_material ||
-                                                            !person.is_active
+                                                            !person.is_active ||
+                                                            (!person.account &&
+                                                                !person.charge_number)
                                                         }
                                                     >
                                                         <KeyRound aria-hidden="true" />
@@ -1177,7 +1178,9 @@ export function PeopleSection({
                                         onClick={() => setAccountPerson(person)}
                                         disabled={
                                             !person.can_receive_material ||
-                                            !person.is_active
+                                            !person.is_active ||
+                                            (!person.account &&
+                                                !person.charge_number)
                                         }
                                     >
                                         <KeyRound aria-hidden="true" />
@@ -1234,6 +1237,7 @@ function PersonDialog({
 }) {
     const form = useForm({
         name: person?.name ?? '',
+        charge_number: person?.charge_number ?? '',
         can_receive_material: person?.can_receive_material ?? true,
         can_deliver_material: person?.can_deliver_material ?? false,
         can_authorize_material: person?.can_authorize_material ?? false,
@@ -1289,6 +1293,27 @@ function PersonDialog({
                                 }
                             />
                             <InputError message={form.errors.name} />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="person-charge-number">
+                                Número de cobro
+                            </Label>
+                            <Input
+                                id="person-charge-number"
+                                inputMode="numeric"
+                                value={form.data.charge_number}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'charge_number',
+                                        event.target.value.replace(/\D/g, ''),
+                                    )
+                                }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Se usa como contraseña del acceso técnico. No se
+                                muestra en el acceso ni en auditorías.
+                            </p>
+                            <InputError message={form.errors.charge_number} />
                         </div>
                         <fieldset className="grid gap-2">
                             <legend className="text-sm font-medium">
@@ -1375,14 +1400,8 @@ function TechnicianAccountDialog({
     onOpenChange: (open: boolean) => void;
 }) {
     const account = person.account;
-    const details = useForm({
-        username: account?.username ?? '',
-        email: account?.email ?? '',
-        is_active: account?.is_active ?? true,
-        password: '',
-        password_confirmation: '',
-    });
-    const reset = useForm({ password: '', password_confirmation: '' });
+    const details = useForm({ is_active: account?.is_active ?? true });
+    const reset = useForm({});
     const submitDetails = (event: FormEvent) => {
         event.preventDefault();
         const options = {
@@ -1414,113 +1433,53 @@ function TechnicianAccountDialog({
                             ? 'Administrar acceso técnico'
                             : 'Crear acceso técnico'
                     }
-                    description={`Cuenta vinculada a ${person.name}. El nombre de usuario será el identificador principal para iniciar sesión.`}
+                    description={
+                        account
+                            ? `Cuenta vinculada a ${person.name}.`
+                            : 'El usuario se genera con el nombre y apellidos juntos en minúsculas. La contraseña será el número de cobro registrado.'
+                    }
                 />
                 <ModalBody className="grid content-start gap-5">
                     <form onSubmit={submitDetails} className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="technician-username">
-                                Nombre de usuario
-                            </Label>
-                            <Input
-                                id="technician-username"
-                                value={details.data.username}
-                                onChange={(event) =>
-                                    details.setData(
-                                        'username',
-                                        event.target.value.toLowerCase(),
-                                    )
-                                }
-                                placeholder="nombre.apellido"
-                                autoComplete="off"
-                                required
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Sólo letras minúsculas, números, punto, guion y
-                                guion bajo.
-                            </p>
-                            <InputError message={details.errors.username} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="technician-email">
-                                Correo (opcional)
-                            </Label>
-                            <Input
-                                id="technician-email"
-                                type="email"
-                                value={details.data.email}
-                                onChange={(event) =>
-                                    details.setData('email', event.target.value)
-                                }
-                                placeholder="nombre@ejemplo.com"
-                                autoComplete="off"
-                            />
-                            <InputError message={details.errors.email} />
-                        </div>
                         {!account && (
-                            <div className="grid gap-4 rounded-xl border bg-muted/25 p-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="technician-password">
-                                        Contraseña temporal
-                                    </Label>
-                                    <PasswordInput
-                                        id="technician-password"
-                                        value={details.data.password}
-                                        onChange={(event) =>
-                                            details.setData(
-                                                'password',
-                                                event.target.value,
-                                            )
-                                        }
-                                        autoComplete="new-password"
-                                        required
-                                    />
-                                    <InputError
-                                        message={details.errors.password}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="technician-password-confirmation">
-                                        Confirmar contraseña
-                                    </Label>
-                                    <PasswordInput
-                                        id="technician-password-confirmation"
-                                        value={
-                                            details.data.password_confirmation
-                                        }
-                                        onChange={(event) =>
-                                            details.setData(
-                                                'password_confirmation',
-                                                event.target.value,
-                                            )
-                                        }
-                                        autoComplete="new-password"
-                                        required
-                                    />
-                                </div>
+                            <div className="rounded-xl border bg-muted/25 p-4 text-sm text-muted-foreground">
+                                No se asigna correo electrónico. Si el usuario
+                                automático ya existe o falta el número de cobro,
+                                el sistema solicitará revisar la persona antes
+                                de crear el acceso.
                             </div>
                         )}
                         {account && (
-                            <Label className="flex items-center gap-3 rounded-xl border p-3">
-                                <Checkbox
-                                    checked={details.data.is_active}
-                                    onCheckedChange={(value) =>
-                                        details.setData(
-                                            'is_active',
-                                            Boolean(value),
-                                        )
-                                    }
-                                />
-                                <span>
-                                    <span className="block font-medium">
-                                        Acceso activo
+                            <>
+                                <div className="rounded-xl border bg-muted/25 p-4">
+                                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                                        Usuario
+                                    </p>
+                                    <p className="mt-1 font-mono text-sm font-semibold">
+                                        {account.username}
+                                    </p>
+                                </div>
+                                <Label className="flex items-center gap-3 rounded-xl border p-3">
+                                    <Checkbox
+                                        checked={details.data.is_active}
+                                        onCheckedChange={(value) =>
+                                            details.setData(
+                                                'is_active',
+                                                Boolean(value),
+                                            )
+                                        }
+                                    />
+                                    <span>
+                                        <span className="block font-medium">
+                                            Acceso activo
+                                        </span>
+                                        <span className="block text-xs text-muted-foreground">
+                                            Al pausarlo, la persona no podrá
+                                            iniciar ni conservar sesión.
+                                        </span>
                                     </span>
-                                    <span className="block text-xs text-muted-foreground">
-                                        Al pausarlo, la persona no podrá iniciar
-                                        ni conservar sesión.
-                                    </span>
-                                </span>
-                            </Label>
+                                </Label>
+                            </>
                         )}
                         <InputError
                             message={
@@ -1537,7 +1496,7 @@ function TechnicianAccountDialog({
                                 Cancelar
                             </Button>
                             <Button disabled={details.processing}>
-                                {account ? 'Guardar acceso' : 'Crear cuenta'}
+                                {account ? 'Guardar acceso' : 'Crear acceso'}
                             </Button>
                         </div>
                     </form>
@@ -1551,48 +1510,9 @@ function TechnicianAccountDialog({
                                     Restablecer contraseña
                                 </h3>
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                    Define una nueva contraseña; la anterior
-                                    nunca se muestra.
+                                    La contraseña siempre es el número de cobro
+                                    registrado. La anterior nunca se muestra.
                                 </p>
-                            </div>
-                            <div className="grid gap-2 sm:grid-cols-2">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="reset-technician-password">
-                                        Nueva contraseña
-                                    </Label>
-                                    <PasswordInput
-                                        id="reset-technician-password"
-                                        value={reset.data.password}
-                                        onChange={(event) =>
-                                            reset.setData(
-                                                'password',
-                                                event.target.value,
-                                            )
-                                        }
-                                        autoComplete="new-password"
-                                        required
-                                    />
-                                    <InputError
-                                        message={reset.errors.password}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="reset-technician-password-confirmation">
-                                        Confirmar
-                                    </Label>
-                                    <PasswordInput
-                                        id="reset-technician-password-confirmation"
-                                        value={reset.data.password_confirmation}
-                                        onChange={(event) =>
-                                            reset.setData(
-                                                'password_confirmation',
-                                                event.target.value,
-                                            )
-                                        }
-                                        autoComplete="new-password"
-                                        required
-                                    />
-                                </div>
                             </div>
                             <Button
                                 type="submit"
@@ -1601,7 +1521,7 @@ function TechnicianAccountDialog({
                                 className="justify-self-start"
                             >
                                 <KeyRound data-icon="inline-start" />{' '}
-                                Restablecer contraseña
+                                Restablecer al número de cobro
                             </Button>
                         </form>
                     )}

@@ -54,11 +54,11 @@ La prueba local no autoriza una carga productiva. Antes de producción se requie
 
 ## Cuentas técnicas
 
-Una administradora crea el acceso desde **Catálogos → Personas → Crear acceso**. La persona debe estar activa y conservar la función **Recibe / técnico**. El nombre de usuario se guarda en minúsculas y acepta únicamente letras, números, punto, guion y guion bajo; el correo es opcional.
+Una administradora crea el acceso desde **Catálogos → Personas → Crear acceso**. La persona debe estar activa, conservar la función **Recibe / técnico** y tener número de cobro. El sistema genera el usuario uniendo nombre y apellidos en minúsculas; si ya pertenece a otra cuenta, se detiene para revisión. Las cuentas técnicas nunca reciben correo electrónico.
 
-Desde el mismo control se pueden cambiar username y correo, pausar o reactivar el acceso y restablecer la contraseña. La contraseña anterior no se muestra y los eventos de auditoría nunca guardan contraseñas ni hashes. Una persona vinculada no puede perder su función técnica, desactivarse ni eliminarse. Al fusionar personas, la cuenta sólo se transfiere si el destino no tiene otra cuenta.
+Desde el mismo control se puede pausar o reactivar el acceso y restablecer la contraseña al número de cobro. Al cambiar ese número, la contraseña se restablece automáticamente. La contraseña anterior, el número de cobro y sus hashes no se muestran ni se guardan en auditorías. Una persona vinculada no puede perder su función técnica, desactivarse ni eliminarse. Al fusionar personas, la cuenta sólo se transfiere si el destino no tiene otra cuenta y ya tiene número de cobro.
 
-Las cuentas con correo pueden usar el enlace automático de recuperación. Una cuenta sin correo debe solicitar el restablecimiento a una administradora. El técnico sí puede cambiar su contraseña actual desde **Seguridad**, pero no puede modificar su username, correo, rol, vínculo o estado.
+Las cuentas técnicas no usan enlace de recuperación y deben solicitar el restablecimiento a una administradora. El técnico no puede modificar su contraseña, username, correo, rol, vínculo o estado.
 
 ## Canonicalización de partidas al actualizar
 

@@ -73,7 +73,8 @@ erDiagram
 
 | Tabla                          | Responsabilidad                                                                                                                                                                                                                       |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `users`                        | Cuentas autorizadas con rol fijo, usuario opcional, correo opcional y vínculo único a persona para técnicos. `is_active` bloquea inmediatamente el acceso.                                                                            |
+| `users`                        | Cuentas autorizadas con rol fijo, usuario opcional, correo opcional y vínculo único a persona para técnicos. Las cuentas técnicas no usan correo; `is_active` bloquea inmediatamente el acceso.                                                                            |
+| `people.charge_number`         | Número de cobro único y confidencial. Es nullable durante la conciliación controlada; cuando existe una cuenta técnica es obligatorio y determina su contraseña. |
 | `storage_locations`            | Configuración estructural de los tipos de vale Almacén y Patio; no expone rutas de administración.                                                                                                                                    |
 | `material_storage_location`    | Relación editable que limita qué materiales se pueden capturar en cada tipo de vale.                                                                                                                                                  |
 | `units`                        | Unidad estructurada usada para cantidades; `decimal_places` distingue las unidades enteras de las que admiten fracciones de hasta tres posiciones.                                                                                  |
@@ -121,7 +122,7 @@ erDiagram
 - Las agregaciones cuantitativas se separan por `material_id` y `unit_id`.
 - El total abstracto de “materiales” mostrado en las filas resumidas de Vales y Seguimiento es una ayuda visual acompañada siempre por el desglose de partidas. `VoucherData` expone los totales de cada vale para la tabla general; Seguimiento los calcula en el frontend sobre las partidas filtradas. Ninguno forma parte de agregaciones contables por material/unidad ni del XLSX.
 - Los adjuntos residen en el disco privado y sólo se descargan después de autorizar el vale.
-- Una cuenta técnica requiere `person_id` único, persona activa y función `can_receive_material`. Esa función y el estado de la persona no pueden retirarse mientras exista el vínculo.
+- Una cuenta técnica requiere `person_id` único, persona activa, función `can_receive_material` y número de cobro. El usuario se calcula con el nombre normalizado sin espacios; una colisión se detiene para revisión. Su contraseña se deriva del número de cobro y se actualiza al cambiarlo. Esa función y el estado de la persona no pueden retirarse mientras exista el vínculo.
 
 ## Estados derivados
 
@@ -139,7 +140,7 @@ Las entradas usan el estado informativo `received`. Los vales cancelados usan `c
 
 ## Seguridad y permisos
 
-Todas las rutas operativas requieren sesión; cuando corresponde, Fortify conserva la verificación de correo. El acceso se limita a cuentas activas y acepta correo o username normalizado. Una cuenta técnica sin correo no usa recuperación automática y debe solicitar un restablecimiento administrativo.
+Todas las rutas operativas requieren sesión; cuando corresponde, Fortify conserva la verificación de correo. El acceso se limita a cuentas activas y acepta correo o username normalizado. Una cuenta técnica no usa correo ni recuperación automática: la administradora puede restablecerla al número de cobro. El técnico no puede cambiar esa contraseña desde Seguridad.
 
 Los roles fijos son `administrator` y `technician`. Los gates globales reservan Catálogos, Seguimiento y administración de cuentas al administrador. Las policies separan consulta, edición, cancelación, revisión, impresión y captura de aplicaciones. No existe un `Gate::before`: cada operación debe estar declarada. El scope limita consultas y las policies vuelven a validar accesos directos.
 

@@ -181,6 +181,12 @@ final class CatalogDeletion
             $model->load('aliases');
         }
 
+        if ($model instanceof Person) {
+            return $model->except('charge_number') + [
+                'charge_number_configured' => filled($model->charge_number),
+            ];
+        }
+
         return $model->toArray();
     }
 }
