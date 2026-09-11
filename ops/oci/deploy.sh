@@ -33,7 +33,7 @@ if [[ $SKIP_CHECKS == false ]]; then
     log 'Ejecutando verificación PHP y de dominio'
     (cd "$PROJECT_DIR" && composer test)
     log 'Ejecutando verificaciones frontend'
-    (cd "$PROJECT_DIR" && npm ci && npm run format:check && npm run types:check && npm run lint:check && npm run build)
+    (cd "$PROJECT_DIR" && npm ci && php artisan wayfinder:generate --with-form && npm run format:check && npm run types:check && npm run lint:check && npm run build)
     log 'Auditando dependencias bloqueadas'
     (cd "$PROJECT_DIR" && composer audit --locked --no-interaction && npm audit --omit=dev --audit-level=moderate)
 else
