@@ -8,7 +8,7 @@ import { cn, toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
-import type { NavItem } from '@/types';
+import type { AppSharedPageProps, NavItem } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -30,7 +30,7 @@ const sidebarNavItems: NavItem[] = [
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
-    const { auth } = usePage().props;
+    const { auth } = usePage<AppSharedPageProps>().props;
     const visibleItems =
         auth.user.role === 'technician'
             ? sidebarNavItems.filter((item) => item.title !== 'Perfil')

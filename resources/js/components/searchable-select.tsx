@@ -32,17 +32,46 @@ const filterChoice = (
     search: string,
     keywords: string[] | undefined,
 ) => {
-    const tokens = normalizeSearchText(search).split(/\s+/).filter(Boolean);
+    const normalizedSearch = normalizeSearchText(search);
+    const tokens = normalizedSearch.split(/\s+/).filter(Boolean);
 
     if (tokens.length === 0) {
         return 1;
     }
 
-    const haystack = normalizeSearchText(
-        [value, ...(keywords ?? [])].join(' '),
-    );
+    const [label = value, ...searchTerms] = keywords ?? [];
+    const normalizedLabel = normalizeSearchText(label);
+    const normalizedSearchTerms = normalizeSearchText(searchTerms.join(' '));
+    const haystack = [normalizedLabel, normalizedSearchTerms]
+        .filter(Boolean)
+        .join(' ');
+    const matchesAllTokens = (candidate: string) =>
+        tokens.every((token) => candidate.includes(token));
+    const matchesWordStart = (candidate: string) => {
+        const words = candidate.split(' ').filter(Boolean);
 
-    return tokens.every((token) => haystack.includes(token)) ? 1 : 0;
+        return tokens.every((token) =>
+            words.some((word) => word.startsWith(token)),
+        );
+    };
+
+    if (normalizedLabel.startsWith(normalizedSearch)) {
+        return 5;
+    }
+
+    if (matchesWordStart(normalizedLabel)) {
+        return 4;
+    }
+
+    if (matchesAllTokens(normalizedLabel)) {
+        return 3;
+    }
+
+    if (matchesWordStart(normalizedSearchTerms)) {
+        return 2;
+    }
+
+    return matchesAllTokens(haystack) ? 1 : 0;
 };
 
 type SearchableSelectProps = {
@@ -141,10 +170,7 @@ export function SearchableSelect({
                     aria-describedby={describedBy}
                     disabled={disabled}
                     className={cn(
-                        'w-full min-w-0 justify-between px-4 text-left font-normal',
-                        usesCodeDescriptionLayout
-                            ? 'h-auto min-h-11 py-2'
-                            : 'h-10',
+                        'h-auto min-h-11 w-full min-w-0 justify-between px-4 py-2 text-left font-normal whitespace-normal',
                         className,
                     )}
                 >
@@ -153,15 +179,15 @@ export function SearchableSelect({
                             <span className="font-mono text-xs font-semibold whitespace-nowrap text-foreground">
                                 {selected.label}
                             </span>
-                            <span className="line-clamp-2 min-w-0 text-xs leading-4 text-muted-foreground">
+                            <span className="min-w-0 text-xs leading-4 wrap-anywhere text-muted-foreground">
                                 {visibleDescription}
                             </span>
                         </span>
                     ) : (
-                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                        <span className="flex min-w-0 flex-1 items-center gap-2 pr-2">
                             <span
                                 className={cn(
-                                    'min-w-0 truncate',
+                                    'min-w-0 flex-1 leading-5 wrap-anywhere',
                                     !selected && 'text-muted-foreground',
                                 )}
                             >
@@ -241,15 +267,15 @@ export function SearchableSelect({
                                                 <span className="font-mono text-xs font-semibold whitespace-nowrap text-foreground">
                                                     {option.label}
                                                 </span>
-                                                <span className="min-w-0 text-xs leading-4 text-muted-foreground">
+                                                <span className="min-w-0 text-xs leading-4 wrap-anywhere text-muted-foreground">
                                                     {option.meta ??
                                                         option.description}
                                                 </span>
                                             </span>
                                         ) : (
                                             <span className="min-w-0 flex-1">
-                                                <span className="flex min-w-0 items-baseline justify-between gap-3">
-                                                    <span className="min-w-0 truncate font-medium">
+                                                <span className="flex min-w-0 items-start justify-between gap-3">
+                                                    <span className="min-w-0 flex-1 leading-5 font-medium wrap-anywhere">
                                                         {option.label}
                                                     </span>
                                                     {option.meta && (
@@ -259,7 +285,7 @@ export function SearchableSelect({
                                                     )}
                                                 </span>
                                                 {option.description && (
-                                                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                                                    <span className="mt-0.5 block text-xs leading-4 wrap-anywhere text-muted-foreground">
                                                         {option.description}
                                                     </span>
                                                 )}

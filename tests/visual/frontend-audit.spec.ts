@@ -266,6 +266,8 @@ async function assertVoucherModalSelectScroll(
     page: Page,
     viewportName: string,
 ) {
+    const materialName = 'LUMINARIA LED CITY PLUS 150 W.';
+
     await page.getByRole('link', { name: 'Capturar vale' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Capturar vale' });
@@ -293,10 +295,58 @@ async function assertVoucherModalSelectScroll(
             `${viewportName}--dialog-voucher-create.png`,
         ),
     });
-    await dialog.getByRole('combobox', { name: 'Material 1' }).click();
+    const voucherType = dialog.locator('#voucher-type');
+
+    expect(
+        await voucherType.evaluate(
+            (element) => getComputedStyle(element).whiteSpace,
+        ),
+    ).toBe('normal');
+
+    const materialSelect = dialog.getByRole('combobox', {
+        name: 'Material 1',
+    });
+
+    await materialSelect.click();
 
     const commandList = page.locator('[data-slot="command-list"]');
 
+    await expect(commandList).toBeVisible();
+
+    const searchInput = page.locator('[data-slot="command-input"]');
+
+    await searchInput.fill('luminar');
+    await expect(page.getByRole('option').first()).toContainText(
+        'LUMINARIA 20 W',
+    );
+
+    await searchInput.fill('LUMINARIA LED CITY PLUS 150 W');
+
+    const longMaterial = page.getByRole('option', { name: materialName });
+
+    await expect(longMaterial).toBeVisible();
+    await expect(longMaterial).toContainText('150 W');
+
+    const longMaterialLabel = longMaterial.getByText(materialName, {
+        exact: true,
+    });
+
+    await expect(longMaterialLabel).toHaveCSS('overflow-wrap', 'anywhere');
+    expect(
+        await longMaterialLabel.evaluate(
+            (element) => element.scrollWidth <= element.clientWidth + 1,
+        ),
+    ).toBe(true);
+
+    await longMaterial.click();
+    await expect(materialSelect).toContainText(materialName);
+    expect(
+        await materialSelect.evaluate(
+            (element) => element.scrollWidth <= element.clientWidth + 1,
+        ),
+    ).toBe(true);
+
+    await materialSelect.click();
     await expect(commandList).toBeVisible();
 
     if (

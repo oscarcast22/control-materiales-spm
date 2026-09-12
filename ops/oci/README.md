@@ -8,7 +8,7 @@ los requisitos de bootstrap y la referencia breve de los scripts.
 
 ## Requisitos para el primer aprovisionamiento
 
-- Bash, `jq`, `git`, `ssh`, `rsync`, PostgreSQL client, Composer y Node 22.13 o posterior.
+- Bash, `jq`, `git`, `ssh`, `rsync`, PostgreSQL client, Composer y Node 22.13 o posterior con Corepack.
 - OCI CLI autenticado en la región principal de la cuenta.
 - Llave pública SSH Ed25519.
 - Token temporal de Cloudflare limitado a la zona `utopiadigital.tech` con permisos DNS, SSL/certificados y configuración SSL.

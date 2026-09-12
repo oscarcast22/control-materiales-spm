@@ -136,7 +136,7 @@ conserva:
 - el repositorio y `ops/oci/.state/`;
 - la llave SSH `~/.ssh/id_ed25519` autorizada en la VM;
 - acceso de red desde la IP pública permitida para SSH;
-- PHP, Composer, Node, npm, Git, SSH y rsync.
+- PHP, Composer, Node, Corepack, Git, SSH y rsync.
 
 No se necesita iniciar sesión en OCI ni crear un token de Cloudflare para un
 despliegue normal. Esas credenciales sólo se requieren para cambiar recursos de
@@ -170,9 +170,9 @@ El despliegue realiza, en orden:
 
 1. confirma que el commit local es exactamente `origin/main`;
 2. ejecuta `composer test`;
-3. instala dependencias frontend reproducibles con `npm ci`;
+3. instala dependencias frontend reproducibles con `corepack pnpm install --frozen-lockfile`;
 4. ejecuta formato, tipos, lint y build;
-5. ejecuta las auditorías de Composer y npm;
+5. ejecuta las auditorías de Composer y pnpm;
 6. genera el paquete desde `git archive`, sin secretos, adjuntos ni bases;
 7. transfiere el paquete por SSH;
 8. instala las dependencias PHP de producción para ARM;

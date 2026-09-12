@@ -20,7 +20,7 @@ import {
     SidebarMenuItem,
     SidebarRail,
 } from '@/components/ui/sidebar';
-import type { NavItem } from '@/types';
+import type { AppSharedPageProps, NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
     {
@@ -46,7 +46,7 @@ const mainNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
+    const { auth } = usePage<AppSharedPageProps>().props;
     const technician = auth.user.role === 'technician';
     const items = technician
         ? [{ title: 'Mis vales', href: '/mis-vales', icon: Wrench }]

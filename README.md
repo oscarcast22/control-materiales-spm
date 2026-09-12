@@ -30,7 +30,7 @@ La aplicación está desplegada en producción en `https://materiales.utopiadigi
 
 - PHP 8.4 o superior con extensiones habituales de Laravel y `zip`.
 - Composer 2.
-- Node.js 22 o superior y npm.
+- Node.js 22 o superior con Corepack y pnpm.
 - PostgreSQL 15 o superior.
 
 ## Instalación
@@ -38,7 +38,7 @@ La aplicación está desplegada en producción en `https://materiales.utopiadigi
 ```bash
 cp .env.example .env
 composer install
-npm install
+corepack pnpm install --frozen-lockfile
 php artisan key:generate
 ```
 
@@ -46,7 +46,7 @@ Cree la base y un usuario de PostgreSQL, y luego ajuste `DB_DATABASE`, `DB_USERN
 
 ```bash
 php artisan migrate --seed
-npm run build
+corepack pnpm run build
 php artisan app:create-user
 ```
 
@@ -112,10 +112,10 @@ Las estructuras de inventario físico se conservan como infraestructura reservad
 
 ```bash
 composer test
-npm run lint:check
-npm run format:check
-npm run types:check
-npm run build
+corepack pnpm run lint:check
+corepack pnpm run format:check
+corepack pnpm run types:check
+corepack pnpm run build
 ```
 
 ## Operación y respaldo

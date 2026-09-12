@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { Auth, Capabilities } from '@/types/auth';
 import type { BreadcrumbItem } from '@/types/navigation';
 
 export type AppLayoutProps = {
@@ -11,6 +12,14 @@ export type AppVariant = 'header' | 'sidebar';
 export type FlashToast = {
     type: 'success' | 'info' | 'warning' | 'error';
     message: string;
+};
+
+export type AppSharedPageProps = {
+    name: string;
+    auth: Auth;
+    capabilities: Capabilities;
+    sidebarOpen: boolean;
+    [key: string]: unknown;
 };
 
 export type ChoiceOption = {

@@ -63,17 +63,17 @@ composer test
 Después de cambios frontend:
 
 ```bash
-npm run format:check
-npm run types:check
-npm run lint:check
-npm run build
+corepack pnpm run format:check
+corepack pnpm run types:check
+corepack pnpm run lint:check
+corepack pnpm run build
 ```
 
 Para un checkpoint o preparación de despliegue ejecute también:
 
 ```bash
 composer audit --locked --no-interaction
-npm audit --omit=dev --audit-level=moderate
+corepack pnpm audit --prod --audit-level=moderate
 ```
 
 No corrija fallos eliminando pruebas, debilitando validaciones o suprimiendo errores de análisis estático.

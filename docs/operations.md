@@ -34,10 +34,10 @@ La eliminación definitiva de un vale es una excepción administrativa deliberad
 ```bash
 cp .env.example .env
 composer install
-npm install
+corepack pnpm install --frozen-lockfile
 php artisan key:generate
 php artisan migrate --seed
-npm run build
+corepack pnpm run build
 php artisan app:create-user
 ```
 
@@ -179,12 +179,12 @@ La `APP_KEY` productiva se guarda como secreto en OCI Vault con una llave admini
 
 ```bash
 composer test
-npm run format:check
-npm run types:check
-npm run lint:check
-npm run build
+corepack pnpm run format:check
+corepack pnpm run types:check
+corepack pnpm run lint:check
+corepack pnpm run build
 composer audit --locked --no-interaction
-npm audit --omit=dev --audit-level=moderate
+corepack pnpm audit --prod --audit-level=moderate
 ```
 
 Registrar la versión del commit, fecha, resultado de migraciones, respaldo previo y responsable del despliegue. La aplicación expone `/up` para una comprobación básica de disponibilidad; no sustituye una prueba funcional de login, consulta, descarga privada y enlace temporal de vale.

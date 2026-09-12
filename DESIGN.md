@@ -262,16 +262,16 @@ Reglas:
 Después de cambios visuales:
 
 ```bash
-npm run format:check
-npm run types:check
-npm run lint:check
-npm run build
+corepack pnpm run format:check
+corepack pnpm run types:check
+corepack pnpm run lint:check
+corepack pnpm run build
 ```
 
 Ejecute también la auditoría Playwright con credenciales de prueba configuradas en variables de entorno:
 
 ```bash
-npm run visual:audit
+corepack pnpm run visual:audit
 ```
 
 Revise al menos escritorio claro, escritorio oscuro y móvil claro, incluidos sidebar expandido/contraído, header en top/scroll, formularios, tablas, estados vacíos y diálogos.

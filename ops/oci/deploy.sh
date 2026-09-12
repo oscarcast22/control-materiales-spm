@@ -17,7 +17,7 @@ for argument in "$@"; do
 done
 
 require_command composer
-require_command npm
+require_command corepack
 require_command rsync
 require_command ssh
 require_clean_release
@@ -33,9 +33,9 @@ if [[ $SKIP_CHECKS == false ]]; then
     log 'Ejecutando verificación PHP y de dominio'
     (cd "$PROJECT_DIR" && composer test)
     log 'Ejecutando verificaciones frontend'
-    (cd "$PROJECT_DIR" && npm ci && php artisan wayfinder:generate --with-form && npm run format:check && npm run types:check && npm run lint:check && npm run build)
+    (cd "$PROJECT_DIR" && corepack pnpm install --frozen-lockfile && php artisan wayfinder:generate --with-form && corepack pnpm run format:check && corepack pnpm run types:check && corepack pnpm run lint:check && corepack pnpm run build)
     log 'Auditando dependencias bloqueadas'
-    (cd "$PROJECT_DIR" && composer audit --locked --no-interaction && npm audit --omit=dev --audit-level=moderate)
+    (cd "$PROJECT_DIR" && composer audit --locked --no-interaction && corepack pnpm audit --prod --audit-level=moderate)
 else
     [[ -d "$PROJECT_DIR/public/build" ]] || die 'No existe public/build; no puede omitirse el build.'
     log 'ADVERTENCIA: se omitieron verificaciones por solicitud explícita.'
