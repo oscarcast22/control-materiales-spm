@@ -58,6 +58,7 @@ type FormData = {
     loaned_to_name: string;
     received_by_id: string;
     items: Line[];
+    attachments: File[];
 };
 
 export type LoanedVoucherFormProps = {
@@ -104,6 +105,7 @@ export default function LoanedVoucherForm({
         received_by_id: voucher?.received_by
             ? String(voucher.received_by.id)
             : '',
+        attachments: [],
         items: voucher
             ? [
                   ...voucher.items.map((item) => ({
@@ -693,6 +695,44 @@ export default function LoanedVoucherForm({
                     </FieldGroup>
                 </CardContent>
             </Card>
+            {!voucher && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Respaldo del vale</CardTitle>
+                        <CardDescription>
+                            Adjunta evidencia del formato prestado para
+                            consultarla después.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Field>
+                            <FieldLabel htmlFor="loaned-voucher-attachments">
+                                Foto o PDF del vale (opcional)
+                            </FieldLabel>
+                            <Input
+                                id="loaned-voucher-attachments"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,application/pdf"
+                                multiple
+                                onChange={(event) =>
+                                    form.setData(
+                                        'attachments',
+                                        Array.from(event.target.files ?? []),
+                                    )
+                                }
+                                aria-invalid={
+                                    Boolean(form.errors.attachments) ||
+                                    undefined
+                                }
+                            />
+                            <FieldDescription>
+                                Hasta 5 archivos de 10 MB cada uno.
+                            </FieldDescription>
+                            <InputError message={form.errors.attachments} />
+                        </Field>
+                    </CardContent>
+                </Card>
+            )}
         </>
     );
 

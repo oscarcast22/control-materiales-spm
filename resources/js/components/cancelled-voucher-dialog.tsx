@@ -34,6 +34,7 @@ export function CancelledVoucherDialog({
         folio: '',
         issued_on: new Date().toISOString().slice(0, 10),
         cancellation_reason: '',
+        attachments: [] as File[],
     });
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -41,7 +42,7 @@ export function CancelledVoucherDialog({
             preserveScroll: true,
             onSuccess: () => {
                 setOpen(false);
-                form.reset('folio', 'cancellation_reason');
+                form.reset('folio', 'cancellation_reason', 'attachments');
             },
         });
     };
@@ -154,6 +155,33 @@ export function CancelledVoucherDialog({
                                 <InputError
                                     message={form.errors.cancellation_reason}
                                 />
+                            </Field>
+                            <Field className="sm:col-span-2">
+                                <FieldLabel htmlFor="cancelled-voucher-attachments">
+                                    Foto o PDF del vale (opcional)
+                                </FieldLabel>
+                                <Input
+                                    id="cancelled-voucher-attachments"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                                    multiple
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'attachments',
+                                            Array.from(
+                                                event.target.files ?? [],
+                                            ),
+                                        )
+                                    }
+                                    aria-invalid={
+                                        Boolean(form.errors.attachments) ||
+                                        undefined
+                                    }
+                                />
+                                <FieldDescription>
+                                    Hasta 5 archivos de 10 MB cada uno.
+                                </FieldDescription>
+                                <InputError message={form.errors.attachments} />
                             </Field>
                         </FieldGroup>
                     </ModalBody>

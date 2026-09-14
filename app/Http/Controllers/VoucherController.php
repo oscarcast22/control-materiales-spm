@@ -159,10 +159,12 @@ class VoucherController extends Controller
             'folio' => ['required', 'string', 'max:50'],
             'issued_on' => ['required', 'date'],
             'cancellation_reason' => ['nullable', 'string', 'min:5', 'max:1000'],
+            ...$this->attachmentValidationRules(),
         ], [
             'cancellation_reason.string' => 'El motivo de cancelación debe ser texto.',
             'cancellation_reason.min' => 'Si escribes un motivo, usa al menos 5 caracteres.',
             'cancellation_reason.max' => 'El motivo de cancelación no puede tener más de 1,000 caracteres.',
+            ...$this->attachmentValidationMessages(),
         ]);
         $data['folio'] = trim($data['folio']);
         $this->ensureUniqueFolio($data['folio'], (int) $data['voucher_type_id']);
@@ -185,12 +187,15 @@ class VoucherController extends Controller
             return $voucher;
         });
 
+        $this->storeAttachments($voucher, $request);
+
         return $this->mutationResponse($request, $voucher, "Folio {$voucher->folio} registrado como cancelado.");
     }
 
     public function storeLoaned(Request $request): RedirectResponse
     {
         Gate::authorize('create', Voucher::class);
+        $this->validateAttachments($request);
         $data = $this->validateLoanedVoucher($request);
         $this->ensureUniqueFolio($data['folio'], (int) $data['storage_location_id']);
 
@@ -212,6 +217,8 @@ class VoucherController extends Controller
 
             return $voucher;
         });
+
+        $this->storeAttachments($voucher, $request);
 
         return $this->mutationResponse($request, $voucher, "Folio {$voucher->folio} registrado como prestado.");
     }
@@ -461,7 +468,8 @@ class VoucherController extends Controller
             'folio' => ['required', 'string', 'max:50'],
             'issued_on' => ['required', 'date'],
             'loaned_to_name' => ['prohibited'],
-        ]);
+            'attachments' => ['prohibited'],
+        ], $this->attachmentValidationMessages());
         $data['folio'] = trim($data['folio']);
         $this->ensureUniqueFolio($data['folio'], (int) $data['voucher_type_id'], $voucher);
 
@@ -698,6 +706,7 @@ class VoucherController extends Controller
             'items.*.unit_id' => ['prohibited'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:'.QuantityPrecision::MAX_VALUE],
             'items.*.luminaire_folios' => ['nullable', 'string', 'max:5000'],
+            'attachments' => $updating ? ['prohibited'] : ['nullable', 'array'],
         ], $this->voucherValidationMessages());
 
         $eligibleMaterials = Material::query()
@@ -803,8 +812,7 @@ class VoucherController extends Controller
             'items.*.unit_id' => ['prohibited'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:'.QuantityPrecision::MAX_VALUE],
             'items.*.luminaire_folios' => ['nullable', 'string', 'max:5000'],
-            'attachments' => ['nullable', 'array', 'max:5'],
-            'attachments.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
+            ...$this->attachmentValidationRules(),
         ], $this->voucherValidationMessages());
 
         $eligibleMaterials = Material::query()
@@ -978,12 +986,38 @@ class VoucherController extends Controller
             'items.*.quantity.max' => 'La cantidad es demasiado grande.',
             'items.*.luminaire_folios.string' => 'Los folios de luminarias deben ser texto.',
             'items.*.luminaire_folios.max' => 'Los folios de luminarias no pueden tener más de 5,000 caracteres.',
+            ...$this->attachmentValidationMessages(),
+        ];
+    }
+
+    /** @return array<string, list<string>> */
+    private function attachmentValidationRules(): array
+    {
+        return [
+            'attachments' => ['nullable', 'array', 'max:5'],
+            'attachments.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function attachmentValidationMessages(): array
+    {
+        return [
             'attachments.array' => 'Adjunta archivos válidos.',
+            'attachments.prohibited' => 'La evidencia sólo se puede adjuntar al registrar el vale.',
             'attachments.max' => 'Puedes adjuntar como máximo cinco archivos.',
             'attachments.*.file' => 'Cada adjunto debe ser un archivo válido.',
             'attachments.*.mimes' => 'Adjunta una imagen JPG, PNG, WEBP o un archivo PDF.',
             'attachments.*.max' => 'Cada archivo puede pesar como máximo 10 MB.',
         ];
+    }
+
+    private function validateAttachments(Request $request): void
+    {
+        $request->validate(
+            $this->attachmentValidationRules(),
+            $this->attachmentValidationMessages(),
+        );
     }
 
     /** @param array<string, mixed> $data

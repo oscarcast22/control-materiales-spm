@@ -386,6 +386,52 @@ class MaterialControlTest extends TestCase
         $this->assertNull($voucher->cancellation_reason);
     }
 
+    public function test_a_cancelled_folio_can_store_private_evidence_when_created(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create();
+        $location = StorageLocation::factory()->create(['code' => 'warehouse']);
+
+        $this->actingAs($user)->post(route('vouchers.cancelled.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => '16576',
+            'issued_on' => '2026-08-27',
+            'attachments' => [UploadedFile::fake()->create('vale-cancelado.pdf', 100, 'application/pdf')],
+        ])->assertSessionHasNoErrors();
+
+        $voucher = Voucher::query()->sole();
+        $attachment = $voucher->attachments()->sole();
+
+        $this->assertSame(VoucherStatus::Cancelled, $voucher->status);
+        Storage::disk('local')->assertExists($attachment->path);
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'uploaded',
+            'auditable_type' => VoucherAttachment::class,
+            'auditable_id' => $attachment->id,
+        ]);
+        $this->actingAs($user)->get(route('attachments.show', $attachment))
+            ->assertDownload('vale-cancelado.pdf');
+    }
+
+    public function test_a_cancelled_folio_rejects_more_than_five_attachments(): void
+    {
+        $user = User::factory()->create();
+        $location = StorageLocation::factory()->create(['code' => 'warehouse']);
+        $attachments = [];
+        for ($index = 1; $index <= 6; $index++) {
+            $attachments[] = UploadedFile::fake()->create("vale-{$index}.pdf", 100, 'application/pdf');
+        }
+
+        $this->actingAs($user)->post(route('vouchers.cancelled.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => '16576',
+            'issued_on' => '2026-08-27',
+            'attachments' => $attachments,
+        ])->assertSessionHasErrors('attachments');
+
+        $this->assertDatabaseCount('vouchers', 0);
+    }
+
     public function test_voucher_validation_messages_explain_the_field_that_needs_correction(): void
     {
         $user = User::factory()->create();
@@ -1702,6 +1748,47 @@ class MaterialControlTest extends TestCase
             ->assertOk()
             ->assertJsonCount(0, 'data');
 
+    }
+
+    public function test_a_loaned_folio_can_store_private_evidence_when_created(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create();
+        $location = StorageLocation::factory()->create(['code' => 'warehouse']);
+
+        $this->actingAs($user)->post(route('vouchers.loaned.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => '16582',
+            'issued_on' => '2026-08-27',
+            'attachments' => [UploadedFile::fake()->create('vale-prestado.jpg', 100, 'image/jpeg')],
+        ])->assertSessionHasNoErrors();
+
+        $voucher = Voucher::query()->sole();
+        $attachment = $voucher->attachments()->sole();
+
+        $this->assertSame(VoucherStatus::Loaned, $voucher->status);
+        $this->assertSame('loaned', VoucherData::make($voucher)['balance_state']);
+        Storage::disk('local')->assertExists($attachment->path);
+        $this->assertDatabaseHas('audit_events', [
+            'event' => 'uploaded',
+            'auditable_type' => VoucherAttachment::class,
+            'auditable_id' => $attachment->id,
+        ]);
+    }
+
+    public function test_a_loaned_folio_rejects_invalid_evidence_when_created(): void
+    {
+        $user = User::factory()->create();
+        $location = StorageLocation::factory()->create(['code' => 'warehouse']);
+
+        $this->actingAs($user)->post(route('vouchers.loaned.store'), [
+            'voucher_type_id' => $location->id,
+            'folio' => '16582',
+            'issued_on' => '2026-08-27',
+            'attachments' => [UploadedFile::fake()->create('vale.exe', 100, 'application/octet-stream')],
+        ])->assertSessionHasErrors('attachments.0');
+
+        $this->assertDatabaseCount('vouchers', 0);
     }
 
     public function test_voucher_attachments_are_private_and_downloadable_only_after_authentication(): void
